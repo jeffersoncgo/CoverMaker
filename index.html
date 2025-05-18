@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <title>Collection Cover Maker</title>
+</head>
+
+<body>
+  <template id="slot-template">
+    <div class="slot" ondragstart="onSlotDragToMove(event)" ondrop="slotOnDropImage(event, this)" ondragover="slotAllowDrop(event)"
+     ondragleave="this.classList.remove('dragover')">
+      <input type="file" accept="image/*" class="fileInput" style="display: none;" onchange="localImageInputChanged(this)">
+      <img src="" class="preview" save customTrigger="reloadSlotImage" src=""></img>
+      <div class="topButtons">
+        <i class="fa-solid fa-thumbtack" onclick="toggleSlotPin(this)"></i>
+        <i class="fa-solid fa-file-image" onclick="loadLocalImage(this)"></i>
+        <i class="fa-solid fa-up-right-from-square" onclick="openInNewTab(this)"></i>
+        <i class="fa-solid fa-arrows-rotate" onclick="radomizeSlotImage(this)"></i>
+      </div>
+      <div class="bottomButtons">
+        <i class="fa-solid fa-up-long" onclick="moveSlotUp(this)"></i>
+        <i class="fa-solid fa-down-long" onclick="moveSlotDown(this)"></i>
+        <i class="fa-solid fa-trash delete" onclick="deleteButtonClick(this)"></i>
+        <i class="fa-solid fa-eraser clear" onclick="clearButtonClick(this)"></i>
+      </div>
+    </div>
+  </template>
+
+  <template id="banner-template">
+    <div class="library">
+      <label>{{name}}</label>
+      <img class="preview" library-name={{name}} library-id={{id}} onclick="selectLibrary(this)"></img>
+    </div>    
+  </template>
+  
+  <template id="cover-template">
+    <div class="cover">
+      <label>{{name}}</label>
+      <img src="" draggable="true" ondragstart="onCoverDragStart(event)" class="preview" item-name={{name}} item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)"></img>
+    </div>
+  </template>
+
+
+  <div class="header">
+    <h1>Collection Cover Maker</h1>
+    <div>
+      <button id="loginBtn" logged-in="false" onClick="showWindow('loginBox');">Login to Jellyfin</button>
+      <button onclick="cleanMemory()">Clean Saved Memory</button>
+    </div>
+  </div>
+
+  <div class="floatWindow" id="loginBox" style="display: none;">
+    <div class="windowBar">
+      <h2>Jellyfin Login</h2>
+      <button class="closeBtn">×</button>
+    </div>
+    <div class="content">
+      <label for="Server">Server URL</label>
+      <input type="text" id="Server" placeholder="http://yourserver:8096" value="http://localhost:8096" save>
+      <label for="Username">Username</label>
+      <input type="text" id="Username" placeholder="Your username" value="admin" save>
+      <label for="Password">Password</label>
+      <input type="password" id="Password" placeholder="Your password" value="password" save>
+      <!-- connect Button, it just refresh the page, so the onLoad functions can start -->
+      <button id="loginAction">Connect</button>
+      <label id="loginErrorMessage"></label>
+    </div>
+  </div>
+
+  <div id="app">
+    <div id="leftSide">
+
+      <div id="tabsList">
+        <li class="tab" id="imageslotsTab">Image Slots</li>
+        <li class="tab" id="settingsTab">Settings</li>
+      </div>
+
+      <div id="tabsContents">
+
+        <div class="tabContent " id="imageslotsContent">
+          <div class="controls">
+            <i class="fa-solid fa-plus" onclick="addImageSlot()"></i>
+            <i class="fa-solid fa-eraser" onclick="clearAllSlots(this)"></i>
+            <i class="fa-solid fa-arrows-rotate" onclick="fillSlotsRandomly()"></i>
+          </div>
+          <div id="image-slots" class="slots scroll-container" slotsCount="0" customTrigger="setSlots" save>
+          </div>
+        </div>
+
+        <div class="tabContent" id="settingsContent">
+          <div class="settings">
+            <div class="field text">
+              <div>
+                <label for="overlayText">Overlay Text:</label>
+                <input class="teste" type="text" id="overlayText" placeholder="Type your text here" value="TEMP" save>
+              </div>
+              <div>
+                <label for="fontSelect">Font:</label>
+                <select id="fontSelect" save>
+                  <option value="Arial">Arial</option>
+                  <option value="Verdana">Verdana</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Helvetica">Helvetica</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Courier New">Courier New</option>
+                  <option value="Brush Script MT">Brush Script MT</option>
+                </select>
+              </div>
+              <div>
+                <label for="fontSize">Font Size (px):</label>
+                <input type="number" id="fontSize" value="327" save>
+              </div>
+              <div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <label for="fontColor">Font Color:</label>
+                  <input type="color" id="fontColor" value="#ffffff" style="flex: 0 0 2rem; padding: 0;" save>
+                <div style="margin-left: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
+                  <label for="boldCheckbox" style="margin: 0;">Bold:</label>
+                  <input type="checkbox" id="boldCheckbox" checked style="flex: 0 0 auto;" save>
+                </div>
+              </div>
+
+              </div>
+              <div>
+                <label for="fontOpacity">Font Opacity (0-1):</label>
+                <input type="number" id="fontOpacity" value="0.9" step="0.1" min="0" max="1" save>
+              </div>
+            </div>
+            <div class="field image">
+              <div>
+                <label for="spaceSize">Margin Size (px):</label>
+                <input type="number" id="spaceSize" value="3" save>
+              </div>
+              <div>
+                <label for="blurSize">Blur Size (px):</label>
+                <input type="number" id="blurSize" value="5" save>
+              </div>
+              <div>
+                <label for="reflexDistance">Reflex Distance (0-1):</label>
+                <input type="number" id="reflexDistance" value="0.8" step="0.1" min="0" max="1" save>
+              </div>
+              <div>
+                <label for="reflexScale">Reflex Scale (0-1):</label>
+                <input type="number" id="reflexScale" value="0.8" step="0.1" min="0" max="1" save>
+              </div>
+              <div>
+                <label for="overlayOpacity">Overlay Opacity (0-1):</label>
+                <input type="number" id="overlayOpacity" value="0.5" step="0.1" min="0" max="1" save>
+              </div>
+              <div>
+                <label for="posterScale">Poster Scale (0-10):</label>
+                <input type="number" id="posterScale" value="1.3" step="0.1" min="0.1" max="10" save>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="canvas-container">
+      <canvas id="myCanvas" width="1920" height="1080"></canvas>
+      <div id="exportBtns" class="field">
+        <button id="exportBtn">Export Composite Image</button>
+        <button id="openTabBtn">Open Composite in New Tab</button>
+      </div>
+    </div>
+
+    <div id="rightSide">
+      <div class="tabContent slots " id="jellyfinContent">
+        <div class="controls">
+          <i id="loadLibraryBtn" class="fa-solid fa-photo-film" onclick="loadLibraries(this)"></i>
+          <i id="refreshlibraryBtn" class="fa-solid fa-arrows-rotate" onclick="filterRandom(this)"></i>
+          <input type="text" id="searchInput" placeholder="Search" input="">
+          <i class="fa-solid fa-left-long" onclick="previousPage(this)"></i>
+          <i class="fa-solid fa-right-long" onclick="nextPage(this)"></i>
+        </div>
+        <div id="jellyfinimages" class="jellyfinWindow scroll-container" save customTrigger="returnToSearch">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://raw.githubusercontent.com/jeffersoncgo/cdn/refs/heads/main/js/JCGWEB/components/utils/common.js"></script>
+  <script src="https://raw.githubusercontent.com/jeffersoncgo/cdn/refs/heads/main/JCGWEB/base.js"></script>
+  <script src="https://raw.githubusercontent.com/jeffersoncgo/cdn/refs/heads/main/JCGWEB/controller.js"></script>
+  <script src="https://raw.githubusercontent.com/jeffersoncgo/cdn/refs/heads/main/JCGWEB/observer.js"></script>
+  <script src="https://raw.githubusercontent.com/jeffersoncgo/cdn/refs/heads/main/JCGWEB/pagememory.js"></script>
+  
+  <script src="js/jellyfin.js"></script>
+  <script src="js/script.js"></script>
+  <script src="js/windowsHandle.js"></script>
+</body>
+
+</html>
