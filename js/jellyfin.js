@@ -73,7 +73,7 @@ class Jellyfin {
     this.Name = "jellyfin-splashmaker";
     this.events = events;
 
-    this.searchItems = new Controller(this.searchItems.bind(this), null, null, null, true)
+    this.searchItems = new Controller(this.searchItems.bind(this))
     this.searchItems = this.searchItems.exec.bind(this.searchItems);
 
     this.init()
