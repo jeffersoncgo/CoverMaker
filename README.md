@@ -50,6 +50,7 @@ Once connected, you can:
 2. Fill slots with images by:
    - Selecting from your Jellyfin library
    - Uploading local images
+   - Pasting images from clipboard
    - Dragging and dropping
    - Using the random fill feature
 3. Adjust the composition settings:
