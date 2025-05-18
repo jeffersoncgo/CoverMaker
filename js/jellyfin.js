@@ -49,6 +49,10 @@ class Jellyfin {
         sortBy: ["Random", "Name", "OfficialRating", "CommunityRating", "ProductionYear", "PremiereDate"],
         order: ["asc", "desc"],
       },
+      Tags: [],
+      Genres: [],
+      Studios: [],
+      People: [],
       Name: "",
       Library: "",
       OfficialRating: "",
@@ -235,6 +239,11 @@ class Jellyfin {
 
       await Promise.all(promises); 
 
+      // Remove duplicated, empty and repeated tags
+      this.searchParams.Tags = [...new Set(this.searchParams.Tags)].sort();
+      this.searchParams.Genres = [...new Set(this.searchParams.Genres)].sort();
+      this.searchParams.Studios = [...new Set(this.searchParams.Studios)].sort();
+
       this.areLibrariesLoaded = true;
       this.events.onLibraryLoad(data);
       return data;
@@ -275,9 +284,9 @@ class Jellyfin {
     if (!query) {
       query = {}
       if (Name)
-        query.Name = Name;
+        query.Name = Name.trim();
       if (library)
-        query.Library = library;
+        query.Library = Name.trim();
     }
 
     this.searchParams = { ...this.searchParams, ...query };
@@ -351,13 +360,26 @@ class Jellyfin {
   async loadLibraryItems(libraryId) { // Get the items in a specific library
     if (!this.isAuthenticated)
       return;
-    let response = await fetch(`${this.Server.ExternalAddress}/Users/${this.User.Id}/Items?SortBy=Random&Fields=PrimaryImageAspectRatio&ImageTypeLimit=1&EnableImageTypes=Primary&ParentId=${libraryId}`, {
+      const Fields = [
+        "PrimaryImageAspectRatio",
+        "Genres",
+        "Overview",
+        // "People", //Is too slow
+        "Studios",
+        "Tags",
+      ]
+    const FieldsText = encodeURIComponent(Fields.join(","))
+    let response = await fetch(`${this.Server.ExternalAddress}/Users/${this.User.Id}/Items?SortBy=Random&Fields=${FieldsText}&ImageTypeLimit=1&EnableImageTypes=Primary&ParentId=${libraryId}`, {
       method: "GET",
       headers: this.headers,
     });
     if (response.ok) {
       let data = await response.json();
       return data.Items.map(item => {
+        this.searchParams.Tags.push(...item.Tags);
+        this.searchParams.Genres.push(...item.Genres);
+        this.searchParams.Studios.push(...item.Studios);
+        // this.searchParams.People.push(...item.People);
         return {
           Id: item.Id, //c07c4089d60376701fc62e3fe008cdcc
           Name: item.Name, //Contatos de 4º Grau
@@ -366,6 +388,11 @@ class Jellyfin {
           OfficialRating: item.OfficialRating, //16
           CommunityRating: item.CommunityRating, //6.3
           ProductionYear: item.ProductionYear, //2009
+          Genres: item.Genres,
+          Studios: item.Studios,
+          Tags: item.Tags,
+          Overview: item.Overview,
+          // People: item.People,
         };
       });
   } else {

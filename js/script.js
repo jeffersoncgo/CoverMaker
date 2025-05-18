@@ -819,7 +819,16 @@ document.addEventListener('paste', (e) => {
   }
 });
 
-jellyfinsearchInput.addEventListener('input', () => {searchOnLibrary(null, true, true)})
+jellyfinsearchInput.addEventListener('input', () => {
+  jellyfin.backupSearchParams();
+  jellyfin.searchParams.offset = 0;
+  jellyfin.searchParams.page = 1;
+  jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[1]
+  searchOnLibrary(null, true, true).then(() => {
+    // jellyfin.restoreSearchParams();
+    fillJellyfinContainerAttr();
+  })
+})
 jellyfinloginActionBtn.addEventListener('click', Login)
 
 // Auto-update canvas when settings change
