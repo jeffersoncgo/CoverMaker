@@ -790,7 +790,7 @@ function fillJellyfinContainerAttr() {
   jellyfinContainer.setAttribute("search-hasNextPage", jellyfin.searchParams.hasNextPage);
 }
 
-searchOnLibrary = new Controller(searchOnLibrary, null, null, null, true)
+searchOnLibrary = new Controller(searchOnLibrary)
 searchOnLibrary = searchOnLibrary.exec.bind(searchOnLibrary);
 
 // ======================
