@@ -46,6 +46,8 @@ const imageSlots = document.getElementById('image-slots');
 const jellyfinContainer = document.getElementById('jellyfinimages'); // container element in DOM
 const jellyfinsearchInput = document.getElementById('searchInput');
 const jellyfinloginActionBtn = document.getElementById('loginAction');
+const jellyfinPreviousPageBtn = document.getElementById('previousPage');
+const jellyfinNextPageBtn = document.getElementById('nextPage');
 
 // ======================
 // Storage Functions
@@ -658,7 +660,11 @@ function CreateJellyfin() {
       document.querySelector("#jellyfinContent").style.display = "block";
     },
     onLibraryLoad: () => searchOnLibrary(null, null),
-    onSearchFinish: fillJellyfinContainerAttr
+    onSearchFinish: () => {
+      fillJellyfinContainerAttr();
+      jellyfinPreviousPageBtn?.setAttribute('disabled', !jellyfin.searchParams.hasPreviousPage);
+      jellyfinNextPageBtn?.setAttribute('disabled', !jellyfin.searchParams.hasNextPage)
+    }
   });
   return window.jellyfin;
 }
@@ -728,9 +734,10 @@ function fillCovers(items) {
   items.forEach(addVideoCover)
 }
 
-async function searchOnLibrary(Qry, force = false) {
+async function searchOnLibrary(Qry, force = false, useDelay = false) {
   if (!jellyfin.areLibrariesLoaded)
     return;
+  jellyfin.setDelay(useDelay == true ? 400 : 0)
   const searchQuery = typeof Qry == "string" ? Qry : jellyfinsearchInput.value;
   jellyfin.searchParams.Name = searchQuery;
   if(!force) {
@@ -748,17 +755,21 @@ function filterRandom() {
   jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[0]
   jellyfin.searchParams.offset = 0;
   jellyfin.searchParams.limit = 10;
-  searchOnLibrary(null, true);
+  searchOnLibrary(null, true, false);
 }
 
 async function nextPage() {
+  jellyfin.setDelay(0)
   const covers = await jellyfin.nextPage();
   if (covers)
     fillCovers(covers);
 }
 
 async function previousPage() {
-  fillCovers(await jellyfin.previousPage());
+  jellyfin.setDelay(0)
+  const covers = await jellyfin.previousPage();
+  if (covers)
+    fillCovers(covers);
 }
 
 async function returnToSearch() {
@@ -787,10 +798,11 @@ function fillJellyfinContainerAttr() {
   jellyfinContainer.setAttribute("search-page", jellyfin.searchParams.page);
   jellyfinContainer.setAttribute("search-limit", jellyfin.searchParams.limit);
   jellyfinContainer.setAttribute("search-offset", jellyfin.searchParams.offset);
-  jellyfinContainer.setAttribute("search-hasNextPage", jellyfin.searchParams.hasNextPage);
 }
 
-searchOnLibrary = new Controller(searchOnLibrary)
+const searchController = new Controller(searchOnLibrary);
+searchOnLibrary = searchController;
+searchOnLibrary.Controller = searchController;
 searchOnLibrary = searchOnLibrary.exec.bind(searchOnLibrary);
 
 // ======================
@@ -807,7 +819,7 @@ document.addEventListener('paste', (e) => {
   }
 });
 
-jellyfinsearchInput.addEventListener('input', () => searchOnLibrary(null, true))
+jellyfinsearchInput.addEventListener('input', () => {searchOnLibrary(null, true, true)})
 jellyfinloginActionBtn.addEventListener('click', Login)
 
 // Auto-update canvas when settings change

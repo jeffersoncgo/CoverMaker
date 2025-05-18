@@ -73,9 +73,10 @@ class Jellyfin {
     this.Name = "jellyfin-splashmaker";
     this.events = events;
 
-    this.searchItems = new Controller(this.searchItems.bind(this))
+    this.Controller = new Controller(this.searchItems.bind(this));
+    this.searchItems = this.Controller;
     this.searchItems = this.searchItems.exec.bind(this.searchItems);
-
+    this.searchItems.Controller = this.Controller;
     this.init()
   }
 
@@ -251,15 +252,23 @@ class Jellyfin {
   }
 
   async previousPage() {
-    if(this.searchParams.page > 1) {
-      this.searchParams.page--;
-      this.searchParams.offset = (this.searchParams.page - 1) * this.searchParams.limit;
-    }
+    if(!this.searchParams.hasPreviousPage)
+      return;
+    this.searchParams.page--;
+    this.searchParams.offset = (this.searchParams.page - 1) * this.searchParams.limit;
     return await this.searchItems(null, null, null);
+  }
+
+  hasPreviousPage() {
+    return this.searchParams.offset > 0;
   }
 
   hasNextPage(items) {
     return this.searchParams.offset + this.searchParams.limit < items.length;
+  }
+
+  setDelay(delay) {
+    this.Controller.startDelayMs = delay;
   }
 
   async searchItems(Name, library, query) {
@@ -299,15 +308,7 @@ class Jellyfin {
     else
       for (const lName in this.Libraries)
         items = items.concat(this.Libraries[lName].Items)
-
-    // Apply filters
-    items = items.filter(item => {
-      return (!this.searchParams.Name || item.Name?.toLowerCase().includes(this.searchParams.Name.toLowerCase())) &&
-            (!this.searchParams.OfficialRating || item.OfficialRating === this.searchParams.OfficialRating) &&
-            (this.searchParams.CommunityRating == null || item.CommunityRating >= this.searchParams.CommunityRating) &&
-            (this.searchParams.ProductionYear == null || item.ProductionYear === this.searchParams.ProductionYear) &&
-            (!this.searchParams.PremiereDate || new Date(item.PremiereDate).toISOString() === new Date(this.searchParams.PremiereDate).toISOString());
-    });
+    items = await searchInArray(items, this.searchParams.Name)
 
     // Sort items
     const sortKey = this.searchParams.sortBy;
@@ -338,6 +339,7 @@ class Jellyfin {
       });
     }
 
+    this.searchParams.hasPreviousPage = this.hasPreviousPage();
     this.searchParams.hasNextPage = this.hasNextPage(items);
 
     items = items.slice(this.searchParams.offset, this.searchParams.offset + this.searchParams.limit);

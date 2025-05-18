@@ -86,6 +86,13 @@ button:active {
   background: var(--primary-active);
 }
 
+i[disabled="true"], button[disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  user-select: none;
+  background-color: var(--background);
+}
+
 
 /* Floating Window Styles */
 .floatWindow {
