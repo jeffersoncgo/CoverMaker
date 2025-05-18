@@ -63,6 +63,7 @@ Once connected, you can:
 
 - Use the pin feature to lock important images in place
 - Drag images between slots to reorder them
+- Drag images from covers list to a slot, to load it.
 - Adjust the poster scale to find the perfect fit
 - Use the blur effect to create depth
 - Experiment with reflection settings for different looks
