@@ -1,6 +1,7 @@
 # Collection Cover Maker
 
 A powerful web application that lets you create beautiful collection covers by combining multiple images into a single composite with professional effects. It features direct integration with Jellyfin media server, allowing you to easily access and use your media library images.
+It can also work without Jellyfin, with local images.
 
 ## Features
 
