@@ -123,7 +123,7 @@ function loadImageIntoSlot(image, slotIndex) {
     slotsImages[slotIndex] = img;
     setSlotImage(slotIndex, img);
   }).catch(err => {
-    preview.src = Setup.Images.error;
+    SlotImageOnError(preview);
     console.error('Failed to load image:', err);
   })
 }
@@ -155,8 +155,9 @@ function SlotImageOnLoad(el) {
   // el.src = Setup.Images.loading
 };
 
-function SlotImageOnError(el) {
-  el.src = Setup.Images.error
+function SlotImageOnError(preview) {
+  // preview.parentElement.style.display = "none";
+  preview.src = Setup.Images.error;
 };
 
 // ======================
@@ -843,9 +844,18 @@ document.getElementById("openTabBtn").addEventListener("click", openInNewTab);
 
 function dummyStart() {
   // Add initial slots
-  setSlots(4);
   // Load default slotsImages
-  ["images/img_1.jpg", "images/img_2.jpg", "images/img_3.jpg", "images/img_4.jpg","images/img_1.jpg", "images/img_2.jpg", "images/img_3.jpg", "images/img_4.jpg","images/img_1.jpg", "images/img_2.jpg"].forEach((src, i) => {
+  const imagesToLoad = {
+    "final_destination_bloodlines": "https://m.media-amazon.com/images/M/MV5BN2JkMDc5MGQtZjg3YS00NmFiLWIyZmQtZTJmNTM5MjVmYTQ4XkEyXkFqcGc@._V1_FMjpg_UY3454_.jpg",
+    "conclave": "https://m.media-amazon.com/images/M/MV5BYjgxMDI5NmMtNTU3OS00ZDQxLTgxZmEtNzY1ZTBmMDY4NDRkXkEyXkFqcGc@._V1_FMjpg_UX1080_.jpg",
+    "oppenheimer": "https://m.media-amazon.com/images/M/MV5BN2JkMDc5MGQtZjg3YS00NmFiLWIyZmQtZTJmNTM5MjVmYTQ4XkEyXkFqcGc@._V1_FMjpg_UY3454_.jpg",
+    "interestellar": "https://m.media-amazon.com/images/M/MV5BYzdjMDAxZGItMjI2My00ODA1LTlkNzItOWFjMDU5ZDJlYWY3XkEyXkFqcGc@._V1_FMjpg_UY3600_.jpg"
+  }
+
+  const values = Object.values(imagesToLoad);
+  setSlots(keys.length);
+
+  values.forEach((src, i) => {
     if (i >= slotsImages.length)
       return;
     const img = new Image();
@@ -858,7 +868,6 @@ function dummyStart() {
   });
 }
 
-// dummyStart();
 
 // On window load
 window.addEventListener('load', () => {
@@ -890,9 +899,9 @@ window.addEventListener('load', () => {
   drawComposite();
   CreateJellyfin();
 
-  window.temp1 = document.querySelector('#overlayText')
-
   window.memory = new pageMemory();
+  window.memory.addEvent('onMemoryIsEmpty', () => dummyStart())
+  window.memory.init();
 });
 
 
