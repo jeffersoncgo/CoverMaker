@@ -853,7 +853,7 @@ function dummyStart() {
   }
 
   const values = Object.values(imagesToLoad);
-  setSlots(keys.length);
+  setSlots(values.length);
 
   values.forEach((src, i) => {
     if (i >= slotsImages.length)
