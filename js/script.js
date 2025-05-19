@@ -719,7 +719,7 @@ function selectLibrary(el) {
   jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[1]
   Setup.Library.loadedLibrary = el.getAttribute('library-name');
   jellyfin.searchParams.Name = ""
-  jellyfin.searchParams.library = Setup.Library.loadedLibrary
+  jellyfin.searchParams.Library = Setup.Library.loadedLibrary
   jellyfin.searchParams.page = 1
   jellyfin.searchParams.offset = 0
   jellyfin.searchParams.hasNextPage = true
@@ -776,7 +776,7 @@ async function returnToSearch() {
   if(jellyfinContainer.hasAttribute("search-name"))
     jellyfin.searchParams.Name = jellyfinContainer.getAttribute("search-name")
   if(jellyfinContainer.hasAttribute("search-library"))
-    jellyfin.searchParams.library = jellyfinContainer.getAttribute("search-library")
+    jellyfin.searchParams.Library = jellyfinContainer.getAttribute("search-library")
   if(jellyfinContainer.hasAttribute("search-page"))
     jellyfin.searchParams.page = parseInt(jellyfinContainer.getAttribute("search-page"))
   if(jellyfinContainer.hasAttribute("search-limit"))
@@ -786,7 +786,7 @@ async function returnToSearch() {
   if(jellyfinContainer.hasAttribute("search-hasNextPage"))
     jellyfin.searchParams.hasNextPage = jellyfinContainer.getAttribute("search-hasNextPage") == "true"
   jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[1]
-  Setup.Library.loadedLibrary = jellyfin.searchParams.library;
+  Setup.Library.loadedLibrary = jellyfin.searchParams.Library;
   clearJellyfinWindow();
   jellyfinContainer.value = jellyfin.searchParams.Name;
   searchOnLibrary(null, null);

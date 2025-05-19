@@ -286,7 +286,7 @@ class Jellyfin {
       if (Name)
         query.Name = Name.trim();
       if (library)
-        query.Library = Name.trim();
+        query.Library = library.trim();
     }
 
     this.searchParams = { ...this.searchParams, ...query };
