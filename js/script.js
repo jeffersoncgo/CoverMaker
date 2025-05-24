@@ -45,6 +45,7 @@ const coverTemplate = document.getElementById('cover-template');
 const imageSlots = document.getElementById('image-slots');
 const jellyfinContainer = document.getElementById('jellyfinimages'); // container element in DOM
 const jellyfinsearchInput = document.getElementById('searchInput');
+const jellyfinCoversLimit = document.getElementById('coverslimit')
 const jellyfinloginActionBtn = document.getElementById('loginAction');
 const jellyfinPreviousPageBtn = document.getElementById('previousPage');
 const jellyfinNextPageBtn = document.getElementById('nextPage');
@@ -733,6 +734,11 @@ function selectLibrary(el) {
 function fillCovers(items) {
   clearJellyfinWindow()
   items.forEach(addVideoCover)
+}
+
+function setCoversLimit(limit) {
+  jellyfin.searchParams.limit = limit;
+  searchOnLibrary(null, null);
 }
 
 async function searchOnLibrary(Qry, force = false, useDelay = false) {

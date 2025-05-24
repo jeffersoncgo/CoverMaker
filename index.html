@@ -14,7 +14,7 @@
     <div class="slot" ondragstart="onSlotDragToMove(event)" ondrop="slotOnDropImage(event, this)" ondragover="slotAllowDrop(event)"
      ondragleave="this.classList.remove('dragover')">
       <input type="file" accept="image/*" class="fileInput" style="display: none;" onchange="localImageInputChanged(this)">
-      <img src="" class="preview" save customTrigger="reloadSlotImage" src=""></img>
+      <img src="" class="preview" save customTrigger="reloadSlotImage" src="" loading="lazy"></img>
       <div class="topButtons">
         <i class="fa-solid fa-thumbtack" onclick="toggleSlotPin(this)"></i>
         <i class="fa-solid fa-file-image" onclick="loadLocalImage(this)"></i>
@@ -33,14 +33,14 @@
   <template id="banner-template">
     <div class="library">
       <label>{{name}}</label>
-      <img class="preview" library-name={{name}} library-id={{id}} onclick="selectLibrary(this)"></img>
+      <img class="preview" library-name={{name}} library-id={{id}} onclick="selectLibrary(this)" loading="lazy"></img>
     </div>    
   </template>
   
   <template id="cover-template">
     <div class="cover">
       <label>{{name}}</label>
-      <img src="" draggable="true" ondragstart="onCoverDragStart(event)" class="preview" item-name={{name}} item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)"></img>
+      <img src="" draggable="true" ondragstart="onCoverDragStart(event)" class="preview" item-name={{name}} item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)" loading="lazy"></img>
     </div>
   </template>
 
@@ -174,7 +174,13 @@
         <div class="controls">
           <i id="loadLibraryBtn" class="fa-solid fa-photo-film" onclick="loadLibraries(this)"></i>
           <i id="refreshlibraryBtn" class="fa-solid fa-arrows-rotate" onclick="filterRandom(this)"></i>
-          <input type="text" id="searchInput" placeholder="Search" input="">
+          <input type="text" id="searchInput" placeholder="Search" input="" save>
+          <select id="coverslimit" value="10" save onchange="setCoversLimit(this.value)">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
           <i id="previousPage" class="fa-solid fa-left-long" onclick="previousPage(this)"></i>
           <i id="nextPage"class="fa-solid fa-right-long" onclick="nextPage(this)"></i>
         </div>
