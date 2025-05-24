@@ -702,7 +702,6 @@ function loadLibraries(el) {
 
 function clearJellyfinWindow() {
   jellyfinContainer.innerHTML = "";
-  jellyfinContainer.scrollTop = 0;
 }
 
 function libraryImagetoCanvas(el) {
@@ -733,8 +732,21 @@ function selectLibrary(el) {
 }
 
 function fillCovers(items) {
-  clearJellyfinWindow()
-  items.forEach(addVideoCover)
+  return new Promise((resolve) => {
+    clearJellyfinWindow();
+    
+    const coverPromises = items.map(cover => {
+      return new Promise(resolveCover => {
+        addVideoCover(cover);
+        resolveCover();
+      });
+    });
+    
+    Promise.all(coverPromises).then(() => {
+      jellyfinContainer.scrollTop = 0;
+      resolve();
+    });
+  });
 }
 
 function setCoversLimit(limit) {
