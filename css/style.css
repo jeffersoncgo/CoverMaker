@@ -179,6 +179,97 @@ i[disabled="true"], button[disabled="true"] {
   display: block;
 }
 
+.buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.buttons .fa-brands {
+  font-size: 2.5rem;
+  color: var(--font-color);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.buttons .fa-brands:hover {
+  color: var(--primary-light);
+}
+
+#loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+#loginForm .field {
+  display: flex;
+  flex-direction: column;
+}
+
+#loginForm label {
+  margin-bottom: 0.5rem;
+}
+
+#loginForm input {
+  margin-bottom: 0;
+}
+
+#loginForm button {
+  margin-top: 1rem;
+}
+
+#loginAction[inactive="true"] {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+  user-select: none;
+  background-color: var(--background);
+}
+
+#loginErrorMessage {
+  /* Basic styling */
+  color: #d32f2f; /* Red color for errors */
+  background-color: #fde8e8; /* Light red background */
+  padding: 12px 16px;
+  border-radius: 4px;
+  border: 1px solid #ef9a9a;
+  margin: 10px 0;
+  font-size: 14px;
+  
+  /* Layout */
+  width: 100%;
+  box-sizing: border-box;
+  
+  /* Animation */
+  animation: fadeIn 0.3s ease-in-out;
+  
+  /* Icon (optional) */
+  position: relative;
+  padding-left: 40px;
+}
+
+#loginErrorMessage:before {
+  /* Error icon (using UTF-8) */
+  content: "⚠";
+  position: absolute;
+  left: 16px;
+  top: 9px;
+  font-size: 18px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+  
+}
+
 #loginAction[inactive="true"] {
   pointer-events: none;
   opacity: 0.5;
