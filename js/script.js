@@ -737,7 +737,13 @@ function fillCovers(items) {
 }
 
 function setCoversLimit(limit) {
+  limit = parseInt(limit);
+  if (isNaN(limit))
+    return;
   jellyfin.searchParams.limit = limit;
+  jellyfin.searchParamsToRestore.limit = limit;
+  if(jellyfinContainer.hasAttribute("search-limit"))
+    jellyfinContainer.setAttribute("search-limit", limit)
   searchOnLibrary(null, null);
 }
 
@@ -761,7 +767,7 @@ function filterRandom() {
   //["Random", "Name", "OfficialRating", "CommunityRating", "ProductionYear", "PremiereDate"]
   jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[0]
   jellyfin.searchParams.offset = 0;
-  jellyfin.searchParams.limit = 10;
+  jellyfin.searchParams.limit = jellyfin.searchParamsToRestore.limit;
   searchOnLibrary(null, true, false);
 }
 
