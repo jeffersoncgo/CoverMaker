@@ -702,6 +702,7 @@ function loadLibraries(el) {
 
 function clearJellyfinWindow() {
   jellyfinContainer.innerHTML = "";
+  jellyfinContainer.scrollTop = 0;
 }
 
 function libraryImagetoCanvas(el) {
