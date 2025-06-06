@@ -1,64 +1,80 @@
 # 🚀 README AI - CoverMaker
 
-CoverMaker is a client-side web application designed to help users easily create custom image composites, primarily for generating visual banners or posters. It provides a flexible interface for arranging multiple images onto a canvas, offering granular control over layout, scaling, spacing, reflection effects, and text overlays. A key feature is its seamless integration with Jellyfin media servers, allowing users to browse their libraries and directly pull item covers and banners into their compositions. Whether you're creating artwork for media libraries, generating custom wallpapers, or simply experimenting with image layouts, CoverMaker offers a straightforward tool accessible directly from your web browser.
+This repository contains the source code for **CoverMaker**, a client-side web application designed for creating custom image composites, primarily for use with media servers like Jellyfin. It allows users to load multiple images into customizable slots, apply various visual effects such as scaling, spacing, reflection, and blur, add text overlays, and finally export the result as a PNG file. The application integrates directly with a user's Jellyfin server, enabling easy browsing, searching, and importing of library covers and banners directly into the composition slots, alongside support for local file uploads and image pasting.
+
+CoverMaker solves the problem of needing custom cover art or banners for media server content, offering a flexible visual editor within the browser. It provides a user-friendly interface for composing images without requiring complex external image editing software, streamlining the process of generating personalized media visuals.
 
 ## 📚 Table of Contents
 
-*   [🚀 Features](#-features)
-*   [🛠️ Requirements](#️-requirements)
-*   [⬇️ Installation / Setup](#️-installation--setup)
-*   [📂 Project Structure](#-project-structure)
+*   [🚀 Introduction](#-introduction)
+*   [✨ Features](#-features)
+*   [⚙️ Installation / Setup](#️-installation--setup)
+*   [📁 Project Structure](#-project-structure)
 *   [📖 Detailed Usage / API Documentation](#-detailed-usage--api-documentation)
-    *   [📁 File: js/script.js - Core Application Logic](#-file-jsscriptjs---core-application-logic)
-    *   [📁 File: js/jellyfin.js - Jellyfin API Client](#-file-jsjellyfinjs---jellyfin-api-client)
-    *   [📁 File: js/windowsHandle.js - Floating Window Manager](#-file-jswindowshandlejs---floating-window-manager)
-*   [⚙️ Configuration](#️-configuration)
+    *   [📄 File: js/script.js - Core Application Logic](#-file-jsscriptjs---core-application-logic)
+    *   [📄 File: js/jellyfin.js - Jellyfin API Client](#-file-jsjellyfinjs---jellyfin-api-client)
+    *   [📄 File: js/windowsHandle.js - Floating Windows](#-file-jswindowshandlejs---floating-windows)
+*   [🔧 Configuration](#-configuration)
+*   [🏃 Scripts / Commands](#-scripts--commands)
 *   [🛡️ Security & Safety Highlights](#️-security--safety-highlights)
-*   [🚧 Limitations and Edge Cases](#-limitations-and-edge-cases)
+*   [⚠️ Limitations and Edge Cases](#️-limitations-and-edge-cases)
+*   [❓ Troubleshooting](#-troubleshooting)
 *   [🤝 Contributing](#-contributing)
-*   [📄 License](#-license)
-*   [🚧 Work in Progress](#-work-in-progress)
+*   [📜 License](#-license)
 
-## 🚀 Features
+## ✨ Features
 
-*   🖼️ **Image Slot Management:** Easily add, delete, clear, move, and pin image placeholders.
-*   📂 **Flexible Image Loading:** Load images from local files, URLs, clipboard paste, or integrated Jellyfin server.
-*   ✨ **Canvas Composition:** Draw multiple images onto a single canvas with customizable layout.
-*   📏 **Layout Controls:** Adjust image scaling, spacing, and alignment within the composition.
-*   🪞 **Reflection Effects:** Apply realistic reflections with adjustable distance, scale, and blur.
-*   🅰️ **Text Overlay:** Add custom text to the composite with control over font, size, color, and opacity.
-*   📺 **Jellyfin Integration:** Browse and select covers/banners directly from your Jellyfin server.
-*   🔍 **Jellyfin Search & Pagination:** Search your Jellyfin library content and navigate through results.
-*   ⬇️ **Image Export:** Save the final composite as a PNG file or open it in a new browser tab.
-*   💾 **Local Storage:** Persist Jellyfin login credentials securely in the browser's local storage.
-*   🖱️ **Drag and Drop:** Rearrange image slots and drag Jellyfin covers directly into slots.
-*   🪟 **Floating Windows:** Interactive, draggable window elements for UI components.
+*   🖼️ **Multi-Slot Image Composition**: Arrange and combine multiple images on a single canvas.
+*   📏 **Customizable Layout**: Control spacing, scaling, and alignment of images within slots.
+*   ✨ **Visual Effects**: Apply reflection, blur, and overlay colors to enhance compositions.
+*   ✍️ **Text Overlay**: Add custom text layers with adjustable font, color, and position.
+*   🚀 **Direct Jellyfin Integration**: Connect to your Jellyfin server to browse, search, and import covers/banners directly.
+*   📂 **Local File Support**: Easily upload images from your computer.
+*   📋 **Paste Image Support**: Paste images directly from your clipboard.
+*   🎲 **Random Slot Filling**: Quickly populate slots with random images from your Jellyfin library.
+*   🔄 **Slot Management**: Add, delete, move, and reorder image slots via drag-and-drop.
+*   💾 **State Persistence**: Saves Jellyfin connection settings locally for convenience.
+*   🎨 **Canvas Export**: Export the final composite image as a PNG file.
+*   ⚙️ **Configurable Image Fetching**: Control size and quality of images fetched from Jellyfin.
+*   🖱️ **Interactive UI**: Utilizes draggable windows and tabbed sections for a user-friendly experience.
 
-## 🛠️ Requirements
+## ⚙️ Installation / Setup
 
-*   A modern web browser with JavaScript enabled (e.g., Chrome, Firefox, Edge, Safari).
-*   (Optional) Access to a running Jellyfin media server if you wish to use the Jellyfin integration features.
-
-## ⬇️ Installation / Setup
-
-CoverMaker is a client-side web application and does not require server-side installation or complex build steps.
+This project is a client-side web application. To use it, you primarily need a modern web browser.
 
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/jeffersoncgo/CoverMaker.git
     ```
-2.  **Navigate to the repository directory:**
+2.  **Navigate to the project directory:**
     ```bash
     cd CoverMaker
     ```
-3.  **Open `index.html`:**
-    Simply open the `index.html` file in your preferred web browser. You can do this directly from your file explorer or via the browser's "File > Open" menu.
+3.  **Open in a browser:**
+    Simply open the `index.html` file located in the root of the repository using your preferred web browser.
 
-The application will load in your browser, ready for use.
+Alternatively, you can serve the files using a simple local web server (recommended for better handling of file paths and potential future features requiring a server context, although not strictly necessary for basic usage).
 
-## 📂 Project Structure
+Using Python's built-in HTTP server:
+```bash
+python -m http.server 8000
+# Then open http://localhost:8000 in your browser
+```
 
-The repository is organized as follows:
+Using Node.js with `http-server` (install via `npm install -g http-server`):
+```bash
+http-server
+# Then open the address provided (usually http://127.0.0.1:8080)
+```
+
+No additional dependencies are required beyond a web browser or a simple HTTP server to serve the static files.
+
+## 📁 Project Structure
+
+The repository follows a standard structure for a simple web application.
+
+<details>
+<summary>Click to Expand Project Tree</summary>
 
 ```
 .
@@ -79,396 +95,398 @@ The repository is organized as follows:
 └── README.md
 ```
 
-*   `.github/`: Contains GitHub-specific configuration files, potentially for workflows or issue templates.
-*   `css/`: Holds the cascading style sheets (`style.css`) that define the visual presentation and layout of the application.
-*   `images/`: Contains static image assets used by the application, such as loading indicators (`loading.gif`) and error placeholders (`error.png`).
-*   `js/`: Houses the core JavaScript files that provide the application's functionality, including the main script (`script.js`), the Jellyfin client (`jellyfin.js`), and the window management utility (`windowsHandle.js`).
-*   `.gitattributes`: Defines attributes per path, often used for normalizing line endings.
-*   `.gitignore`: Specifies intentionally untracked files that Git should ignore.
-*   `.gitmodules`: Used for tracking submodules if the project incorporates other repositories.
-*   `index.html`: The main entry point of the application, the HTML file that the user opens in their browser.
-*   `README.md`: This file, providing documentation for the project.
+</details>
+
+*   `/css`: Contains the main stylesheet (`style.css`) for the application's visual presentation.
+*   `/images`: Stores static image assets used by the application, such as default loading or error images.
+*   `/js`: Houses the core JavaScript logic, including modules for Jellyfin interaction (`jellyfin.js`), general application functionality (`script.js`), and UI enhancements like draggable windows (`windowsHandle.js`).
+*   `.github`: Contains GitHub-specific configuration, potentially for workflows or issue templates.
+*   `index.html`: The main HTML file, serving as the entry point for the application interface.
+*   `.gitattributes`, `.gitignore`, `.gitmodules`: Standard Git configuration files for managing line endings, ignored files, and submodules.
+*   `README.md`: This documentation file.
 
 ## 📖 Detailed Usage / API Documentation
 
-This section details the key JavaScript components and how they are used within the application.
+This section provides details on the key JavaScript files and their functionalities, derived from internal analysis.
 
-### 📁 File: js/script.js - Core Application Logic
+### 📄 File: js/script.js - Core Application Logic
 
-This file contains the main client-side logic, managing the UI, image slots, canvas drawing, and integrating the other components.
+This file contains the primary client-side script that orchestrates the user interface, manages image slots, handles user interactions, draws on the canvas, and integrates with the `Jellyfin` and `windowsHandle` modules.
 
-*   **Description**: This script orchestrates the entire application flow. It handles user interactions with the UI, manages the state of the image slots, draws the composite image on the canvas based on user settings, and integrates functionality from the Jellyfin API client and window manager.
-*   **Key Features**:
-    *   Manages a dynamic list of image "slots".
-    *   Supports loading images from various sources.
-    *   Draws a composite image on canvas with settings control.
-    *   Integrates Jellyfin browsing and image selection.
-    *   Handles image export.
-    *   Saves and loads Jellyfin credentials via local storage.
-    *   Manages UI tabs and drag/drop functionality.
-*   **Dependencies**:
-    *   Internal: `./jellyfin.js` (`Jellyfin` class), `./pageMemory.js` (for `window.memory`), `./Controller.js` (for `searchController`), `../../scripts/components/utils/common.js` (`utils`).
-    *   External: Browser DOM, Canvas API, FileReader, Image, localStorage, Clipboard API, Drag and Drop API, `window.open`, `fetch`.
+**Description**:
+`script.js` acts as the main controller for the CoverMaker application. It initializes the UI, loads saved settings, manages the array of images (`slotsImages`) corresponding to the visual slots, provides methods for adding, removing, and manipulating slots, handles drag-and-drop, processes user input for canvas settings, interfaces with the Jellyfin API client to fetch media images, draws the final composite image on the canvas, and exports the result. It uses event listeners to respond to user actions.
 
-*   **How to Use / API Highlights / Examples**:
+**Key Features**:
+*   Manages state for image slots and canvas settings.
+*   Loads and saves Jellyfin credentials to `localStorage`.
+*   Handles loading images from various sources (local file, paste, URL, Jellyfin).
+*   Provides UI functions for managing image slots (add, delete, move, clear).
+*   Integrates drag-and-drop for slot reordering and image dropping.
+*   Communicates with the Jellyfin API client for browsing and searching media.
+*   Draws the composite image on an HTML5 canvas with effects.
+*   Exports the canvas content as a PNG.
+*   Manages tabbed UI sections and floating windows (via `windowsHandle`).
+*   Uses external utilities for safe file naming and potentially state memory (`pageMemory`).
 
-    The `script.js` file exposes various functions globally or attaches listeners to DOM elements. Below are examples of how core functionalities work or could be programmatically triggered if used as a library (though primarily designed as a direct application script).
+**Dependencies**:
+*   Internal: `./jellyfin` (Jellyfin API client), `../../scripts/components/utils/common` (utility functions, alias `utils`), `Controller` (likely for debouncing/throttling), `pageMemory` (for state saving/restoring).
+*   External (Browser): `document`, `window`, `localStorage`, `fetch`, `Image`, `Canvas`, etc.
 
-    **Example 1: Loading a Local Image into a Slot**
+**How to Use / API Highlights / Examples**:
 
-    This demonstrates how a user action (selecting a file) triggers the image loading and slot update process.
+The functionalities exposed by `script.js` are primarily triggered by user interactions in the UI, but the underlying functions demonstrate how different parts of the application work.
 
-    *   **Input**: A `File` object obtained from a file input element.
-    *   **Code Snippet**:
-        ```javascript
-        // Assume 'localImageInput' is an HTML input element of type="file"
-        const localImageInput = document.getElementById('localImageInput');
+#### Example 1: Adding a New Image Slot
 
-        localImageInput.addEventListener('change', function(event) {
-            const file = event.target.files[0]; // Get the first selected file
-            if (file) {
-                // loadImageIntoSlot is a function likely available globally or through event listeners
-                loadImageIntoSlot(file); // Load the file into the first available slot
-                console.log('Attempting to load image:', file.name);
-            }
-        });
-        ```
-    *   **Output**: The selected image appears in the first available image slot preview, and the composite canvas is redrawn to include the new image. A loading indicator might appear temporarily.
-    *   **Explanation**: This is the standard way users add local images. The `loadImageIntoSlot` function handles reading the file (or fetching if it were a URL), creating an `Image` element, and updating the UI and internal state.
+This demonstrates how a new slot is added to the UI and the internal image array. This is typically triggered by clicking an "Add Slot" button.
 
-    **Example 2: Redrawing the Composite Canvas**
+*   **Purpose**: Increases the number of available image slots for composition.
+*   **Code Snippet**:
+    ```javascript
+    // Assuming addImageSlot() is exposed globally or accessible
+    // In script.js, this is called internally by an event listener
+    // Let's simulate the action:
+    addImageSlot(); // Adds a new slot element to the DOM
+                    // and pushes null to the slotsImages array.
+    ```
+*   **Output**: A new, empty image slot element appears in the `image-slots` container in the HTML. The `slotsImages` array will have one more `null` entry. The canvas will be redrawn to reflect the change in slot count.
+*   **Explanation**: This function modifies both the visual structure (DOM) and the internal data structure (`slotsImages` array) that tracks the images. It's a core function for building the composition.
 
-    The composite canvas needs to be redrawn whenever an image changes or a setting is adjusted.
+#### Example 2: Loading an Image (Local File) into a Slot
 
-    *   **Input**: None (relies on the current state of `slotsImages` and setting inputs).
-    *   **Code Snippet**:
-        ```javascript
-        // Assume 'spacingInput' is an HTML input element
-        const spacingInput = document.getElementById('spacingInput');
+This shows how an image file selected by the user is processed and loaded into a specific slot or the next available one. This is triggered by interacting with the file input associated with a slot.
 
-        spacingInput.addEventListener('input', function() {
-            // drawComposite is a function likely available globally or through event listeners
-            drawComposite(); // Redraw the canvas whenever spacing changes
-            console.log('Spacing changed, redrawing canvas.');
-        });
+*   **Purpose**: To place a selected image into a specific slot in the composition.
+*   **Input**: A `File` object (e.g., from an `<input type="file">` event).
+*   **Code Snippet**:
+    ```javascript
+    // Assume fileInput is an HTMLInputElement <input type="file">
+    // and 'event' is the change event object.
+    const file = event.target.files[0]; // Get the selected file
+    const slotIndex = 0; // Target slot index (e.g., the first slot)
 
-        // This function is also called internally whenever an image slot is updated
-        // or other relevant settings change.
-        ```
-    *   **Output**: The `canvas` element is cleared and redrawn with the images arranged according to the latest settings, including the updated spacing.
-    *   **Explanation**: The `drawComposite` function is the core rendering loop. It reads all necessary parameters from the UI and internal state (`slotsImages`) and uses the Canvas API to render the final image.
+    // Call the function to load the image
+    // In script.js, this is handled internally based on the input's data attribute
+    // Let's simulate the call:
+    loadImageIntoSlot(file, slotIndex);
+    ```
+*   **Output**: The preview image within the specified slot in the UI updates to show the loaded image. The canvas redraws to include the newly loaded image in the composite. The `slotsImages` array element at `slotIndex` is updated with the loaded `Image` object.
+*   **Explanation**: This function is central to getting images into the application. It handles reading the file and using the `Image` constructor to load it, then updates the UI and internal state.
 
-    **Example 3: Exporting the Composite Image**
+#### Example 3: Drawing the Composite Image
 
-    How the application handles saving the final output.
+This function is called whenever a change occurs that affects the final output (image loaded, slot deleted/moved, setting changed).
 
-    *   **Input**: None (relies on the current state of the `canvas`).
-    *   **Code Snippet**:
-        ```javascript
-        // Assume 'exportButton' is an HTML button element
-        const exportButton = document.getElementById('exportButton');
+*   **Purpose**: To render the current state of all image slots and canvas settings onto the main HTML5 canvas.
+*   **Code Snippet**:
+    ```javascript
+    // Assuming drawComposite() is accessible
+    // This is called frequently by various event listeners in script.js
+    drawComposite();
+    ```
+*   **Output**: The content of the main `<canvas>` element is updated. It clears the previous drawing and draws the images from `slotsImages` according to the current settings (spacing, scale, reflection, blur, overlay, text).
+*   **Explanation**: This is the core rendering function. It iterates through the `slotsImages` array and uses the Canvas API to draw each image with the user-defined transformations and effects, creating the final visual output shown in the UI.
 
-        exportButton.addEventListener('click', function() {
-            // exportAsPNG is a function likely available globally or through event listeners
-            exportAsPNG(); // Trigger the download
-            console.log('Exporting canvas as PNG.');
-        });
-        ```
-    *   **Output**: The browser initiates a file download of the canvas content as a PNG image file.
-    *   **Explanation**: The `exportAsPNG` function uses `canvas.toDataURL('image/png')` to get a base64 representation of the image and then creates a temporary link element to trigger a download.
+#### Example 4: Exporting the Composite as PNG
 
-    **Example 4: Logging into Jellyfin and Searching**
+This function generates a downloadable PNG file of the current canvas content.
 
-    Illustrates the flow for connecting to Jellyfin and performing a search.
+*   **Purpose**: To allow the user to save the created composite image to their computer.
+*   **Code Snippet**:
+    ```javascript
+    // Assuming exportAsPNG() is accessible
+    // This is called when the export button is clicked
+    exportAsPNG();
+    ```
+*   **Output**: The browser prompts the user to download a file, typically named based on internal logic (e.g., using a safe filename derived from potential text overlays or a default name), with the `.png` extension. The downloaded file contains the exact image rendered on the canvas.
+*   **Explanation**: This function leverages the canvas's `toDataURL` method to get a base64 representation of the image, then uses a standard technique involving creating a temporary anchor tag (`<a>`) with a `download` attribute to trigger a file download in the browser.
 
-    *   **Input**: Server URL, Username, and Password entered into designated input fields.
-    *   **Code Snippet**:
-        ```javascript
-        // Assume input fields and a login button exist
-        const loginButton = document.getElementById('loginButton');
+#### Example 5: Logging into Jellyfin
 
-        loginButton.addEventListener('click', function() {
-            // Login is a function likely available globally or through event listeners
-            Login(); // Attempt to log in using the current input values
-            console.log('Attempting Jellyfin login...');
-        });
+This initiates the connection and authentication process with a Jellyfin server using credentials from the UI.
 
-        // After successful login (handled by the Jellyfin class callback),
-        // a search might be automatically triggered or the user can type in the search box.
-        const searchInput = document.getElementById('jellyfinSearchInput');
-        searchInput.addEventListener('input', function() {
-             // searchOnLibrary is a function likely available globally or through event listeners
-             // useDelay=true is common for input events to debounce the search
-             searchOnLibrary(this.value, false, true);
-             console.log('Search input changed, searching Jellyfin library...');
-        });
-        ```
-    *   **Output**:
-        *   Upon clicking Login: The application attempts to connect to the Jellyfin server. UI elements related to Jellyfin browsing become visible/hidden based on success/failure.
-        *   Upon typing in Search: The Jellyfin library is filtered based on the input, and matching covers/banners are displayed in the Jellyfin browsing area.
-    *   **Explanation**: The `Login` function reads credentials from the UI and calls the `UpdateConfig` method on the `window.jellyfin` instance, which handles the actual API interaction and authentication. The `searchOnLibrary` function updates the search parameters and triggers the client-side search within the `jellyfin` instance, then updates the UI with the results.
+*   **Purpose**: To establish a connection to a Jellyfin server and authenticate a user to access their libraries and media.
+*   **Code Snippet**:
+    ```javascript
+    // Assuming Login() is accessible and reads credentials from specific UI inputs
+    // This is called when the Jellyfin "Login" button is clicked
+    Login();
+    ```
+*   **Output**: If successful, the Jellyfin library selection UI becomes active. If unsuccessful, an error message is displayed in the UI, and the library selection remains disabled. The Jellyfin instance is updated internally with server info and user token.
+*   **Explanation**: This function encapsulates the interaction with the `Jellyfin` class's configuration and initialization methods. It's the gateway to using the Jellyfin integration features.
 
-### 📁 File: js/jellyfin.js - Jellyfin API Client
+### 📄 File: js/jellyfin.js - Jellyfin API Client
 
-This file contains a dedicated class for interacting with a Jellyfin server's API.
+This file defines a class `Jellyfin` that serves as an interface for interacting with the Jellyfin media server REST API.
 
-*   **Description**: The `Jellyfin` class provides methods to connect to a server, authenticate a user, fetch user libraries, load library items, perform client-side searching/filtering over loaded items, and generate image URLs. It acts as a wrapper around the Jellyfin REST API relevant to browsing content.
-*   **Key Features**:
-    *   Connects to Jellyfin server.
-    *   Authenticates users with username/password.
-    *   Fetches user's libraries and their items.
-    *   Performs client-side search on loaded items.
-    *   Supports pagination for search results.
-    *   Generates URLs for item images (covers, banners, etc.).
-    *   Provides event callbacks for login, library load, and search finish.
-*   **Dependencies**:
-    *   Internal: `../../scripts/js/JCGWEB/controller.js` (aliased as `Controller`).
-    *   External: Standard browser `fetch` API, global `searchInArray` function (assumed).
+**Description**:
+The `Jellyfin` class handles the technical details of communicating with a Jellyfin server. It manages the server address and user credentials, performs authentication, fetches user libraries and their contents, caches this data internally, and provides methods for searching, filtering, and paginating through the cached library items. It also assists in generating URLs for fetching item images. The design choice to cache library data locally allows for fast client-side searching and filtering without repeated API calls.
 
-*   **How to Use / API Highlights / Examples**:
+**Key Features**:
+*   `Jellyfin` Class for API interaction.
+*   Fetches server public information.
+*   Authenticates users and manages authorization headers.
+*   Retrieves and caches user libraries and their items.
+*   Performs client-side search, filter, sort, and pagination on cached data.
+*   Generates image URLs for media items.
+*   Uses callback events (`onLoginSuccess`, `onLibraryLoad`, `onSearchFinish`, etc.) for asynchronous operations.
+*   Manages search parameters internally.
 
-    The `Jellyfin` class is typically instantiated once and its methods are called by the main application script (`script.js`).
+**Dependencies**:
+*   `fetch`: Standard browser API for making HTTP requests.
+*   `require("../../scripts/js/JCGWEB/controller")`: Depends on an internal `Controller` module (likely for debouncing).
+*   `searchInArray`: Uses a function assumed to be available globally or imported elsewhere for performing array searches.
 
-    **Example 1: Initializing the Jellyfin Client**
+**How to Use / API Highlights / Examples**:
 
-    Creating an instance to start interacting with the server.
+An instance of the `Jellyfin` class is created and managed by `script.js`. The following examples illustrate how its methods would be used.
 
-    *   **Input**: Server Host, Username, Password, and an optional `events` object with callback functions.
-    *   **Code Snippet**:
-        ```javascript
-        import Jellyfin from './jellyfin.js';
+#### Example 1: Instantiating the Jellyfin Client
 
-        const jellyfinEvents = {
-            onServerSetupError: (error) => console.error('Jellyfin server setup failed:', error),
-            onLoginSuccess: (user) => console.log('Jellyfin login successful:', user),
-            onLoginError: (error) => console.error('Jellyfin login failed:', error),
-            onLibraryLoad: (libraries) => console.log('Jellyfin libraries loaded:', libraries),
-            onSearchFinish: (results) => console.log('Jellyfin search finished, results count:', results.length)
-        };
+Creating a new instance and initiating the connection process.
 
-        // Assuming config variables are loaded from localStorage or user input
-        const serverHost = localStorage.getItem('jellyfinHost') || 'http://localhost:8096';
-        const username = localStorage.getItem('jellyfinUsername') || '';
-        const password = ''; // Password is not typically stored long-term
+*   **Purpose**: To create a new client object ready to communicate with a specific Jellyfin server using provided credentials.
+*   **Input**: `Host` (string), `Username` (string), `Pw` (string), `events` (object of callback functions).
+*   **Code Snippet**:
+    ```javascript
+    // Example of creating an instance (as done internally by script.js)
+    const jellyfinEvents = {
+        onServerSetupError: (error) => console.error("Server setup failed:", error),
+        onLoginSuccess: (user) => console.log("Logged in as:", user.Username),
+        onLoginError: (error) => console.error("Login failed:", error),
+        onLibraryLoad: (libraries) => console.log("Libraries loaded:", libraries.map(lib => lib.Name)),
+        onSearchFinish: (results) => console.log("Search finished, items found:", results.length)
+    };
 
-        const jellyfinClient = new Jellyfin(serverHost, username, password, jellyfinEvents);
+    const jellyfinClient = new Jellyfin(
+        "http://your-jellyfin-server:8096", // Replace with your server address
+        "your_username",                     // Replace with your username
+        "your_password",                     // Replace with your password
+        jellyfinEvents                       // Pass the event handlers
+    );
 
-        // The constructor automatically calls init() to attempt connection and login.
-        ```
-    *   **Output**: A `Jellyfin` instance is created. An asynchronous process begins to check server availability, attempt login, and load libraries. Console logs will show the progress and any errors via the provided callbacks.
-    *   **Explanation**: The constructor sets up the instance and immediately tries to establish a connection using the provided credentials. The `events` object is crucial for the calling code to react to the outcomes of these asynchronous operations.
+    // Instantiation automatically calls init() which starts connection/login
+    ```
+*   **Output**: A `Jellyfin` object instance is created. Asynchronous API calls are initiated. Based on success/failure, the corresponding event callback functions (`onLoginSuccess`, `onLoginError`, `onServerSetupError`) are triggered.
+*   **Explanation**: The constructor takes server and user details along with an object containing callback functions. These callbacks are essential for the external code (`script.js`) to react to the asynchronous results of API operations like login and data loading.
 
-    **Example 2: Searching for Items**
+#### Example 2: Searching Cached Library Items
 
-    Filtering the loaded library items based on criteria.
+Filtering and retrieving items from the data loaded from the Jellyfin server.
 
-    *   **Input**: Optional `Name` (string), `library` (string), and a `query` object.
-    *   **Code Snippet**:
-        ```javascript
-        // Assuming jellyfinClient is already initialized and libraries are loaded
+*   **Purpose**: To find items within the already loaded libraries that match specific criteria (name, library, custom query).
+*   **Input**: `Name` (optional string), `library` (optional string), `query` (optional object for detailed search params).
+*   **Code Snippet**:
+    ```javascript
+    // Assuming jellyfinClient is an initialized instance that has loaded libraries
+    // Search for items containing "Star Wars" in the currently loaded library
+    jellyfinClient.searchItems("Star Wars");
 
-        // Perform a basic search for items containing "Matrix" in the name
-        const searchResults = jellyfinClient.searchItems("Matrix");
-        console.log("Search results for 'Matrix':", searchResults);
+    // Search for items in the "Movies" library containing "Matrix"
+    jellyfinClient.searchItems("Matrix", "Movies");
 
-        // Perform a search specifically in the "Movies" library for items containing "Wars",
-        // sorting by name descending, showing results 11-20 (page 2 with limit 10)
-        const advancedSearchResults = jellyfinClient.searchItems(
-            "Wars",
-            "Movies",
-            { sortBy: "Name", order: "desc", page: 2, limit: 10 }
-        );
-        console.log("Advanced search results:", advancedSearchResults);
-        ```
-    *   **Output**: The `searchItems` method returns an array of item objects matching the criteria from the items loaded in memory. The `onSearchFinish` event callback is also triggered with these results. Pagination state (`hasNextPage`, `hasPreviousPage`) on the `jellyfinClient` instance is updated.
-    *   **Explanation**: This method performs a client-side filter and sort on the data previously fetched by `loadLibraryItems`. This design allows for very fast filtering once the initial load is complete, but depends on `loadLibraryItems` successfully fetching all relevant data first.
+    // More advanced search: find items in "TV Shows" starting with "S", sorted by name ascending
+    jellyfinClient.searchItems(null, "TV Shows", {
+        Name: "S",
+        SortBy: "SortName",
+        SortOrder: "Ascending",
+        StartIndex: 0, // Start from the first page
+        Limit: 50      // Get up to 50 results
+    });
+    ```
+*   **Output**: The `onSearchFinish` event callback (provided during instantiation) is triggered with an array containing the filtered, sorted, and paginated item objects. The function also returns this array. Internal state (`this.searchParams`) is updated.
+*   **Explanation**: This method operates on the data that was previously fetched and cached by the `Jellyfin` instance. It's designed for fast, client-side filtering and sorting, making the UI responsive to user input in search fields and filter dropdowns.
 
-    **Example 3: Navigating Pagination**
+#### Example 3: Generating an Image URL
 
-    Moving through search results pages.
+Creating a correctly formatted URL to fetch a specific item's image from the server.
 
-    *   **Input**: None for `nextPage` or `previousPage`.
-    *   **Code Snippet**:
-        ```javascript
-        // Assuming a search has been performed and jellyfinClient.hasNextPage is true
+*   **Purpose**: To get the web address for an item's cover, poster, or other image, allowing control over its desired dimensions.
+*   **Input**: `itemId` (string), `width` (optional number), `height` (optional number), `quality` (optional number).
+*   **Code Snippet**:
+    ```javascript
+    // Assuming jellyfinClient is an initialized instance
+    const itemId = "some_item_id_from_jellyfin"; // Replace with a real item ID
 
-        if (jellyfinClient.hasNextPage) {
-            console.log("Loading next page...");
-            const nextPageResults = jellyfinClient.nextPage();
-            console.log("Next page results:", nextPageResults);
-        } else {
-            console.log("No more pages available.");
+    // Get URL for the item's primary image (default size)
+    const imageUrlDefault = jellyfinClient.makeImageUrl(itemId);
+    console.log("Default Image URL:", imageUrlDefault);
+
+    // Get URL for a 500px wide image
+    const imageUrl500Wide = jellyfinClient.makeImageUrl(itemId, 500);
+    console.log("500px Wide Image URL:", imageUrl500Wide);
+
+    // Get URL for a 300x450 image with 80% quality
+    const imageUrlSpecific = jellyfinClient.makeImageUrl(itemId, 300, 450, 80);
+    console.log("Specific Size/Quality Image URL:", imageUrlSpecific);
+    ```
+*   **Output**: A string containing the URL to fetch the image from the configured Jellyfin server.
+*   **Explanation**: This utility function correctly formats the API endpoint for image delivery, including the necessary item ID and optional parameters for requesting a specific image size and quality. This is crucial for populating `<img>` tags or CSS backgrounds in the UI.
+
+### 📄 File: js/windowsHandle.js - Floating Windows
+
+This JavaScript file provides functionality to make arbitrary HTML elements behave like draggable, closable windows within the browser viewport.
+
+**Description**:
+`windowsHandle.js` adds interactive window management features to web elements. It identifies elements marked with a specific class (`.floatWindow`) and automatically applies drag functionality using a designated handle element (`.windowBar`). It also adds event listeners to a close button (`.closeBtn`) if present, allowing the window to be hidden. Functions are provided to programmatically show or hide windows by ID. The script ensures windows stay within the visible browser area and brings the clicked window to the front using `zIndex`.
+
+**Key Features**:
+*   Makes HTML elements draggable within the viewport.
+*   Uses a specific child element as the drag handle.
+*   Constrains dragging to the visible browser window.
+*   Brings the active window to the front (`zIndex`).
+*   Adds close functionality via a dedicated button.
+*   Provides functions to show and hide windows programmatically.
+*   Automatically initializes draggable behavior for elements on page load.
+
+**Dependencies**:
+*   Relies solely on standard browser DOM APIs (`document`, `window`, `Element`, etc.).
+
+**How to Use / API Highlights / Examples**:
+
+The functionality is primarily applied automatically or triggered by calling the provided functions on target DOM elements.
+
+#### Example 1: Applying Drag Behavior to an Element
+
+The `makeDraggable` function is the core of this module, though it's often called automatically for elements with the `.floatWindow` class.
+
+*   **Purpose**: To enable a specific HTML element to be dragged around the screen.
+*   **Input**: `windowEl` (DOM element object). The element should have a child with class `windowBar` (drag handle) and optionally a child with class `closeBtn`.
+*   **Code Snippet**:
+    ```html
+    <!-- Example HTML structure for a draggable window -->
+    <div id="myDraggableWindow" class="floatWindow">
+        <div class="windowBar">Window Title Bar</div>
+        <div class="windowContent">... window content ...</div>
+        <button class="closeBtn">Close</button>
+    </div>
+    ```
+    ```javascript
+    // Assuming windowsHandle.js is loaded
+    // This happens automatically for elements with class 'floatWindow' on DOMContentLoaded
+    // To manually make an element draggable (e.g., one added dynamically):
+    const myWindow = document.getElementById('myDraggableWindow');
+    if (myWindow) {
+        makeDraggable(myWindow);
+    }
+    ```
+*   **Output**: The specified `windowEl` element can now be dragged by clicking and holding its `windowBar` child. Clicking the element brings it to the front. Clicking the `closeBtn` hides the window.
+*   **Explanation**: This function attaches event listeners (`mousedown`, `mousemove`, `mouseup`) to the element and the document to track drag movements, update the element's position (`left`, `top`), and manage its `zIndex`. It also sets up the close button listener.
+
+#### Example 2: Showing a Hidden Window
+
+Making a specific window element visible and centering it.
+
+*   **Purpose**: To display a window that was previously hidden (e.g., using `hideWindow` or the close button).
+*   **Input**: `windowId` (string, the `id` attribute of the window element).
+*   **Code Snippet**:
+    ```javascript
+    // Assuming windowsHandle.js is loaded
+    // To show the window with id 'myDraggableWindow'
+    showWindow('myDraggableWindow');
+    ```
+*   **Output**: The HTML element with the ID `myDraggableWindow` changes its display style to `block` (or its previous display value) and is centered on the screen. Its `zIndex` is updated to ensure it's on top.
+*   **Explanation**: This function finds the target element by ID and manipulates its `display`, `left`, `top`, and `zIndex` CSS properties to make it visible and position it appropriately.
+
+#### Example 3: Hiding a Visible Window
+
+Making a specific window element hidden.
+
+*   **Purpose**: To conceal a visible window element from the user interface.
+*   **Input**: `windowId` (string, the `id` attribute of the window element).
+*   **Code Snippet**:
+    ```javascript
+    // Assuming windowsHandle.js is loaded
+    // To hide the window with id 'myDraggableWindow'
+    hideWindow('myDraggableWindow');
+    ```
+*   **Output**: The HTML element with the ID `myDraggableWindow` changes its display style to `none`.
+*   **Explanation**: This function finds the target element by ID and simply sets its `display` CSS property to `none`, removing it from the visual layout.
+
+## 🔧 Configuration
+
+Configuration in CoverMaker is primarily managed through the `Setup` object within `js/script.js` and implicitly through the properties of the `Jellyfin` instance.
+
+*   **`js/script.js` `Setup` Object**: This object holds settings for image dimensions and quality when fetching covers/banners from Jellyfin, as well as paths to default images.
+    ```javascript
+    const Setup = {
+        Banner: { width: 2000, height: 2000, quality: 100 }, // Settings for Library Banners
+        Cover: { width: 2000, height: 2000, quality: 100 },  // Settings for Item Covers
+        Library: { loadedLibrary: null },                  // Currently selected library name
+        Images: {
+            loading: "./images/loading.gif",              // Path to loading image
+            error: "./images/error.png"                   // Path to error image
         }
+    };
+    ```
+    These values can be adjusted directly in the `script.js` file if you need different default image sizes or paths. The `loadedLibrary` is managed dynamically by the application based on user selection.
 
-        // Similarly for previousPage:
-        if (jellyfinClient.hasPreviousPage) {
-            console.log("Loading previous page...");
-            const previousPageResults = jellyfinClient.previousPage();
-            console.log("Previous page results:", previousPageResults);
-        }
-        ```
-    *   **Output**: The internal page/offset state of the `jellyfinClient` is updated, and `searchItems` is called internally to return the results for the new page. The `onSearchFinish` event is triggered again.
-    *   **Explanation**: `nextPage` and `previousPage` are convenience methods that modify the internal `searchParams.page` and `searchParams.offset` and then re-run the `searchItems` logic to get the appropriate slice of the loaded data.
+*   **`js/jellyfin.js` Internal State**: The `Jellyfin` class manages its configuration internally via properties like `this.Server`, `this.User`, and `this.searchParams`. These are populated when a new instance is created or when `UpdateConfig` is called. Users interact with this configuration indirectly via the UI elements that trigger `Login()` or `searchItems()` calls in `script.js`.
 
-    **Example 4: Generating Image URLs**
+Most users will not need to modify these settings directly in the code, as the application's UI provides controls for Jellyfin connection details and canvas effects.
 
-    Getting the correct URL to display item artwork.
+## 🏃 Scripts / Commands
 
-    *   **Input**: `itemId` (string), and optional `width`, `height`, `quality` (numbers).
-    *   **Code Snippet**:
-        ```javascript
-        // Assuming jellyfinClient is initialized and you have an item object with an Id property
-        const sampleItemId = 'a1b2c3d4e5f6'; // Example item ID
+This project is a client-side web application. There are no build scripts or server-side commands to run in the typical sense.
 
-        // Get URL for the primary image with default dimensions (2000x2000)
-        const imageUrlDefault = jellyfinClient.makeImageUrl(sampleItemId);
-        console.log("Default image URL:", imageUrlDefault);
+To use the application, simply **open the `index.html` file in your web browser** or serve the directory using a simple static file server (as described in the [Installation](#️-installation--setup) section).
 
-        // Get URL for a smaller thumbnail, specifying width and height
-        const imageUrlThumbnail = jellyfinClient.makeImageUrl(sampleItemId, 300, 450);
-        console.log("Thumbnail URL:", imageUrlThumbnail);
-
-        // Get URL with specific quality setting
-        const imageUrlLowQuality = jellyfinClient.makeImageUrl(sampleItemId, 1000, 1000, 50);
-        console.log("Low quality image URL:", imageUrlLowQuality);
-        ```
-    *   **Output**: Returns a string representing the HTTP URL to fetch the specified image from the Jellyfin server.
-    *   **Explanation**: This method correctly formats the URL path and query parameters required by the Jellyfin API to request a specific image (`Primary`, `Banner`, `Logo`, etc. - although the implementation seems to default to `Primary`) for a given item, optionally resizing and compressing it.
-
-### 📁 File: js/windowsHandle.js - Floating Window Manager
-
-This script provides functionality for creating and managing draggable window elements in the browser.
-
-*   **Description**: This file contains functions to make arbitrary HTML elements behave like simple floating windows. It enables dragging using a designated handle, closing via a button, constraining movement to the viewport, bringing the active window to the front, and programmatically showing/hiding windows by their ID.
-*   **Key Features**:
-    *   Makes elements draggable via a child handle (`.windowBar`).
-    *   Restricts dragging within the viewport boundaries.
-    *   Brings dragged or shown windows to the front using `z-index`.
-    *   Hides windows when a child close button (`.closeBtn`) is clicked.
-    *   Provides functions to show and hide windows by ID.
-    *   Automatically initializes elements with the class `floatWindow` on page load.
-*   **Dependencies**:
-    *   Internal: None.
-    *   External: Standard browser DOM APIs and event handling.
-
-*   **How to Use / API Highlights / Examples**:
-
-    The functions in `windowsHandle.js` are typically called automatically on page load for elements with the `floatWindow` class, or can be invoked programmatically.
-
-    **Example 1: Automatically Initialized Draggable Window**
-
-    Elements with the correct class structure are made draggable on `DOMContentLoaded`.
-
-    *   **Input**: An HTML element with the class `floatWindow` containing a child element with class `windowBar`.
-    *   **Code Snippet**:
-        ```html
-        <!-- Example HTML structure -->
-        <div id="myFloatingWindow" class="floatWindow">
-            <div class="windowBar">Window Title <button class="closeBtn">X</button></div>
-            <div class="windowContent">
-                <p>This is the content of the floating window.</p>
-            </div>
-        </div>
-
-        <style>
-            /* Basic styles required for positioning */
-            .floatWindow {
-                position: absolute; /* Needed for top/left positioning */
-                /* Initial centering style applied by the script on load */
-                /* transform: translate(-50%, -50%); */
-                /* top: 50%; left: 50%; */
-                /* Other styling like border, background, etc. */
-            }
-            .windowBar {
-                cursor: grab; /* Indicate it's draggable */
-                /* Styling for the drag handle */
-            }
-        </style>
-        <script src="js/windowsHandle.js"></script>
-        ```
-    *   **Output**: When the page loads, the `div` with `id="myFloatingWindow"` will be automatically positioned (initially centered) and enabled for dragging by clicking and dragging the `div` with class `windowBar`. Clicking the button with class `closeBtn` will hide the window.
-    *   **Explanation**: The script listens for the `DOMContentLoaded` event. When it fires, it finds all elements with the class `floatWindow` and calls `makeDraggable` on each, setting up the necessary event listeners for drag behavior and close functionality.
-
-    **Example 2: Programmatically Showing a Window**
-
-    Making a hidden window visible via a button click or other event.
-
-    *   **Input**: The string ID of the window element (`windowId`).
-    *   **Code Snippet**:
-        ```javascript
-        // Assume you have a button to open the window
-        const openWindowButton = document.getElementById('openSettingsButton');
-
-        openWindowButton.addEventListener('click', function() {
-            // showWindow function is available globally
-            showWindow('myFloatingWindow'); // Use the ID defined in HTML
-            console.log('Showing window with ID "myFloatingWindow"');
-        });
-        ```
-    *   **Output**: The HTML element with `id="myFloatingWindow"` becomes visible (`display: block`) and its `z-index` is set to a high value to ensure it appears on top of other windows.
-    *   **Explanation**: The `showWindow` function finds the element by its ID and directly manipulates its `display` and `z-index` CSS properties.
-
-    **Example 3: Programmatically Hiding a Window**
-
-    Concealing a window using its ID.
-
-    *   **Input**: The string ID of the window element (`windowId`).
-    *   **Code Snippet**:
-        ```javascript
-        // Assume you have a button or other event to close the window
-        const closeProgrammaticallyButton = document.getElementById('closeAlertButton');
-
-        closeProgrammaticallyButton.addEventListener('click', function() {
-            // hideWindow function is available globally
-            hideWindow('myFloatingWindow'); // Use the ID defined in HTML
-            console.log('Hiding window with ID "myFloatingWindow"');
-        });
-        ```
-    *   **Output**: The HTML element with `id="myFloatingWindow"` becomes hidden (`display: none`).
-    *   **Explanation**: The `hideWindow` function finds the element by its ID and sets its `display` style to 'none'. Note that the close button mechanism handled by `makeDraggable` internally uses a similar logic.
-
-## ⚙️ Configuration
-
-The primary configuration for CoverMaker resides within the `js/script.js` file in the `Setup` constant object. Additionally, Jellyfin connection details are managed using browser `localStorage`.
-
-*   **Canvas Composition Settings:**
-    The `Setup` object defines default dimensions and quality settings for fetching Jellyfin images (`Banner`, `Cover`). These can be adjusted directly in the `js/script.js` file if you need different defaults. Most user-facing settings (scaling, spacing, reflection, text) are controlled directly via the input fields in the application's UI.
-
-*   **Jellyfin Login Configuration:**
-    Your Jellyfin server address and username are automatically saved to and loaded from your browser's `localStorage` when you interact with the Jellyfin login fields. The password is not saved to local storage for security reasons.
-    *   `localStorage.getItem('jellyfinHost')`: Retrieves the saved server address.
-    *   `localStorage.getItem('jellyfinUsername')`: Retrieves the saved username.
-    *   `localStorage.setItem('jellyfinHost', value)`: Saves the server address.
-    *   `localStorage.setItem('jellyfinUsername', value)`: Saves the username.
-
-    These values are used by the `CreateJellyfin` and `Login` functions in `script.js` to initialize and update the `Jellyfin` client instance.
+All core functionality is executed by the browser's JavaScript engine in response to user interaction.
 
 ## 🛡️ Security & Safety Highlights
 
-CoverMaker is designed with a focus on client-side operation and user control:
+CoverMaker is designed with user safety and privacy in mind, particularly concerning its interaction with a personal Jellyfin server:
 
-*   **Client-Side Execution:** The application runs entirely within your web browser. No data is processed or stored on a remote server operated by the project maintainers.
-*   **Local File Handling:** When loading local files, they are processed directly by your browser using the FileReader API. Files are not uploaded anywhere.
-*   **Jellyfin Integration:** The Jellyfin client (`js/jellyfin.js`) connects *directly* from your browser to the Jellyfin server address *you provide*. Credentials are sent directly to your server. Your Jellyfin data does not pass through any third-party servers.
-*   **Local Storage for Credentials:** Server address and username for Jellyfin are stored in your browser's local storage. While convenient for persistence, users should be aware that local storage is accessible to other scripts running on the *same origin* (i.e., files served from the same location as `index.html`). The password is *not* stored.
-*   **No External Dependencies (Runtime):** The core application relies only on standard browser APIs and the provided JavaScript files. It does not pull external libraries or scripts from CDNs at runtime, reducing the risk of unexpected code execution.
+*   **Client-Side Operation**: The entire application runs in your web browser. No processing of your images or Jellyfin data occurs on external servers hosted by the project developers.
+*   **Local Data Storage**: Jellyfin server credentials (host, username, password) are saved *only* in your browser's `localStorage`. This data does not leave your browser and is not transmitted anywhere other than to your specified Jellyfin server during login attempts. While `localStorage` is not encrypted, it provides a convenient way to persist settings locally without involving external databases or servers. Users should be aware that `localStorage` can be accessed by other scripts running on the *same origin* (domain/protocol/port), but this is standard browser behavior.
+*   **Direct Jellyfin Connection**: The application connects directly from your browser to *your* Jellyfin server. It does not route your connection or data through any intermediary service.
+*   **Safe File Naming**: The application uses a utility (`safeWindowsFileName` from `../../scripts/components/utils/common`) when exporting files to ensure generated filenames are compatible with standard operating system file naming rules, preventing potential errors or security issues related to invalid characters in filenames.
+*   **Limited API Scope**: The Jellyfin integration focuses on reading library data and fetching images. It does not request permissions to modify your Jellyfin server's content or settings beyond standard user access for browsing.
 
-As long as you obtain the code from a trusted source (like the official GitHub repository) and use it in a secure browser environment, the primary security considerations relate to the security of your local machine and the network connection to your Jellyfin server (if used).
+By operating entirely client-side and saving sensitive (though self-hosted) credentials only in local storage, CoverMaker minimizes external dependencies and potential data exposure points, relying on the security of your browser and your own Jellyfin server setup.
 
-## 🚧 Limitations and Edge Cases
+## ⚠️ Limitations and Edge Cases
 
-*   **Client-Side Jellyfin Search Memory:** The `Jellyfin` class in `js/jellyfin.js` loads all library items into memory for client-side searching. This might consume significant memory for users with extremely large Jellyfin libraries (tens or hundreds of thousands of items), potentially impacting browser performance.
-*   **Direct DOM Manipulation:** The `js/script.js` file uses direct DOM manipulation and relies heavily on global variables. While effective for this application, this architecture can become challenging to scale or maintain for more complex projects compared to using modern frameworks.
-*   **Error Handling:** Basic error handling is present (e.g., image loading errors, fetch errors in `jellyfin.js`), but comprehensive handling for all possible network issues or invalid inputs might require further refinement.
-*   **Canvas Performance:** Compositing and redrawing on the HTML5 canvas might become slow with a very large number of high-resolution images or complex reflection settings, depending on the user's hardware.
-*   **Browser Compatibility:** While using standard APIs, subtle differences in browser implementations of Canvas, Drag and Drop, or other features might exist.
-*   **Jellyfin API Coverage:** The `Jellyfin` class only implements the specific API calls needed for this application's browsing and image fetching features. It is not a full-featured Jellyfin API client library.
+*   **Browser Compatibility**: The application relies heavily on modern browser features, particularly the HTML5 Canvas API and Fetch API. Older browsers may not be fully supported.
+*   **Performance**: Performance can be affected by the size and number of images loaded into slots and the complexity of the canvas drawing operations. Very large images or a high number of slots might lead to slowdowns, especially on less powerful devices.
+*   **Image Formats**: While modern browsers support various image formats (PNG, JPG, GIF, WebP, etc.), compatibility might vary. The application's ability to load and draw images is dependent on the browser's native support.
+*   **Cross-Origin Images**: Loading images directly from external URLs (not your Jellyfin server or local files) might be subject to Cross-Origin Resource Sharing (CORS) restrictions imposed by the server hosting the image.
+*   **`localStorage`**: While used for convenience, `localStorage` is not suitable for highly sensitive data and has size limitations.
+*   **Jellyfin API Changes**: Changes to the Jellyfin API in future server versions could potentially break compatibility with the current `js/jellyfin.js` implementation.
+*   **Missing Dependencies**: Some dependencies like `Controller` and `pageMemory` are referenced but not included in the core analysis, suggesting they might be part of a larger framework or separate modules not present in this repository or excluded from analysis. Their absence might impact certain non-core features related to performance optimization (debouncing) or state management if not provided externally.
+
+## ❓ Troubleshooting
+
+*   **Jellyfin Login Failed**:
+    *   Double-check the Jellyfin server address (including `http://` or `https://` and the correct port, usually 8096 or 8920).
+    *   Verify your Jellyfin username and password are correct.
+    *   Ensure your Jellyfin server is running and accessible from the computer running the browser. Check your server's firewall and network settings.
+*   **Images Not Loading (Previews or Canvas)**:
+    *   For local files or pasted images, ensure the file is a supported image format (PNG, JPG, etc.).
+    *   For Jellyfin images, ensure you are successfully logged into the Jellyfin server and have selected a library that contains items with images.
+    *   Check your browser's developer console (usually F12) for network errors (e.g., 404 Not Found, CORS errors) or JavaScript errors related to image loading.
+    *   Ensure the `images/loading.gif` and `images/error.png` files exist at the correct relative paths from `index.html`.
+*   **Canvas Export Issues**:
+    *   Ensure the canvas is not empty (i.e., images have been loaded into slots).
+    *   Some browser extensions might interfere with file downloads. Try disabling extensions.
+    *   Check browser compatibility for the Canvas `toDataURL` method.
+
+If you encounter persistent issues, checking the browser's developer console for error messages is always the first step.
 
 ## 🤝 Contributing
 
-Contributions are welcome! If you find a bug, have a feature request, or want to contribute code, please refer to the project's guidelines (if available) or submit an issue or pull request on the GitHub repository.
+This project is open source. If you find issues or have suggestions for improvements, please open an issue on the GitHub repository.
 
-## 📄 License
+If you wish to contribute code, please:
+1.  Fork the repository.
+2.  Create a new branch for your feature or bug fix.
+3.  Make your changes, following the existing coding style.
+4.  Test your changes thoroughly.
+5.  Submit a pull request with a clear description of your changes.
+
+Please refer to any existing `CONTRIBUTING.md` file in the repository for more detailed guidelines, if available.
+
+## 📜 License
 
 MIT License
 
@@ -491,7 +509,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-## 🚧 Work in Progress
-
-This repository and its documentation are under active development. Features and structure may change.
