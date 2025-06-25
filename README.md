@@ -4,6 +4,34 @@
 
 Collection Cover Maker is a web-based application that allows you to design and generate custom cover images for your media collections. Whether you're organizing movies, TV shows, or music, this tool helps you create visually appealing covers with various customization options. It can be used as a standalone tool or integrated with Jellyfin to fetch images from your media library.
 
+## Examples
+<details>
+  <summary>Spoiler: Page</summary>
+
+![Image](https://github.com/user-attachments/assets/d9cbfda8-403d-4385-b1cf-a6eaeb75e6ad)
+
+![Image](https://github.com/user-attachments/assets/02d1f44c-b973-42ec-b631-17700b362a03)
+
+![Image](https://github.com/user-attachments/assets/6a2ead2d-6032-4108-91a1-aae16c9047e9)
+
+</details>
+<details>
+  <summary>Spoiler: Covers Examples</summary>
+
+![Image](https://github.com/user-attachments/assets/fba14f46-1721-48da-9f82-aef3d2b44d00)
+
+![Image](https://github.com/user-attachments/assets/ce97f054-c9a6-4a8c-86f3-c7b283ef111b)
+
+![Image](https://github.com/user-attachments/assets/d0191257-11bb-4a60-a682-d29ddcbd2aa1)
+
+![Image](https://github.com/user-attachments/assets/108898cc-6720-4ad4-a04c-902c483b13bc)
+
+![Image](https://github.com/user-attachments/assets/dba48f0d-cebe-4ac5-849f-c6923c2836c5)
+
+
+</details>
+
+
 ## Features
 
 *   **Create Composite Images:** Combine multiple images into a single cover.
