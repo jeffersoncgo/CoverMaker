@@ -317,6 +317,7 @@ class Jellyfin {
     else
       for (const lName in this.Libraries)
         items = items.concat(this.Libraries[lName].Items)
+
     items = await searchInArray(items, this.searchParams.Name)
 
     // Sort items
@@ -377,7 +378,9 @@ class Jellyfin {
       let data = await response.json();
       return data.Items.map(item => {
         this.searchParams.Tags.push(...item.Tags);
-        this.searchParams.Genres.push(...item.Genres);
+        // Here we add end char to each Genre (U+FEFF ZERO WIDTH NO-BREAK SPACE)
+        // So, when you choose a genre, it will not with the titles
+        this.searchParams.Genres.push(...item.Genres.map(e => e+'﻿'));
         this.searchParams.Studios.push(...item.Studios);
         // this.searchParams.People.push(...item.People);
         return {
