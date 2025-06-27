@@ -44,6 +44,7 @@ const bannerTemplate = document.getElementById('banner-template');
 const coverTemplate = document.getElementById('cover-template');
 const imageSlots = document.getElementById('image-slots');
 const jellyfinContainer = document.getElementById('jellyfinimages'); // container element in DOM
+const jellyfinloadLibraryBtn = document.getElementById('loadLibraryBtn');
 const jellyfinsearchInput = document.getElementById('searchInput');
 const jellyfinCoversLimit = document.getElementById('coverslimit')
 const jellyfinloginActionBtn = document.getElementById('loginAction');

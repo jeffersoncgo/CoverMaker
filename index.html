@@ -177,7 +177,7 @@
           <i id="refreshlibraryBtn" class="fa-solid fa-arrows-rotate" onclick="filterRandom(this)"></i>
           <div class="searchInputDiv">
             <input type="text" id="searchInput" placeholder="Search" input="" save>
-            <i class="fa-solid fa-xmark" id="clearSearchInput" onclick="jellyfinsearchInput.value = ''; searchOnLibrary(null, true, true)"></i>
+            <i class="fa-solid fa-xmark" id="clearSearchInput" onclick="if(jellyfinsearchInput.value == '') return; jellyfinsearchInput.value = ''; searchOnLibrary(null, true, true)"></i>
           </div>
 
           <select id="coverslimit" value="10" save onchange="setCoversLimit(this.value)">
