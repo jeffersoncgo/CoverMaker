@@ -241,9 +241,9 @@ class Jellyfin {
 
       // Remove duplicated, empty and repeated 
       // ArraySort is from JCGWEB CDN it ArraySort(array, ignoreCase)
-      this.searchParams.Tags = ArraySort([...new Set(this.searchParams.Tags)], true)
-      this.searchParams.Genres = ArraySort([...new Set(this.searchParams.Genres)], true)
-      this.searchParams.Studios = ArraySort([...new Set(this.searchParams.Studios)], true)
+      this.searchParams.Tags = [...new Set(this.searchParams.Tags.toLowerCase())].sort().eachWordUp()
+      this.searchParams.Genres = [...new Set(this.searchParams.Genres.toLowerCase())].sort().eachWordUp()
+      this.searchParams.Studios = [...new Set(this.searchParams.Studios.toLowerCase())].sort().eachWordUp()
       this.areLibrariesLoaded = true;
       this.events.onLibraryLoad(data);
       return data;
