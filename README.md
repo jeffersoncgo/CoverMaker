@@ -1,84 +1,161 @@
 # Collection Cover Maker
 
-A powerful web application that lets you create beautiful collection covers by combining multiple images into a single composite with professional effects. It features direct integration with Jellyfin media server, allowing you to easily access and use your media library images.
-It can also work without Jellyfin, with local images.
+## Overview
+
+Collection Cover Maker is a web-based application that allows you to design and generate custom cover images for your media collections. Whether you're organizing movies, TV shows, or music, this tool helps you create visually appealing covers with various customization options. It can be used as a standalone tool or integrated with Jellyfin to fetch images from your media library.
+
+## Examples
+<details>
+  <summary>Spoiler: Page</summary>
+
+![Image](https://github.com/user-attachments/assets/d9cbfda8-403d-4385-b1cf-a6eaeb75e6ad)
+
+![Image](https://github.com/user-attachments/assets/02d1f44c-b973-42ec-b631-17700b362a03)
+
+![Image](https://github.com/user-attachments/assets/6a2ead2d-6032-4108-91a1-aae16c9047e9)
+
+</details>
+<details>
+  <summary>Spoiler: Covers Examples</summary>
+
+![Image](https://github.com/user-attachments/assets/fba14f46-1721-48da-9f82-aef3d2b44d00)
+
+![Image](https://github.com/user-attachments/assets/ce97f054-c9a6-4a8c-86f3-c7b283ef111b)
+
+![Image](https://github.com/user-attachments/assets/d0191257-11bb-4a60-a682-d29ddcbd2aa1)
+
+![Image](https://github.com/user-attachments/assets/108898cc-6720-4ad4-a04c-902c483b13bc)
+
+![Image](https://github.com/user-attachments/assets/dba48f0d-cebe-4ac5-849f-c6923c2836c5)
+
+
+</details>
+
 
 ## Features
 
-- **Jellyfin Integration**
-  - Direct connection to your Jellyfin server
-  - Browse and search your media libraries
-  - Use movie posters and show artwork directly
-  - Secure authentication support
+*   **Create Composite Images:** Combine multiple images into a single cover.
+*   **Flexible Image Sourcing:**
+    *   Load images from your local computer.
+    *   Drag and drop images directly into slots.
+    *   Paste images from your clipboard.
+*   **Jellyfin Integration:**
+    *   Connect to your Jellyfin server.
+    *   Browse your Jellyfin libraries.
+    *   Fetch existing covers or images directly from your Jellyfin instance to use in your composite image.
+    *   Randomize images from your Jellyfin library to fill slots.
+*   **Customization Options:**
+    *   **Text Overlay:** Add custom text with adjustable font, size, color, boldness, and opacity.
+    *   **Image Layout:**
+        *   Define the number of image slots.
+        *   Adjust margins between images.
+        *   Apply blur effects to image reflections.
+        *   Control reflection distance and scale.
+        *   Adjust overall poster scale.
+    *   **Overlay Effects:** Control the opacity of a global overlay on the composite image.
+*   **Image Management:**
+    *   Pin images to slots to prevent them from being changed.
+    *   Easily clear or delete individual image slots.
+    *   Move images between slots.
+    *   Open individual slot images or the final composite image in a new tab.
+*   **Export:** Download your created cover as a PNG file.
+*   **Persistent Settings:** Your settings (like Jellyfin server details, UI preferences) are saved in your browser's local storage for convenience.
 
-- **Image Management**
-  - Add multiple image slots
-  - Drag and drop support
-  - Local image upload
-  - Random image selection from Jellyfin
-  - Pin images to prevent changes
-  - Reorder images easily
+## How to Use
 
-- **Professional Effects**
-  - Customizable reflection effects
-  - Blur control
-  - Adjustable spacing
-  - Overlay text with font customization
-  - Opacity controls
-  - Dynamic scaling
+1.  **Open the Application:** Access the Collection Cover Maker by opening the `index.html` file in your web browser or by visiting the live application URL (if available).
 
-- **Export Options**
-  - Export as high-quality PNG
-  - Preview in new tab
-  - Zoom functionality in preview
+2.  **Adding Images to Slots:**
+    *   **Image Slots Tab:** This is where you manage the images that will form your composite cover.
+    *   **Add Slots:** Click the `+` icon in the "Image Slots" controls to add more image slots. The canvas will automatically adjust to accommodate the number of slots.
+    *   **Load Local Images:**
+        *   Click the "Load Local Image" icon (looks like a picture) on an individual slot to open a file dialog and select an image from your computer.
+        *   Alternatively, you can drag and drop an image file from your computer directly onto a slot.
+        *   You can also paste an image from your clipboard (Ctrl+V or Cmd+V).
+    *   **Using Jellyfin Images (Optional):**
+        *   **Login:** Click the "Login to Jellyfin" button. Enter your Jellyfin server URL, username, and password. Click "Connect".
+        *   **Browse Libraries:** Once connected, the right-side panel will activate. Click the "Load Libraries" icon (looks like a film strip) to display your Jellyfin libraries.
+        *   **Select a Library:** Click on a library banner to view its items.
+        *   **Search:** Use the search bar to find specific items within the selected library.
+        *   **Add to Slot:** Click on an item's cover in the Jellyfin panel to add it to the next available image slot on the left. You can also drag and drop covers from the Jellyfin panel to a specific slot.
+        *   **Randomize:** Use the "Randomize Slot Image" icon (circular arrows) on a slot to fill it with a random image from your currently selected Jellyfin library/search. Use the "Fill Slots Randomly" icon in the "Image Slots" controls to fill all unpinned slots.
 
-## Connecting to Jellyfin
+3.  **Arranging and Managing Images:**
+    *   **Move Images:** Drag and drop a slot to reorder it. Alternatively, use the up/down arrow icons on each slot.
+    *   **Pin Images:** Click the thumbtack icon on a slot to "pin" an image. Pinned images won't be affected by "Fill Slots Randomly" or if you try to add another image to a filled slot without a specific target.
+    *   **Clear/Delete Slots:**
+        *   Click the eraser icon on a slot to clear its image.
+        *   Click the trash can icon on a slot to delete the slot itself.
+        *   Use the "Clear All Slots" icon (large eraser) in the "Image Slots" controls to clear images from all slots.
+    *   **Open in New Tab:** Click the "Open in New Tab" icon (box with an arrow) on a slot to view that individual image in a new browser tab.
 
-1. Click the "Login to Jellyfin" button
-2. Enter your Jellyfin server URL (e.g., `http://yourserver:8096`)
-3. Provide your username and password
-4. Click "Connect"
+4.  **Customizing the Composite Image (Settings Tab):**
+    *   Navigate to the **Settings** tab on the left panel.
+    *   **Overlay Text:**
+        *   `Overlay Text`: Enter the text you want to display on the cover.
+        *   `Font`: Choose a font style.
+        *   `Font Size (px)`: Set the size of the text.
+        *   `Font Color`: Pick a color for the text.
+        *   `Bold`: Check to make the text bold.
+        *   `Font Opacity (0-1)`: Adjust the transparency of the text.
+    *   **Image Styling:**
+        *   `Margin Size (px)`: Set the space between images on the canvas.
+        *   `Blur Size (px)`: Control the amount of blur for the image reflections.
+        *   `Reflex Distance (0-1)`: Adjust how far the reflection extends.
+        *   `Reflex Scale (0-1)`: Control the intensity/visibility of the reflection.
+        *   `Overlay Opacity (0-1)`: Set the transparency of the dark overlay on the entire composite image.
+        *   `Poster Scale (0-10)`: Adjust the vertical scale of the primary images.
 
-Once connected, you can:
-- Browse your media libraries
-- Search for specific titles
-- Click on any poster to add it to your composition
-- Use the random selection feature to discover new images
+5.  **Previewing the Composite Image:**
+    *   The central canvas area displays a live preview of your composite image as you make changes.
 
-## Creating a Cover
+6.  **Exporting Your Cover:**
+    *   Once you are satisfied with your design:
+        *   Click the **"Export Composite Image"** button to download the cover as a PNG file.
+        *   Click the **"Open Composite in New Tab"** button to view the full-resolution composite image in a new browser tab.
 
-1. Add image slots using the "+" button
-2. Fill slots with images by:
-   - Selecting from your Jellyfin library
-   - Uploading local images
-   - Pasting images from clipboard
-   - Dragging and dropping
-   - Using the random fill feature
-3. Adjust the composition settings:
-   - Modify reflection properties
-   - Change spacing and blur
-   - Add and customize overlay text
-4. Export your creation as a PNG or preview in a new tab
+7.  **Managing Settings:**
+    *   **Clean Saved Memory:** Click this button in the header to clear all saved settings from your browser's local storage (Jellyfin credentials, UI settings, etc.) and restore the application to its default state.
 
-## Tips
+## Local Setup
 
-- Use the pin feature to lock important images in place
-- Drag images between slots to reorder them
-- Drag images from covers list to a slot, to load it.
-- Adjust the poster scale to find the perfect fit
-- Use the blur effect to create depth
-- Experiment with reflection settings for different looks
+This project is a static web application and does not require a complex build process or backend server to run locally.
 
-## Browser Support
+**Prerequisites:**
 
-The application works best in modern browsers that support:
-- Canvas API
-- Drag and Drop API
-- File API
-- Modern CSS features
+*   A modern web browser (e.g., Chrome, Firefox, Edge, Safari).
+*   Git (optional, for cloning the repository).
 
-## Privacy & Security
+**Steps:**
 
-- Your Jellyfin credentials are stored locally in your browser
-- No data is sent to external servers except your Jellyfin instance
-- All image processing happens in your browser
+1.  **Get the Code:**
+    *   **Clone the repository (recommended):**
+        ```bash
+        git clone https://github.com/jeffersoncgo/CoverMaker.git
+        cd CoverMaker
+        ```
+    *   **Or Download ZIP:** Download the project ZIP file from GitHub and extract it.
+
+2.  **Run the Application:**
+    *   Navigate to the project directory.
+    *   Open the `index.html` file in your web browser.
+
+That's it! The application should now be running locally.
+
+## Live Application
+
+You can access the live version of Collection Cover Maker here:
+[https://jeffersoncgo.github.io/CoverMaker/](https://jeffersoncgo.github.io/CoverMaker/)
+
+## Contributing
+
+Contributions are welcome! If you have ideas for new features, find a bug, or want to improve the code, please feel free to:
+
+*   **Open an Issue:** Report bugs or suggest features by opening an issue on the GitHub repository.
+*   **Submit a Pull Request:** If you've made changes you'd like to contribute, please fork the repository and submit a pull request with a clear description of your changes.
+
+Please try to follow the existing code style and add comments where necessary.
+
+## License
+
+This project is currently not distributed under a specific license. Please refer to the repository owner for licensing information or consider adding a `LICENSE` file to the project.
