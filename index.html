@@ -175,7 +175,11 @@
         <div class="controls">
           <i id="loadLibraryBtn" class="fa-solid fa-photo-film" onclick="loadLibraries(this)"></i>
           <i id="refreshlibraryBtn" class="fa-solid fa-arrows-rotate" onclick="filterRandom(this)"></i>
-          <input type="text" id="searchInput" placeholder="Search" input="" save>
+          <div class="searchInputDiv">
+            <input type="text" id="searchInput" placeholder="Search" input="" save>
+            <i class="fa-solid fa-xmark" id="clearSearchInput" onclick="jellyfinsearchInput.value = ''; searchOnLibrary(null, true, true)"></i>
+          </div>
+
           <select id="coverslimit" value="10" save onchange="setCoversLimit(this.value)">
             <option value="10">10</option>
             <option value="20">20</option>
