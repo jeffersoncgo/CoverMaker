@@ -239,11 +239,11 @@ class Jellyfin {
 
       await Promise.all(promises); 
 
-      // Remove duplicated, empty and repeated tags
-      this.searchParams.Tags = [...new Set(this.searchParams.Tags)].sort();
-      this.searchParams.Genres = [...new Set(this.searchParams.Genres)].sort();
-      this.searchParams.Studios = [...new Set(this.searchParams.Studios)].sort();
-
+      // Remove duplicated, empty and repeated 
+      // ArraySort is from JCGWEB CDN it ArraySort(array, ignoreCase)
+      this.searchParams.Tags = ArraySort([...new Set(this.searchParams.Tags)], true)
+      this.searchParams.Genres = ArraySort([...new Set(this.searchParams.Genres)], true)
+      this.searchParams.Studios = ArraySort([...new Set(this.searchParams.Studios)], true)
       this.areLibrariesLoaded = true;
       this.events.onLibraryLoad(data);
       return data;
