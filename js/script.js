@@ -464,7 +464,7 @@ function onSlotDragToMove(event) {
 }
 
 // ======================
-// Slot Buttos Click Functions
+// Slot Buttons Click Functions
 // ======================
 function getIndexFromButtonClick(e) {
   try {
@@ -661,7 +661,10 @@ function CreateJellyfin() {
       document.querySelector("#rightSide").style.display = "block";
       document.querySelector("#jellyfinContent").style.display = "block";
     },
-    onLibraryLoad: () => searchOnLibrary(null, null),
+    onLibraryLoad: () => {
+      makeDetailList(jellyfinsearchInput, jellyfin.searchParams.Genres);
+      searchOnLibrary(null, null);
+    },
     onSearchFinish: () => {
       fillJellyfinContainerAttr();
       jellyfinPreviousPageBtn?.setAttribute('disabled', !jellyfin.searchParams.hasPreviousPage);
@@ -932,4 +935,19 @@ window.addEventListener('load', () => {
 
 function cleanMemory() {
   memory.reset().then(() => location.reload());
+}
+
+// Others
+function  makeDetailList(inputTarget, list) {
+  const datalist = document.createElement('datalist');
+  datalist.id = `${inputTarget.id}-list`;
+
+  list.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item;
+    datalist.appendChild(option);
+  });
+
+  inputTarget.setAttribute('list', datalist.id);
+  inputTarget.parentNode.insertBefore(datalist, inputTarget.nextSibling);
 }
