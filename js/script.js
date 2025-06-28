@@ -611,28 +611,54 @@ function openInNewTab(source) {
   const fileName = utils.safeWindowsFileName(document.getElementById("overlayText").value || "composite") + '.png'
   const tab = window.open();
 
-  const previewHTML = `
-  <body style="margin:0; background-color:#121212; overflow:auto; display:flex; align-items:center; justify-content:center;">
-  <img id="preview" onload="window.stop()" src="${dataURL}" style="transform-origin: top center; transition: transform 0.15s ease-out; max-width: none; max-height: none; cursor: zoom-in;">
-<script>
-    const img = document.getElementById("preview");
-    let scale = 1;
-    let isToggled = false;
-
-    img.addEventListener("click", () => {
-      if (scale === 1) {
-        scale = 2; // zoom in
-        img.style.cursor = "zoom-out";
-      } else {
-        scale = 1; // reset
-        img.style.cursor = "zoom-in";
+  const previewHTML = `<!-- start a simple html page -->
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body {
+        display: flex;
+        margin:0; 
+        background-color:#121212;
+        align-items:center; 
+        justify-content:center;
       }
-      img.style.transform = \`scale(\${scale})\`;
-      isToggled = scale > 1;
-    });
-  </script>
-  </body>
-  `
+      img {
+        object-fit: scale-down;
+        max-width: calc(100vw - 20px);
+        max-height: 100vh;
+        min-height: 100vh;
+        cursor: zoom-in;
+        overflow-x: hidden;
+      }
+      img[zoomed] {
+        cursor: zoom-out;
+      }
+    </style>
+</head>
+<body>
+    <img id="preview" onload="window.stop()" src="${dataURL}">
+</body>
+<script>
+      const img = document.getElementById("preview");
+      img.addEventListener("click", () => {
+        if (img.getAttribute('zoomed')) {
+          img.removeAttribute('zoomed');
+          img.style.maxHeight = '100vh'; 
+          img.style.minWidth =  'unset';
+          img.style.objectFit =  'scale-down';
+        } else {
+          img.setAttribute('zoomed', 'true');
+          img.style.maxHeight = 'unset';
+          img.style.minWidth =  'calc(100vw - 20px)';
+          img.style.objectFit =  'contain';
+        }
+      });
+    </script>
+</html>`
 
   tab.document.write(previewHTML);
   tab.document.title = fileName;
