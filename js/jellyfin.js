@@ -396,6 +396,9 @@ class Jellyfin {
           Studios: item.Studios,
           Tags: item.Tags,
           Overview: item.Overview,
+          IsFavorite: item.UserData.IsFavorite,
+          Played: item.UserData.Played,
+          PlayCount: item.UserData.PlayCount
           // People: item.People,
         };
       });
