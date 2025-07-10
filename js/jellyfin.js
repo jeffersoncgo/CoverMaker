@@ -71,6 +71,8 @@ class Jellyfin {
 
     this.Libraries = {}
 
+    this.lastError = "";
+
     this.areLibrariesLoaded = false;
 
     this.isAuthenticated = false;
@@ -88,18 +90,17 @@ class Jellyfin {
     // Get first the public info of the server
     await this.getPublicInfo();
     if (!this.Server.isOnline)
-      return console.error("Server is offline. Please check the address.");
+      throw new Error("Server is offline. Please check the address.")
 
     // If the server is online, then we can try to login
     if (this.User.Username && this.User.Pw) {
-      let login = await this.login();
-      if (login) {
+      this.login().then(async () => {
         this.isAuthenticated = true;
         this.updateAuthHeader();
         await this.getLibraries()
-      }
+      }).catch(err => console.error(err))
     } else
-      return console.error("Username and password are required for authentication.");
+      throw new Error("Username and password are required for authentication.")
   }
 
   UpdateConfig(host, username, password) {
@@ -201,8 +202,8 @@ class Jellyfin {
       this.User.Id = null;
       this.updateAuthHeader();
       if (response) {
-        this.events.onLoginError(response);
-        this.onFetchError(response);
+        this.events.onLoginError(error, response);
+        this.onFetchError(error, response);
       } else {
         this.events.onLoginError(error);
         this.onFetchError(error);
