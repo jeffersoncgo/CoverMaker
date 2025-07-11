@@ -59,6 +59,7 @@ class Jellyfin {
       CommunityRating: null,
       ProductionYear: null,
       PremiereDate: "",
+      IncludePeople: false,
       limit: 10,
       offset: 0,
       page: 1,
@@ -378,6 +379,15 @@ class Jellyfin {
         "Studios",
         "Tags",
       ]
+    if (this.searchParams.IncludePeople) {
+      if (!Fields.includes('People'))
+        Fields.push('People')
+    } else {
+      const index = Fields.indexOf('People');
+      if (index > -1) {
+        Fields.splice(index, 1);
+      }
+    }
     const FieldsText = encodeURIComponent(Fields.join(","))
     let response = await fetch(`${this.Server.ExternalAddress}/Users/${this.User.Id}/Items?SortBy=Random&Fields=${FieldsText}&ImageTypeLimit=1&EnableImageTypes=Primary&ParentId=${libraryId}`, {
       method: "GET",
@@ -403,7 +413,7 @@ class Jellyfin {
           Genres: item.Genres,
           Studios: item.Studios,
           Tags: item.Tags,
-          // People: item.People,
+          People: item.People,
           Overview: item.Overview,
           UserData: {
             IsFavorite: item.UserData.IsFavorite,
