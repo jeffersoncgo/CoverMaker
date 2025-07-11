@@ -290,6 +290,7 @@ class Jellyfin {
         query.Library = library.trim();
     }
 
+
     this.searchParams = { ...this.searchParams, ...query };
 
     if (!this.areLibrariesLoaded) {
@@ -318,6 +319,13 @@ class Jellyfin {
     else
       for (const lName in this.Libraries)
         items = items.concat(this.Libraries[lName].Items)
+
+    // If SearchParams has PlayedOnly or UnplayedOnly we will filter by it
+    if (this.searchParams.PlayedOnly) {
+      items = items.filter(item => item.UserData && item.UserData.Played);
+    } else if (this.searchParams.UnplayedOnly) {
+      items = items.filter(item => item.UserData && !item.UserData.Played);
+    }
 
     items = await searchInArray(items, this.searchParams.Name)
 
