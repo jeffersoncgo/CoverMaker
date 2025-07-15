@@ -323,7 +323,7 @@ class Jellyfin {
 
     // If SearchParams has PlayedOnly or UnplayedOnly we will filter by it
     if (this.searchParams.PlayedOnly) {
-      items = items.filter(item => item.UserData && item.UserData.Played);
+      items = items.filter(item => item.UserData && item.UserData.Played && item.UserData.PlayCount > 0);
     } else if (this.searchParams.UnplayedOnly) {
       items = items.filter(item => item.UserData && !item.UserData.Played);
     }
