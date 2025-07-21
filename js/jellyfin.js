@@ -386,6 +386,9 @@ class Jellyfin {
           if (loadedData.Count == Count && loadedData.Items.length == Count) {
             console.log(`${loadedData.Name} loaded from cache.`)
             this.Libraries[library.Name] = loadedData;
+            this.Libraries[library.Name].Status = 'Loaded';
+            this.Libraries[library.Name].Count = Count;
+            toReagroupd.push(library.Id);
             return loadedData;
           }
         }
