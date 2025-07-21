@@ -3,18 +3,18 @@ if (typeof module != 'undefined')
 
 class Jellyfin {
   constructor(Host = "http://localhost:8096", Username = "", Pw = "", events = {
-    onServerSetupError: () => {},
-    onLoginSuccess: () => {},
-    onLoginError: () => {},
-    onLibraryLoad: () => {},
-    onSearchFinish: () => {},
+    onServerSetupError: () => { },
+    onLoginSuccess: () => { },
+    onLoginError: () => { },
+    onLibraryLoad: () => { },
+    onSearchFinish: () => { },
   }) {
     const defaultEvents = {
-      onServerSetupError: () => {},
-      onLoginSuccess: () => {},
-      onLoginError: () => {},
-      onLibraryLoad: () => {},
-      onSearchFinish: () => {},
+      onServerSetupError: () => { },
+      onLoginSuccess: () => { },
+      onLoginError: () => { },
+      onLibraryLoad: () => { },
+      onSearchFinish: () => { },
     }
     events = { ...defaultEvents, ...events };
     this.Server = {
@@ -59,8 +59,9 @@ class Jellyfin {
       CommunityRating: null,
       ProductionYear: null,
       PremiereDate: "",
-      IncludePeople: false,
+      IncludePeople: true,
       limit: 10,
+      loadLimit: 100,
       offset: 0,
       page: 1,
       hasNextPage: true,
@@ -71,6 +72,7 @@ class Jellyfin {
     this.currentSearchFilter = null //Will only be set after the first query
 
     this.Libraries = {}
+    this.fetchQueue = new FetchQueue();
 
     this.lastError = "";
 
@@ -84,6 +86,12 @@ class Jellyfin {
     this.searchItems = this.Controller;
     this.searchItems = this.searchItems.exec.bind(this.searchItems);
     this.searchItems.Controller = this.Controller;
+
+    this.regex = {
+      title: /^(?<title>.+?)\s+\(\d{4}\)\s+\[.*?=.+?\]/,
+      year: /\((?<year>\d{4})\)/,
+      id: /\[(?<provider>[a-zA-Z]+id)=(?<id>[a-zA-Z0-9]+)\]/
+    }
     this.init()
   }
 
@@ -129,11 +137,85 @@ class Jellyfin {
     this.headers.authorization = `MediaBrowser Client="${this.Server.Client}", Device="${this.Server.Device}", DeviceId="${this.Name}", Version="${this.Server.Version}"${TokenBit}`;
   }
 
+  openDB(dbName, storeName) {
+    return new Promise((resolve, reject) => {
+      let db;
+
+      // First check if the store exists
+      const checkRequest = indexedDB.open(dbName);
+      checkRequest.onsuccess = () => {
+        db = checkRequest.result;
+
+        // If store exists, return it
+        if (db.objectStoreNames.contains(storeName)) {
+          return resolve(db);
+        }
+
+        // Store missing → close db and reopen with bump
+        const version = db.version + 1;
+        db.close();
+
+        const upgradeRequest = indexedDB.open(dbName, version);
+
+        upgradeRequest.onupgradeneeded = (event) => {
+          const upgradeDb = event.target.result;
+          upgradeDb.createObjectStore(storeName);
+        };
+
+        upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
+        upgradeRequest.onerror = () => reject(upgradeRequest.error);
+      };
+
+      checkRequest.onerror = () => reject(checkRequest.error);
+    });
+  }
+
+
+  async saveCompressedData(dbName, storeName, key = "result", data) {
+    const db = await this.openDB(dbName, storeName);
+    console.log(db)
+    const tx = db.transaction(storeName, "readwrite");
+    const store = tx.objectStore(storeName);
+    const compressed = /*LZString.compressToUTF16*/(JSON.stringify(data));
+    store.put(compressed, key);
+    return tx.complete;
+  }
+
+  async loadCompressedData(dbName, storeName, key = "result") {
+    const db = await this.openDB(dbName, storeName);
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, "readonly");
+      const store = tx.objectStore(storeName);
+      const req = store.get(key);
+
+      req.onsuccess = () => {
+        const compressed = req.result;
+        if (!compressed) return resolve(null); // Not found
+        try {
+          const data = JSON.parse(/*LZString.decompressFromUTF16*/(compressed));
+          resolve(data);
+        } catch (error) {
+          console.error("Error decompressing or parsing data:", error);
+          resolve(null); // Resolve with null on error
+        }
+      };
+
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  isLibrarySizeChanged(libraryId, currSize) {
+    if (this.Libraries[libraryId]) {
+      return this.Libraries[libraryId].Count != currSize;
+    }
+    return true;
+  }
+
   async getPublicInfo() {
     let response;
     try {
       response = await fetch(`${this.Server.ExternalAddress}/System/Info/Public`);
-      
+
       if (!response.ok)
         throw new Error(`HTTP ${response.status}`);
 
@@ -145,7 +227,7 @@ class Jellyfin {
       this.Server.OperatingSystem = data.OperatingSystem;
       this.Server.Id = data.Id;
       this.Server.isOnline = true;
-      
+
       this.updateAuthHeader();
       return data;
     } catch (error) {
@@ -159,17 +241,17 @@ class Jellyfin {
         this.onFetchError(error);
         this.events.onServerSetupError(error);
       }
-  
+
       return null; // Optional: signal failure to caller
     }
   }
 
   backupSearchParams() {
-    this.searchParamsToRestore = {...this.searchParams}
+    this.searchParamsToRestore = { ...this.searchParams }
   }
 
   restoreSearchParams() {
-    this.searchParams = {...this.searchParamsToRestore}
+    this.searchParams = { ...this.searchParamsToRestore }
   }
 
   async login() {
@@ -187,13 +269,13 @@ class Jellyfin {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-  
+
       let data = await response.json();
       this.User.Token = data.AccessToken;
       this.User.Id = data.User.Id;
 
       this.isAuthenticated = true;
-      
+
       this.updateAuthHeader();
       this.events.onLoginSuccess(data);
       return data;
@@ -216,46 +298,83 @@ class Jellyfin {
     return this.Libraries[name] ? this.Libraries[name].Id : null;
   }
 
-  async getLibraries() { // Get the available libraries for the user
-    if (!this.isAuthenticated)
-      return;
-    let response = await fetch(`${this.Server.ExternalAddress}/UserViews?userId=${this.User.Id}`, {
+  libaryNameById(id) { // Get the library name by id
+    for (const lId in this.Libraries) {
+      if (this.Libraries[lId].Id === id)
+        return this.Libraries[lId].Name;
+    }
+    return null;
+  }
+
+  async getLibraries() {
+    if (!this.isAuthenticated) return;
+
+    // Start a variable, so we can know the time it run
+    const startTime = performance.now();
+    const response = await fetch(`${this.Server.ExternalAddress}/UserViews?userId=${this.User.Id}`, {
       method: "GET",
       headers: this.headers,
     });
-    if (response.ok) {
-      let data = await response.json();
-      this.Libraries = {}
 
-      const promises = data.Items.map(async library => {
-        const items = await this.loadLibraryItems(library.Id);
-
-        this.Libraries[library.Name] = {
-          Id: library.Id,
-          Name: library.Name,
-          ImageId: library.ImageTags?.Primary,
-          Items: items,
-          Count: items.length
-        };
-      });
-
-      await Promise.all(promises); 
-
-      // Remove duplicated, empty and repeated 
-      // ArraySort is from JCGWEB CDN it ArraySort(array, ignoreCase)
-      this.searchParams.Tags = [...new Set(this.searchParams.Tags.toLowerCase())].sort().eachWordUp()
-      this.searchParams.Genres = [...new Set(this.searchParams.Genres.toLowerCase())].sort().eachWordUp()
-      this.searchParams.Studios = [...new Set(this.searchParams.Studios.toLowerCase())].sort().eachWordUp()
-      this.areLibrariesLoaded = true;
-      this.events.onLibraryLoad(data);
-      return data;
-    } else {
+    if (!response.ok) {
       this.onFetchError(response);
+      return;
     }
+
+    const data = await response.json();
+    this.Libraries = {};
+
+    const promises = data.Items.map(async (library) => {
+      try {
+        const loadedData = await this.loadCompressedData(this.Server.Id, library.Id, "result");
+        console.log(loadedData)
+        if (loadedData) {
+          this.Libraries[library.Name] = loadedData;
+          return loadedData;
+        }
+      } catch (error) {}
+
+      const Count = await this.getLibrarySize(library.Id);
+
+      if (!this.isLibrarySizeChanged(library.Id, Count))
+        return this.Libraries[library.Name];
+
+      this.Libraries[library.Name] = {
+        Id: library.Id,
+        Name: library.Name,
+        ImageId: library.ImageTags?.Primary,
+        Items: [],
+        Count: 0,
+        Status: 'Loading...'
+      };
+
+      this.Libraries[library.Name].Count = Count;
+      this.loadLibraryItems(library.Id).then((items) => {
+        if (!items || items.length == 0)
+          return;
+        console.log(`Loaded ${items.length} items from library ${library.Name}`)
+        this.saveCompressedData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
+        this.Libraries[library.Name].Status = 'Loaded';
+      })
+      return this.Libraries[library.Name];
+    });
+
+    await Promise.all(promises);
+
+    // Deduplicate & sanitize metadata
+    this.searchParams.Tags = [...new Set(this.searchParams.Tags.map(tag => tag.toLowerCase()))].sort().eachWordUp();
+    this.searchParams.Genres = [...new Set(this.searchParams.Genres.map(g => g.toLowerCase()))].sort().eachWordUp();
+    this.searchParams.Studios = [...new Set(this.searchParams.Studios.map(s => s.Name.toLowerCase()))].sort().eachWordUp();
+
+    this.areLibrariesLoaded = true;
+    this.events.onLibraryLoad(data);
+    const endTime = performance.now();
+    console.log(`All libraries loaded in ${((endTime - startTime) / 1000).toFixed(2)} seconds.`);
+    return data;
   }
 
   async nextPage() {
-    if(!this.searchParams.hasNextPage)
+    if (!this.searchParams.hasNextPage)
       return;
     this.searchParams.page++;
     this.searchParams.offset = (this.searchParams.page - 1) * this.searchParams.limit;
@@ -263,7 +382,7 @@ class Jellyfin {
   }
 
   async previousPage() {
-    if(!this.searchParams.hasPreviousPage)
+    if (!this.searchParams.hasPreviousPage)
       return;
     this.searchParams.page--;
     this.searchParams.offset = (this.searchParams.page - 1) * this.searchParams.limit;
@@ -281,6 +400,21 @@ class Jellyfin {
   setDelay(delay) {
     this.Controller.startDelayMs = delay;
   }
+
+  isPlayed(item) {
+    return item.UserData && ((item.UserData.Played) || (item.UserData.PlayedPercentage >= 70) || (item.UserData.PlayCount > 0)) && item.Type != "BoxSet";
+  }
+
+  extractInfoByTitle(title) {
+    return {
+      title: title.match(this.regex.title)?.groups?.title,
+      year: title.match(this.regex.year)?.groups?.year,
+      providerId: title.match(this.regex.id)?.groups?.id,
+      provider: title.match(this.regex.id)?.groups?.provider,
+      originalTitle: title
+    }
+  }
+
 
   async searchItems(Name, library, query) {
     if (!query) {
@@ -312,8 +446,8 @@ class Jellyfin {
     if (this.searchParams.Library && (!this.Libraries?.[this.searchParams.Library]?.Items)) {
       this.events.onSearchFinish([])
       return [];
-    } 
-    
+    }
+
     let items = [];
     if (this.searchParams.Library)
       items = this.Libraries[this.searchParams.Library].Items
@@ -323,9 +457,9 @@ class Jellyfin {
 
     // If SearchParams has PlayedOnly or UnplayedOnly we will filter by it
     if (this.searchParams.PlayedOnly) {
-      items = items.filter(item => item.UserData && item.UserData.Played && item.UserData.PlayCount > 0);
+      items = items.filter(this.isPlayed);
     } else if (this.searchParams.UnplayedOnly) {
-      items = items.filter(item => item.UserData && !item.UserData.Played);
+      items = items.filter(item => !this.isPlayed(item));
     }
 
     items = await searchInArray(items, this.searchParams.Name)
@@ -368,64 +502,136 @@ class Jellyfin {
     return items;
   }
 
-  async loadLibraryItems(libraryId) { // Get the items in a specific library
+  async refreshItem(item, Recursive = true, ImageRefreshMode = "Default", MetadataRefreshMode = "Default", ReplaceAllImages = false, RegenerateTrickplay = false, ReplaceAllMetadata = false) {
+    if (!this.isAuthenticated) {
+      console.warn("Not authenticated. Cannot refresh item.");
+      return null;
+    }
+    try {
+      const response = await fetch(`${this.Server.ExternalAddress}/Items/${item.Id}/Refresh?Recursive=${Recursive}&ImageRefreshMode=${ImageRefreshMode}&MetadataRefreshMode=${MetadataRefreshMode}&ReplaceAllImages=${ReplaceAllImages}&RegenerateTrickplay=${RegenerateTrickplay}&ReplaceAllMetadata=${ReplaceAllMetadata}`, {
+        method: "POST", // Changed to POST as per the provided curl example
+        headers: this.headers,
+        body: null,
+        credentials: "include",
+        "mode": "cors",
+
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      console.log(`Item ${item.Name} refreshed.`);
+      return true;
+    } catch (error) {
+      console.error(`Error refreshing item ${item.Name}:`, error);
+      this.onFetchError(error);
+      return false;
+    }
+  }
+
+  async getLibrarySize(libraryId) {
     if (!this.isAuthenticated)
       return;
-      const Fields = [
-        "PrimaryImageAspectRatio",
-        "Genres",
-        "Overview",
-        // "People", //Is too slow
-        "Studios",
-        "Tags",
-      ]
-    if (this.searchParams.IncludePeople) {
-      if (!Fields.includes('People'))
-        Fields.push('People')
-    } else {
-      const index = Fields.indexOf('People');
-      if (index > -1) {
-        Fields.splice(index, 1);
-      }
-    }
-    const FieldsText = encodeURIComponent(Fields.join(","))
-    let response = await fetch(`${this.Server.ExternalAddress}/Users/${this.User.Id}/Items?SortBy=Random&Fields=${FieldsText}&ImageTypeLimit=1&EnableImageTypes=Primary&ParentId=${libraryId}`, {
+    //https://flik.jcgweb.com.br/Users/33b0af0c69d54da3aac45eb12f635a4e/Items?ParentId=af92f2d68eea947c7f9df41836afb987&Limit=0
+    let response = await fetch(`${this.Server.ExternalAddress}/Users/${this.User.Id}/Items?ParentId=${libraryId}&Limit=0`, {
       method: "GET",
-      headers: this.headers,
+      headers: this.headers
     });
     if (response.ok) {
       let data = await response.json();
-      return data.Items.map(item => {
-        this.searchParams.Tags.push(...item.Tags);
-        // Here we add end char to each Genre (U+FEFF ZERO WIDTH NO-BREAK SPACE)
-        // So, when you choose a genre, it will not with the titles
-        this.searchParams.Genres.push(...item.Genres.map(e => e+'﻿'));
-        this.searchParams.Studios.push(...item.Studios);
-        // this.searchParams.People.push(...item.People);
-        return {
-          Id: item.Id, //c07c4089d60376701fc62e3fe008cdcc
-          Name: item.Name, //Contatos de 4º Grau
-          ImageId: item.ImageTags.Primary, //17113beff6c0842baced46c6541baea5
-          PremiereDate: item.PremiereDate, //2009-11-05T00:00:00.0000000Z
-          OfficialRating: item.OfficialRating, //16
-          CommunityRating: item.CommunityRating, //6.3
-          ProductionYear: item.ProductionYear, //2009
-          Genres: item.Genres,
-          Studios: item.Studios,
-          Tags: item.Tags,
-          People: item.People,
-          Overview: item.Overview,
-          UserData: {
-            IsFavorite: item.UserData.IsFavorite,
-            Played: item.UserData.Played,
-            PlayCount: item.UserData.PlayCount
-          }
-        };
-      });
-  } else {
+      return data.TotalRecordCount;
+    } else {
       this.onFetchError(response);
-      return []
+      return 0;
     }
+  }
+
+  async loadLibraryItems(libraryId) {
+    if (!this.isAuthenticated) return [];
+
+    const Fields = [
+      "OriginalTitle", "Overview", "Genres", "People", "Studios", "Tags",
+      "DateLastMediaAdded", "RecursiveItemCount", "ChildCount",
+      "MediaSources", "MediaSourceCount"
+    ];
+
+    if (!this.searchParams.IncludePeople) {
+      const index = Fields.indexOf("People");
+      if (index > -1) Fields.splice(index, 1);
+    }
+
+    const libraryName = this.libaryNameById(libraryId);
+    const librarySize = this.Libraries[libraryName].Count;
+    const loadLimit = Math.min(this.searchParams.loadLimit, librarySize);
+    const FieldsText = encodeURIComponent(Fields.join(","));
+    const headers = this.headers;
+
+    // Ensure fresh container
+    this.Libraries[libraryName].Items = [];
+
+    const pendingFetches = [];
+
+    for (let startIndex = 0; startIndex < librarySize; startIndex += loadLimit) {
+      console.log(`Queueing ${libraryName} Items from ${startIndex} to ${startIndex + loadLimit}`);
+
+      const url = `${this.Server.ExternalAddress}/Users/${this.User.Id}/Items?SortBy=IndexNumber&Fields=${FieldsText}&ImageTypeLimit=1&EnableImageTypes=Primary&ParentId=${libraryId}&Limit=${loadLimit}&startIndex=${startIndex}`;
+
+      // Wrap each fetch task into a Promise to await later
+      const p = new Promise((resolve, reject) => {
+        this.fetchQueue.fetch(
+          url,
+          { method: "GET", headers },
+          (data, res) => {
+            const items = data.Items || [];
+
+            for (const item of items) {
+              // ⛏️ Extract metadata while mutating searchParams
+              if (item.Tags) this.searchParams.Tags.push(...item.Tags);
+              if (item.Genres) this.searchParams.Genres.push(...item.Genres.map(g => g + '\uFEFF'));
+              if (item.Studios) this.searchParams.Studios.push(...item.Studios);
+              if (item.People) this.searchParams.People.push(...item.People);
+
+              this.Libraries[libraryName].Items.push({
+                Id: item.Id,
+                Name: item.Name,
+                ImageId: item.ImageTags?.Primary,
+                PremiereDate: item.PremiereDate,
+                OfficialRating: item.OfficialRating,
+                CommunityRating: item.CommunityRating,
+                ProductionYear: item.ProductionYear,
+                Genres: item.Genres,
+                Studios: item.Studios,
+                Tags: item.Tags,
+                People: item.People,
+                Overview: item.Overview,
+                Type: item.Type,
+                ItemsCount: item.RecursiveItemCount || item.ChildCount || item.MediaSources?.length,
+                UserData: {
+                  IsFavorite: item.UserData?.IsFavorite,
+                  Played: item.UserData?.Played,
+                  PlayCount: item.UserData?.PlayCount,
+                  LastPlayedDate: item.UserData?.LastPlayedDate
+                },
+                originalData: item
+              });
+            }
+
+            resolve(); // ✅ Resolve this page
+          },
+          (err) => {
+            this.onFetchError(err);
+            resolve(); // Still resolve to allow others to complete
+          }
+        );
+      });
+
+      pendingFetches.push(p);
+    }
+
+    // ⏳ Wait all paginated fetch tasks to complete
+    await Promise.all(pendingFetches);
+    return this.Libraries[libraryName].Items;
   }
 
   makeImageUrl(itemId, width = 480, height = 270, quality = 80) { // Make the image url
@@ -433,8 +639,10 @@ class Jellyfin {
       return;
     width = width ? `&fillWidth=${width}` : "&fillWidth=2000";
     height = height ? `&fillHeight=${height}` : "&fillHeight=2000";
-    quality = quality ? `&quality=${quality}` : "&quality=100"; 
+    quality = quality ? `&quality=${quality}` : "&quality=100";
     let imageUrl = `${this.Server.ExternalAddress}/Items/${itemId}/Images/Primary?${width}${height}${quality}`;
     return imageUrl;
   }
+
+
 }
