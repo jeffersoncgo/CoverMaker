@@ -171,17 +171,15 @@ class Jellyfin {
   }
 
 
-  async saveCompressedData(dbName, storeName, key = "result", data) {
+  async saveData(dbName, storeName, key = "result", data) {
     const db = await this.openDB(dbName, storeName);
-    console.log(db)
     const tx = db.transaction(storeName, "readwrite");
     const store = tx.objectStore(storeName);
-    const compressed = /*LZString.compressToUTF16*/(JSON.stringify(data));
-    store.put(compressed, key);
+    store.put(JSON.stringify(data), key);
     return tx.complete;
   }
 
-  async loadCompressedData(dbName, storeName, key = "result") {
+  async loadData(dbName, storeName, key = "result") {
     const db = await this.openDB(dbName, storeName);
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, "readonly");
@@ -189,11 +187,10 @@ class Jellyfin {
       const req = store.get(key);
 
       req.onsuccess = () => {
-        const compressed = req.result;
-        if (!compressed) return resolve(null); // Not found
+        const result = req.result;
+        if (!result) return resolve(null); // Not found
         try {
-          const data = JSON.parse(/*LZString.decompressFromUTF16*/(compressed));
-          resolve(data);
+          resolve(JSON.parse(result));
         } catch (error) {
           console.error("Error decompressing or parsing data:", error);
           resolve(null); // Resolve with null on error
@@ -325,16 +322,18 @@ class Jellyfin {
     this.Libraries = {};
 
     const promises = data.Items.map(async (library) => {
-      try {
-        const loadedData = await this.loadCompressedData(this.Server.Id, library.Id, "result");
-        console.log(loadedData)
-        if (loadedData) {
-          this.Libraries[library.Name] = loadedData;
-          return loadedData;
-        }
-      } catch (error) {}
-
       const Count = await this.getLibrarySize(library.Id);
+
+      try {
+        const loadedData = await this.loadData(this.Server.Id, library.Id, "result");
+        if (loadedData) {
+          if (loadedData.Count == Count && loadedData.Items.length == Count) {
+            console.log(`${loadedData.Name} loaded from cache.`)
+            this.Libraries[library.Name] = loadedData;
+            return loadedData;
+          }
+        }
+      } catch (error) { }
 
       if (!this.isLibrarySizeChanged(library.Id, Count))
         return this.Libraries[library.Name];
@@ -348,14 +347,16 @@ class Jellyfin {
         Status: 'Loading...'
       };
 
+      this.showLoadingLibraries();
+
       this.Libraries[library.Name].Count = Count;
-      this.loadLibraryItems(library.Id).then((items) => {
-        if (!items || items.length == 0)
-          return;
-        console.log(`Loaded ${items.length} items from library ${library.Name}`)
-        this.saveCompressedData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
-        this.Libraries[library.Name].Status = 'Loaded';
-      })
+      const items = await this.loadLibraryItems(library.Id); //.then((items) => {
+      if (!items || items.length == 0)
+        return this.Libraries[library.Name].Status = 'Loading Error'
+      console.log(`Loaded ${items.length} items from library ${library.Name}`)
+      this.saveData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
+      this.Libraries[library.Name].Status = 'Loaded';
+      // })
       return this.Libraries[library.Name];
     });
 
@@ -369,6 +370,7 @@ class Jellyfin {
     this.areLibrariesLoaded = true;
     this.events.onLibraryLoad(data);
     const endTime = performance.now();
+    this.hideLoadingLibraries()
     console.log(`All libraries loaded in ${((endTime - startTime) / 1000).toFixed(2)} seconds.`);
     return data;
   }
@@ -642,6 +644,82 @@ class Jellyfin {
     quality = quality ? `&quality=${quality}` : "&quality=100";
     let imageUrl = `${this.Server.ExternalAddress}/Items/${itemId}/Images/Primary?${width}${height}${quality}`;
     return imageUrl;
+  }
+
+  showLoadingLibraries() {
+    // Create container if it doesn't exist
+    let container = document.getElementById("loadingLibrariesContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "loadingLibrariesContainer";
+      container.style = `
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    `;
+      document.body.appendChild(container);
+    }
+
+    container.innerHTML = ""; // Clear existing
+
+    const loadingLibraries = Object.values(this.Libraries).filter(lib => lib.Status === "Loading...");
+    if (loadingLibraries.length === 0) return;
+
+    for (const lib of loadingLibraries) {
+      const progress = Math.min(100, Math.floor((lib.Items.length / lib.Count) * 100));
+      const wrapper = document.createElement("div");
+
+      wrapper.className = "loading-lib-bar";
+      wrapper.style = `
+      background: var(--surface, #1f2937);
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      margin-bottom: 0.75rem;
+      box-shadow: var(--shadow-lg, 0 4px 10px rgba(0,0,0,0.3));
+      width: 300px;
+      font-size: 0.85rem;
+      color: var(--text-light, #fff);
+    `;
+
+      wrapper.innerHTML = `
+      <div style="margin-bottom: 0.25rem; font-weight: bold;">
+        ${lib.Name} — ${lib.Items.length} / ${lib.Count}
+      </div>
+      <div style="background: #2d3748; border-radius: 0.25rem; overflow: hidden; height: 0.5rem;">
+        <div style="width: ${progress}%; background: var(--primary, #3b82f6); height: 100%; transition: width 0.3s ease;"></div>
+      </div>
+    `;
+
+      container.appendChild(wrapper);
+    }
+
+    // 🌀 Loop to auto-refresh until done
+    if (!this._loadingAnimationFrame) {
+      const loop = () => {
+        const stillLoading = Object.values(this.Libraries).some(lib => lib.Status === "Loading...");
+        if (stillLoading) {
+          this.showLoadingLibraries(); // Recursively refresh
+          this._loadingAnimationFrame = requestAnimationFrame(loop);
+        } else {
+          this.hideLoadingLibraries();
+        }
+      };
+      this._loadingAnimationFrame = requestAnimationFrame(loop);
+    }
+  }
+
+  hideLoadingLibraries() {
+    const container = document.getElementById("loadingLibrariesContainer");
+    if (container) container.remove();
+
+    if (this._loadingAnimationFrame) {
+      cancelAnimationFrame(this._loadingAnimationFrame);
+      this._loadingAnimationFrame = null;
+    }
   }
 
 
