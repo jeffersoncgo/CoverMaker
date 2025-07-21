@@ -197,8 +197,55 @@ class Jellyfin {
         }
       };
 
-      req.onerror = () => reject(req.error);
+      req.onerror = () => resolve(null);
     });
+  }
+
+  async clearData(dbName, storeName) {
+    const db = await this.openDB(dbName, storeName);
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, "readwrite");
+      const store = tx.objectStore(storeName);
+      store.clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async cleanDb() {
+    await this.clearData(this.Server.Id, "Tags");
+    await this.clearData(this.Server.Id, "Genres");
+    await this.clearData(this.Server.Id, "Studios");
+    await this.clearData(this.Server.Id, "People");
+    for (const lName in this.Libraries) {
+      await this.clearData(this.Server.Id, this.Libraries[lName].Id);
+    }
+    this.Libraries = {};
+    this.areLibrariesLoaded = false;
+    this.searchParams = {
+      Tags: [],
+      Genres: [],
+      Studios: [],
+      People: [],
+      Name: "",
+      Library: "",
+      OfficialRating: "",
+      CommunityRating: null,
+      ProductionYear: null,
+      PremiereDate: "",
+      IncludePeople: true,
+      limit: 10,
+      loadLimit: 100,
+      offset: 0,
+      page: 1,
+      hasNextPage: true,
+      sortBy: "Name", // Random, Name, OfficialRating, CommunityRating, ProductionYear, PremiereDate
+      order: "asc", // asc, desc
+      PlayedOnly: false,
+      UnplayedOnly: false,
+    }
+    this.searchParamsToRestore = {}
+    location.reload();
   }
 
   isLibrarySizeChanged(libraryId, currSize) {
@@ -321,6 +368,12 @@ class Jellyfin {
     const data = await response.json();
     this.Libraries = {};
 
+    // Try to load the Tags, Genres, Studios and People
+    this.searchParams.Tags = await this.loadData(this.Server.Id, "Tags", "result") || [];
+    this.searchParams.Genres = await this.loadData(this.Server.Id, "Genres", "result") || [];
+    this.searchParams.Studios = await this.loadData(this.Server.Id, "Studios", "result") || [];
+    this.searchParams.People = await this.loadData(this.Server.Id, "People", "result") || [];
+    
     const promises = data.Items.map(async (library) => {
       const Count = await this.getLibrarySize(library.Id);
 
@@ -354,6 +407,7 @@ class Jellyfin {
       if (!items || items.length == 0)
         return this.Libraries[library.Name].Status = 'Loading Error'
       console.log(`Loaded ${items.length} items from library ${library.Name}`)
+      // This will save the library
       this.saveData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
       this.Libraries[library.Name].Status = 'Loaded';
       // })
@@ -365,7 +419,14 @@ class Jellyfin {
     // Deduplicate & sanitize metadata
     this.searchParams.Tags = [...new Set(this.searchParams.Tags.map(tag => tag.toLowerCase()))].sort().eachWordUp();
     this.searchParams.Genres = [...new Set(this.searchParams.Genres.map(g => g.toLowerCase()))].sort().eachWordUp();
-    this.searchParams.Studios = [...new Set(this.searchParams.Studios.map(s => s.Name.toLowerCase()))].sort().eachWordUp();
+    this.searchParams.Studios = [...new Set(this.searchParams.Studios.map(s => s.toLowerCase()))].sort().eachWordUp();
+    this.searchParams.People = [...new Set(this.searchParams.People.map(p => p.toLowerCase()))].sort().eachWordUp();
+
+    // Let's save the Tags, Genres and Studios
+    this.saveData(this.Server.Id, "Tags", "result", this.searchParams.Tags);
+    this.saveData(this.Server.Id, "Genres", "result", this.searchParams.Genres);
+    this.saveData(this.Server.Id, "Studios", "result", this.searchParams.Studios);
+    this.saveData(this.Server.Id, "People", "result", this.searchParams.People);
 
     this.areLibrariesLoaded = true;
     this.events.onLibraryLoad(data);
