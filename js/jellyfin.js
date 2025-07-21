@@ -368,6 +368,8 @@ class Jellyfin {
     const data = await response.json();
     this.Libraries = {};
 
+    let toReagroupd = [];
+
     // Try to load the Tags, Genres, Studios and People
     this.searchParams.Tags = await this.loadData(this.Server.Id, "Tags", "result") || [];
     this.searchParams.Genres = await this.loadData(this.Server.Id, "Genres", "result") || [];
@@ -376,6 +378,7 @@ class Jellyfin {
     
     const promises = data.Items.map(async (library) => {
       const Count = await this.getLibrarySize(library.Id);
+      // if any of the Tags, Genres, Studios or People are empty, this will automatically be added to the updatedLibraries
 
       try {
         const loadedData = await this.loadData(this.Server.Id, library.Id, "result");
@@ -407,20 +410,33 @@ class Jellyfin {
       if (!items || items.length == 0)
         return this.Libraries[library.Name].Status = 'Loading Error'
       console.log(`Loaded ${items.length} items from library ${library.Name}`)
-      // This will save the library
+      
       this.saveData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
       this.Libraries[library.Name].Status = 'Loaded';
-      // })
+      
+      if(!toReagroupd.includes(library.Id))
+        toReagroupd.push(library.Id);
       return this.Libraries[library.Name];
     });
 
     await Promise.all(promises);
 
+    // For each getLibraryItemsGroups, runs the getLibraryItemsGroups for Tags, Genres, Studios and People
+    // do the loop in getLibraryItemsGroups
+    for (const libraryId of toReagroupd) {
+      await Promise.all([
+        this.getLibraryItemsGroups(libraryId, "Tags").then(tags => this.searchParams.Tags.push(...tags.flat())),
+        this.getLibraryItemsGroups(libraryId, "Genres").then(genres => this.searchParams.Genres.push(...genres.flat())),
+        this.getLibraryItemsGroups(libraryId, "Studios").then(studios => this.searchParams.Studios.push(...studios.flat())),
+        this.getLibraryItemsGroups(libraryId, "People").then(people => this.searchParams.People.push(...people.flat()))
+      ]);
+    }
+
     // Deduplicate & sanitize metadata
-    this.searchParams.Tags = [...new Set(this.searchParams.Tags.map(tag => tag.toLowerCase()))].sort().eachWordUp();
-    this.searchParams.Genres = [...new Set(this.searchParams.Genres.map(g => g.toLowerCase()))].sort().eachWordUp();
-    this.searchParams.Studios = [...new Set(this.searchParams.Studios.map(s => s.toLowerCase()))].sort().eachWordUp();
-    this.searchParams.People = [...new Set(this.searchParams.People.map(p => p.toLowerCase()))].sort().eachWordUp();
+    this.searchParams.Tags = [...new Set(this.searchParams.Tags)].sort().eachWordUp();
+    this.searchParams.Genres = [...new Set(this.searchParams.Genres)].sort().eachWordUp();
+    this.searchParams.Studios = [...new Set(this.searchParams.Studios)].sort().eachWordUp();
+    this.searchParams.People = [...new Set(this.searchParams.People)].sort().eachWordUp();
 
     // Let's save the Tags, Genres and Studios
     this.saveData(this.Server.Id, "Tags", "result", this.searchParams.Tags);
@@ -593,6 +609,26 @@ class Jellyfin {
     }
   }
 
+  async getLibraryItemsGroups(libraryId, GroupName) {
+    const libraryName = this.libaryNameById(libraryId);
+    const library = this.Libraries[libraryName];
+    if (!library || !library.Items) {
+      console.warn(`Library ${libraryName} not found or has no items.`);
+      return [];
+    }
+
+    const functions = {
+      People: p => p.Name.toLowerCase() + '\uFEFF',
+      Studios: s => s.Name.toLowerCase() + '\uFEFF',
+      Genres: g => g.toLowerCase() + '\uFEFF',
+      Tags: t => t.toLowerCase() + '\uFEFF',
+    }
+
+    const f = functions[GroupName];
+
+    return library.Items.map(item => item[GroupName]?.map(f));
+  }
+
   async getLibrarySize(libraryId) {
     if (!this.isAuthenticated)
       return;
@@ -650,10 +686,10 @@ class Jellyfin {
 
             for (const item of items) {
               // ⛏️ Extract metadata while mutating searchParams
-              if (item.Tags) this.searchParams.Tags.push(...item.Tags);
-              if (item.Genres) this.searchParams.Genres.push(...item.Genres.map(g => g + '\uFEFF'));
-              if (item.Studios) this.searchParams.Studios.push(...item.Studios);
-              if (item.People) this.searchParams.People.push(...item.People);
+              if (item.Tags) this.searchParams.Tags.push(...item.Tags.map(t => t.toLowerCase() + '\uFEFF'));
+              if (item.Genres) this.searchParams.Genres.push(...item.Genres.map(g => g.toLowerCase() + '\uFEFF'));
+              if (item.Studios) this.searchParams.Studios.push(...item.Studios.map(s => s.Name.toLowerCase() + '\uFEFF'));
+              if (item.People) this.searchParams.People.push(...item.People.map(p => p.Name.toLowerCase() + '\uFEFF'));
 
               this.Libraries[libraryName].Items.push({
                 Id: item.Id,
