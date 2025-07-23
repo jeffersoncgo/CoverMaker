@@ -59,7 +59,6 @@ class Jellyfin {
       CommunityRating: null,
       ProductionYear: null,
       PremiereDate: "",
-      IncludePeople: true,
       limit: 10,
       loadLimit: 100,
       offset: 0,
@@ -72,6 +71,7 @@ class Jellyfin {
     this.currentSearchFilter = null //Will only be set after the first query
 
     this.Libraries = {}
+
     this.fetchQueue = new FetchQueue();
 
     this.lastError = "";
@@ -233,7 +233,6 @@ class Jellyfin {
       CommunityRating: null,
       ProductionYear: null,
       PremiereDate: "",
-      IncludePeople: true,
       limit: 10,
       loadLimit: 100,
       offset: 0,
@@ -375,7 +374,7 @@ class Jellyfin {
     this.searchParams.Genres = await this.loadData(this.Server.Id, "Genres", "result") || [];
     this.searchParams.Studios = await this.loadData(this.Server.Id, "Studios", "result") || [];
     this.searchParams.People = await this.loadData(this.Server.Id, "People", "result") || [];
-    
+
     const promises = data.Items.map(async (library) => {
       const Count = await this.getLibrarySize(library.Id);
       // if any of the Tags, Genres, Studios or People are empty, this will automatically be added to the updatedLibraries
@@ -413,11 +412,13 @@ class Jellyfin {
       if (!items || items.length == 0)
         return this.Libraries[library.Name].Status = 'Loading Error'
       console.log(`Loaded ${items.length} items from library ${library.Name}`)
-      
+      this.Libraries[library.Name].Items = items;
+      this.Libraries[library.Name].Count = items.length;
+
       this.saveData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
       this.Libraries[library.Name].Status = 'Loaded';
-      
-      if(!toReagroupd.includes(library.Id))
+
+      if (!toReagroupd.includes(library.Id))
         toReagroupd.push(library.Id);
       return this.Libraries[library.Name];
     });
@@ -431,7 +432,8 @@ class Jellyfin {
         this.getLibraryItemsGroups(libraryId, "Tags").then(tags => this.searchParams.Tags.push(...tags.flat())),
         this.getLibraryItemsGroups(libraryId, "Genres").then(genres => this.searchParams.Genres.push(...genres.flat())),
         this.getLibraryItemsGroups(libraryId, "Studios").then(studios => this.searchParams.Studios.push(...studios.flat())),
-        this.getLibraryItemsGroups(libraryId, "People").then(people => this.searchParams.People.push(...people.flat()))
+        this.getLibraryItemsGroups(libraryId, "People").then(people => this.searchParams.People.push(...people.flat())),
+        this.updateLibraryUserData(libraryId),
       ]);
     }
 
@@ -649,28 +651,27 @@ class Jellyfin {
     }
   }
 
-  async loadLibraryItems(libraryId) {
+  async loadLibraryItems(libraryId, fastLoading = false) {
     if (!this.isAuthenticated) return [];
 
-    const Fields = [
-      "OriginalTitle", "Overview", "Genres", "People", "Studios", "Tags",
-      "DateLastMediaAdded", "RecursiveItemCount", "ChildCount",
-      "MediaSources", "MediaSourceCount"
-    ];
+    const Fields = ["OriginalTitle"];
 
-    if (!this.searchParams.IncludePeople) {
-      const index = Fields.indexOf("People");
-      if (index > -1) Fields.splice(index, 1);
-    }
+    if (!fastLoading)
+      Fields.push(...[
+        "Overview", "Genres", "People", "Studios", "Tags",
+        "DateLastMediaAdded", "RecursiveItemCount", "ChildCount",
+        "MediaSources", "MediaSourceCount"
+      ])
 
     const libraryName = this.libaryNameById(libraryId);
     const librarySize = this.Libraries[libraryName].Count;
-    const loadLimit = Math.min(this.searchParams.loadLimit, librarySize);
+    const loadLimit = fastLoading ? librarySize : Math.min(this.searchParams.loadLimit, librarySize);
     const FieldsText = encodeURIComponent(Fields.join(","));
     const headers = this.headers;
 
     // Ensure fresh container
-    this.Libraries[libraryName].Items = [];
+    // this.Libraries[libraryName].Items = [];
+    const allItems = []
 
     const pendingFetches = [];
 
@@ -687,38 +688,54 @@ class Jellyfin {
           (data, res) => {
             const items = data.Items || [];
 
-            for (const item of items) {
-              // ⛏️ Extract metadata while mutating searchParams
-              if (item.Tags) this.searchParams.Tags.push(...item.Tags.map(t => t.toLowerCase() + '\uFEFF'));
-              if (item.Genres) this.searchParams.Genres.push(...item.Genres.map(g => g.toLowerCase() + '\uFEFF'));
-              if (item.Studios) this.searchParams.Studios.push(...item.Studios.map(s => s.Name.toLowerCase() + '\uFEFF'));
-              if (item.People) this.searchParams.People.push(...item.People.map(p => p.Name.toLowerCase() + '\uFEFF'));
+            if (!fastLoading) {
 
-              this.Libraries[libraryName].Items.push({
-                Id: item.Id,
-                Name: item.Name,
-                ImageId: item.ImageTags?.Primary,
-                PremiereDate: item.PremiereDate,
-                OfficialRating: item.OfficialRating,
-                CommunityRating: item.CommunityRating,
-                ProductionYear: item.ProductionYear,
-                Genres: item.Genres,
-                Studios: item.Studios,
-                Tags: item.Tags,
-                People: item.People,
-                Overview: item.Overview,
-                Type: item.Type,
-                ItemsCount: item.RecursiveItemCount || item.ChildCount || item.MediaSources?.length,
-                UserData: {
-                  IsFavorite: item.UserData?.IsFavorite,
-                  Played: item.UserData?.Played,
-                  PlayCount: item.UserData?.PlayCount,
-                  LastPlayedDate: item.UserData?.LastPlayedDate
-                },
-                originalData: item
-              });
+              for (const item of items) {
+
+                // ⛏️ Extract metadata while mutating searchParams
+                if (item.Tags) this.searchParams.Tags.push(...item.Tags.map(t => t.toLowerCase() + '\uFEFF'));
+                if (item.Genres) this.searchParams.Genres.push(...item.Genres.map(g => g.toLowerCase() + '\uFEFF'));
+                if (item.Studios) this.searchParams.Studios.push(...item.Studios.map(s => s.Name.toLowerCase() + '\uFEFF'));
+                if (item.People) this.searchParams.People.push(...item.People.map(p => p.Name.toLowerCase() + '\uFEFF'));
+
+                allItems.push({
+                  Id: item.Id,
+                  Name: item.Name,
+                  ImageId: item.ImageTags?.Primary,
+                  PremiereDate: item.PremiereDate,
+                  OfficialRating: item.OfficialRating,
+                  CommunityRating: item.CommunityRating,
+                  ProductionYear: item.ProductionYear,
+                  Genres: item.Genres,
+                  Studios: item.Studios,
+                  Tags: item.Tags,
+                  People: item.People,
+                  Overview: item.Overview,
+                  Type: item.Type,
+                  ItemsCount: item.RecursiveItemCount || item.ChildCount || item.MediaSources?.length,
+                  UserData: {
+                    IsFavorite: item.UserData?.IsFavorite,
+                    Played: item.UserData?.Played,
+                    PlayCount: item.UserData?.PlayCount,
+                    LastPlayedDate: item.UserData?.LastPlayedDate
+                  },
+                  originalData: item
+                });
+              }
+            } else {
+              for (const item of items) {
+                allItems.push({
+                  Id: item.Id,
+                  ImageId: item.ImageTags?.Primary,
+                  UserData: {
+                    IsFavorite: item.UserData?.IsFavorite,
+                    Played: item.UserData?.Played,
+                    PlayCount: item.UserData?.PlayCount,
+                    LastPlayedDate: item.UserData?.LastPlayedDate
+                  }
+                });
+              }
             }
-
             resolve(); // ✅ Resolve this page
           },
           (err) => {
@@ -733,7 +750,71 @@ class Jellyfin {
 
     // ⏳ Wait all paginated fetch tasks to complete
     await Promise.all(pendingFetches);
-    return this.Libraries[libraryName].Items;
+    return allItems;
+  }
+
+  async updateLibraryUserData(libraryId) {
+    if (!this.isAuthenticated) return;
+    const libraryName = this.libaryNameById(libraryId);
+    const library = this.Libraries[libraryName];
+    if (!library || !library.Items) {
+      console.warn(`Library ${libraryName} not found or has no items.`);
+      return;
+    }
+
+    const Fields = ["UserData"];
+    const FieldsText = encodeURIComponent(Fields.join(","));
+    const headers = this.headers;
+
+    const allItems = []
+    const pendingFetches = [];
+
+    console.log('Updating UserData for library ' + libraryName + '...')
+    
+
+    const url = `${this.Server.ExternalAddress}/Users/${this.User.Id}/Items?SortBy=IndexNumber&Fields=${FieldsText}&ParentId=${libraryId}`;
+
+    const p = new Promise((resolve, reject) => {
+      this.fetchQueue.fetch(
+        url,
+        { method: "GET", headers },
+        (data, res) => {
+          const items = data.Items || [];
+          for (const item of items) {
+            allItems.push({
+              Id: item.Id,
+              UserData: {
+                IsFavorite: item.UserData?.IsFavorite,
+                Played: item.UserData?.Played,
+                PlayCount: item.UserData?.PlayCount,
+                LastPlayedDate: item.UserData?.LastPlayedDate
+              }
+            });
+          }
+          resolve();
+        },
+        (err) => {
+          this.onFetchError(err);
+          resolve();
+        }
+      );
+    });
+    pendingFetches.push(p);
+    await Promise.all(pendingFetches);
+
+    // Update the UserData for each item in the library
+    library.Items = library.Items.map(existingItem => {
+      const updatedUserData = allItems.find(fetchedItem => fetchedItem.Id === existingItem.Id);
+      if (updatedUserData) {
+        return { ...existingItem, UserData: updatedUserData.UserData };
+      }
+      return existingItem;
+    });
+
+    // Save the updated library data back to IndexedDB
+    await this.saveData(this.Server.Id, libraryId, "result", this.Libraries[libraryName]
+    );
+
   }
 
   makeImageUrl(itemId, width = 480, height = 270, quality = 80) { // Make the image url
