@@ -856,10 +856,12 @@ function fillJellyfinContainerAttr() {
   jellyfinContainer.setAttribute("search-offset", jellyfin.searchParams.offset);
 }
 
-const searchController = new Controller(searchOnLibrary);
-searchOnLibrary = searchController;
-searchOnLibrary.Controller = searchController;
-searchOnLibrary = searchOnLibrary.exec.bind(searchOnLibrary);
+// const searchController = new Controller(searchOnLibrary);
+// searchOnLibrary = searchController;
+// searchOnLibrary.Controller = searchController;
+// searchOnLibrary = searchOnLibrary.exec.bind(searchOnLibrary);
+
+searchOnLibrary = Controller.wrap(searchOnLibrary);
 
 // ======================
 // Event Listeners
