@@ -52,7 +52,7 @@ class Jellyfin {
       Tags: [],
       Genres: [],
       Studios: [],
-      People: [],
+      // People: [],
       Name: "",
       Library: "",
       OfficialRating: "",
@@ -60,7 +60,7 @@ class Jellyfin {
       ProductionYear: null,
       PremiereDate: "",
       limit: 10,
-      loadLimit: 100,
+      loadLimit: 1000,
       offset: 0,
       page: 1,
       hasNextPage: true,
@@ -216,7 +216,7 @@ class Jellyfin {
     await this.clearData(this.Server.Id, "Tags");
     await this.clearData(this.Server.Id, "Genres");
     await this.clearData(this.Server.Id, "Studios");
-    await this.clearData(this.Server.Id, "People");
+    // await this.clearData(this.Server.Id, "People");
     for (const lName in this.Libraries) {
       await this.clearData(this.Server.Id, this.Libraries[lName].Id);
     }
@@ -226,7 +226,7 @@ class Jellyfin {
       Tags: [],
       Genres: [],
       Studios: [],
-      People: [],
+      // People: [],
       Name: "",
       Library: "",
       OfficialRating: "",
@@ -373,7 +373,7 @@ class Jellyfin {
     this.searchParams.Tags = await this.loadData(this.Server.Id, "Tags", "result") || [];
     this.searchParams.Genres = await this.loadData(this.Server.Id, "Genres", "result") || [];
     this.searchParams.Studios = await this.loadData(this.Server.Id, "Studios", "result") || [];
-    this.searchParams.People = await this.loadData(this.Server.Id, "People", "result") || [];
+    // this.searchParams.People = await this.loadData(this.Server.Id, "People", "result") || [];
 
     const promises = data.Items.map(async (library) => {
       const Count = await this.getLibrarySize(library.Id);
@@ -441,10 +441,10 @@ class Jellyfin {
           if(studios.length > 0)
           this.searchParams.Studios = this.searchParams.Studios.concat(...studios)
         }),
-        this.getLibraryItemsGroups(libraryId, "People").then(people => {
-          if(people.length > 0)
-            this.searchParams.People = this.searchParams.People.concat(...people); 
-        }),
+        // this.getLibraryItemsGroups(libraryId, "People").then(people => {
+        //   if(people.length > 0)
+        //     this.searchParams.People = this.searchParams.People.concat(...people); 
+        // }),
         this.updateLibraryUserData(libraryId),
       ]);
     }
@@ -453,13 +453,13 @@ class Jellyfin {
     this.searchParams.Tags = [...new Set(this.searchParams.Tags)].sort().eachWordUp();
     this.searchParams.Genres = [...new Set(this.searchParams.Genres)].sort().eachWordUp();
     this.searchParams.Studios = [...new Set(this.searchParams.Studios)].sort().eachWordUp();
-    this.searchParams.People = [...new Set(this.searchParams.People)].sort().eachWordUp();
+    // this.searchParams.People = [...new Set(this.searchParams.People)].sort().eachWordUp();
 
     // Let's save the Tags, Genres and Studios
     this.saveData(this.Server.Id, "Tags", "result", this.searchParams.Tags);
     this.saveData(this.Server.Id, "Genres", "result", this.searchParams.Genres);
     this.saveData(this.Server.Id, "Studios", "result", this.searchParams.Studios);
-    this.saveData(this.Server.Id, "People", "result", this.searchParams.People);
+    // this.saveData(this.Server.Id, "People", "result", this.searchParams.People);
 
     this.areLibrariesLoaded = true;
     this.events.onLibraryLoad(data);
@@ -670,9 +670,9 @@ class Jellyfin {
 
     if (!fastLoading)
       Fields.push(...[
-        "Overview", "Genres", "People", "Studios", "Tags",
+        "Overview", "Genres", /*"People",*/ "Studios", "Tags",
         "DateLastMediaAdded", "RecursiveItemCount", "ChildCount",
-        "MediaSources", "MediaSourceCount"
+        /*"MediaSources", "MediaSourceCount"*/
       ])
 
     const libraryName = this.libaryNameById(libraryId);
@@ -720,7 +720,7 @@ class Jellyfin {
                   Genres: item.Genres,
                   Studios: item.Studios,
                   Tags: item.Tags,
-                  People: item.People,
+                  // People: item.People,
                   Overview: item.Overview,
                   Type: item.Type,
                   ItemsCount: item.RecursiveItemCount || item.ChildCount || item.MediaSources?.length,
