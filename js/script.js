@@ -956,14 +956,17 @@ window.addEventListener('load', () => {
   drawComposite();
   CreateJellyfin();
 
+  window.memoryLoaded = false;
   window.memory = new pageMemory();
   window.memory.addEvent('onMemoryIsEmpty', () => dummyStart())
+  window.memory.addEvent('onRestoreSucess', () => window.memoryLoaded = true)
+  window.memory.addEvent('onRestoreError', () =>  window.memoryLoaded = true)
   window.memory.init();
 });
 
 
 function cleanMemory() {
-  memory.reset().then(() => location.reload());
+  memory.reset().then(() => jellyfin.cleanDb());
 }
 
 // Others
