@@ -429,10 +429,22 @@ class Jellyfin {
     // do the loop in getLibraryItemsGroups
     for (const libraryId of toReagroupd) {
       await Promise.all([
-        this.getLibraryItemsGroups(libraryId, "Tags").then(tags => this.searchParams.Tags.push(...tags.flat())),
-        this.getLibraryItemsGroups(libraryId, "Genres").then(genres => this.searchParams.Genres.push(...genres.flat())),
-        this.getLibraryItemsGroups(libraryId, "Studios").then(studios => this.searchParams.Studios.push(...studios.flat())),
-        this.getLibraryItemsGroups(libraryId, "People").then(people => this.searchParams.People.push(...people.flat())),
+        this.getLibraryItemsGroups(libraryId, "Tags").then(tags => {
+          if(tags.length > 0)
+            this.searchParams.Tags = this.searchParams.Tags.concat(...tags)
+        }),
+        this.getLibraryItemsGroups(libraryId, "Genres").then(genres => {
+          if(genres.length > 0)
+          this.searchParams.Genres = this.searchParams.Genres.concat(...genres)
+        }),
+        this.getLibraryItemsGroups(libraryId, "Studios").then(studios => {
+          if(studios.length > 0)
+          this.searchParams.Studios = this.searchParams.Studios.concat(...studios)
+        }),
+        this.getLibraryItemsGroups(libraryId, "People").then(people => {
+          if(people.length > 0)
+            this.searchParams.People = this.searchParams.People.concat(...people); 
+        }),
         this.updateLibraryUserData(libraryId),
       ]);
     }
@@ -670,8 +682,7 @@ class Jellyfin {
     const headers = this.headers;
 
     // Ensure fresh container
-    // this.Libraries[libraryName].Items = [];
-    const allItems = []
+    this.Libraries[libraryName].Items ??= [];
 
     const pendingFetches = [];
 
@@ -698,7 +709,7 @@ class Jellyfin {
                 if (item.Studios) this.searchParams.Studios.push(...item.Studios.map(s => s.Name.toLowerCase() + '\uFEFF'));
                 if (item.People) this.searchParams.People.push(...item.People.map(p => p.Name.toLowerCase() + '\uFEFF'));
 
-                allItems.push({
+                this.Libraries[libraryName].Items.push({
                   Id: item.Id,
                   Name: item.Name,
                   ImageId: item.ImageTags?.Primary,
@@ -724,7 +735,7 @@ class Jellyfin {
               }
             } else {
               for (const item of items) {
-                allItems.push({
+                this.Libraries[libraryName].Items.push({
                   Id: item.Id,
                   ImageId: item.ImageTags?.Primary,
                   UserData: {
@@ -750,7 +761,7 @@ class Jellyfin {
 
     // ⏳ Wait all paginated fetch tasks to complete
     await Promise.all(pendingFetches);
-    return allItems;
+    return this.Libraries[libraryName].Items;
   }
 
   async updateLibraryUserData(libraryId) {
@@ -851,31 +862,33 @@ class Jellyfin {
     if (loadingLibraries.length === 0) return;
 
     for (const lib of loadingLibraries) {
-      const progress = Math.min(100, Math.floor((lib.Items.length / lib.Count) * 100));
-      const wrapper = document.createElement("div");
+      try {
+        const progress = Math.min(100, Math.floor((lib.Items.length / lib.Count) * 100));
+        const wrapper = document.createElement("div");
 
-      wrapper.className = "loading-lib-bar";
-      wrapper.style = `
-      background: var(--surface, #1f2937);
-      border-radius: 0.5rem;
-      padding: 0.5rem 1rem;
-      margin-bottom: 0.75rem;
-      box-shadow: var(--shadow-lg, 0 4px 10px rgba(0,0,0,0.3));
-      width: 300px;
-      font-size: 0.85rem;
-      color: var(--text-light, #fff);
-    `;
+        wrapper.className = "loading-lib-bar";
+        wrapper.style = `
+        background: var(--surface, #1f2937);
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        margin-bottom: 0.75rem;
+        box-shadow: var(--shadow-lg, 0 4px 10px rgba(0,0,0,0.3));
+        width: 300px;
+        font-size: 0.85rem;
+        color: var(--text-light, #fff);
+      `;
 
-      wrapper.innerHTML = `
-      <div style="margin-bottom: 0.25rem; font-weight: bold;">
-        ${lib.Name} — ${lib.Items.length} / ${lib.Count}
-      </div>
-      <div style="background: #2d3748; border-radius: 0.25rem; overflow: hidden; height: 0.5rem;">
-        <div style="width: ${progress}%; background: var(--primary, #3b82f6); height: 100%; transition: width 0.3s ease;"></div>
-      </div>
-    `;
+        wrapper.innerHTML = `
+        <div style="margin-bottom: 0.25rem; font-weight: bold;">
+          ${lib.Name} — ${lib.Items.length} / ${lib.Count}
+        </div>
+        <div style="background: #2d3748; border-radius: 0.25rem; overflow: hidden; height: 0.5rem;">
+          <div style="width: ${progress}%; background: var(--primary, #3b82f6); height: 100%; transition: width 0.3s ease;"></div>
+        </div>
+      `;
 
-      container.appendChild(wrapper);
+        container.appendChild(wrapper);
+      } catch (error) {}
     }
 
     // 🌀 Loop to auto-refresh until done
