@@ -60,7 +60,7 @@ class Jellyfin {
       ProductionYear: null,
       PremiereDate: "",
       limit: 10,
-      loadLimit: 1000,
+      loadLimit: 500,
       offset: 0,
       page: 1,
       hasNextPage: true,
