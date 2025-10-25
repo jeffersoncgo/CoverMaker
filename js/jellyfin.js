@@ -650,7 +650,7 @@ class Jellyfin {
     if (!this.isAuthenticated)
       return;
     //https://flik.jcgweb.com.br/Users/33b0af0c69d54da3aac45eb12f635a4e/Items?ParentId=af92f2d68eea947c7f9df41836afb987&Limit=0
-    let response = await fetch(`${this.Server.ExternalAddress}/Users/${this.User.Id}/Items?ParentId=${libraryId}&Limit=0`, {
+    let response = await fetch(`${this.Server.ExternalAddress}/Users/${this.User.Id}/Items?ParentId=${libraryId}&Limit=1`, {
       method: "GET",
       headers: this.headers
     });
