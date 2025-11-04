@@ -1173,6 +1173,10 @@ class Jellyfin {
   }
 
   async setupMeiliSearch() {
+    if(!window.meilisearch) {
+      console.warn("Meilisearch library not loaded. Skipping Meilisearch setup.");
+      return false;
+    }
     await this.checkForMeiliSearch();
     if (!this.Meilisearch.isAvailable)
       return false;
