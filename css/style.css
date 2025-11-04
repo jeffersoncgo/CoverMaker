@@ -49,6 +49,22 @@ h2 {
   margin-bottom: 1.5rem;
 }
 
+.tagline {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin-bottom: 1.5rem;
+}
+
+/* The style of link in the tagline */
+.tagline a {
+  color: var(--primary-light);
+  text-decoration: none;
+}
+
+.tagline a:hover {
+  text-decoration: underline;
+}
+
 
 input, select {
   padding: 0.5rem 0.75rem;
