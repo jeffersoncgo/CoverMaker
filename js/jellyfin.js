@@ -466,27 +466,27 @@ class Jellyfin {
         // if any of the Tags, Genres, Studios or People are empty, this will automatically be added to the updatedLibraries
 
         // add to library.Locations the info locations from the VirtualFolders where VirtualFolder ItemId is = to library.Id
-        if (library.CollectionType == "boxsets") {
-          if(!this.Libraries[library.Name])
-            continue;
-          this.Libraries[library.Name].Status = 'Loaded';
-          this.Libraries[library.Name].Count = 0;
-          toReagroupd.push(library.Id)
-          this.hideLoadingLibraries();
-          continue;
-        }
+        // if (library.CollectionType == "boxsets") {
+        //   if(!this.Libraries[library.Name])
+        //     continue;
+        //   this.Libraries[library.Name].Status = 'Loaded';
+        //   this.Libraries[library.Name].Count = 0;
+        //   toReagroupd.push(library.Id)
+        //   this.hideLoadingLibraries();
+        //   continue;
+        // }
 
         const virtualFolder = this.VirtualFolders.find(vf => vf.ItemId === library.Id);
-        if (virtualFolder) {
+        if (virtualFolder && library.CollectionType == "tvshows") {//We only need for tvshows, to separate series from animes
           library.Locations = virtualFolder.Locations;
         }
+
         
 
         try {
           const loadedData = await this.loadData(this.Server.Id, library.Id, "result");
           if (loadedData) {
             if (loadedData.Count == Count && loadedData.Items.length == Count) {
-              console.log(`${loadedData.Name} loaded from cache.`)
               this.Libraries[library.Name] = loadedData;
               this.Libraries[library.Name].Status = 'Loaded';
               this.Libraries[library.Name].Count = Count;
@@ -495,6 +495,7 @@ class Jellyfin {
               this.Libraries[library.Name].Path = library.Path;
               this.Libraries[library.Name].Locations = library.Locations;
               toReagroupd.push(library.Id);
+              console.log(`${loadedData.Name} loaded from cache.`)
               continue;
             }
           }
@@ -519,13 +520,13 @@ class Jellyfin {
         };
 
         // if Type is boxsets, let's just skip for now
-        if (library.CollectionType == "boxsets") {
-          this.Libraries[library.Name].Status = 'Loaded';
-          this.Libraries[library.Name].Count = 0;
-          toReagroupd.push(library.Id)
-          this.hideLoadingLibraries();
-          continue;
-        }
+        // if (library.CollectionType == "boxsets") {
+        //   this.Libraries[library.Name].Status = 'Loaded';
+        //   this.Libraries[library.Name].Count = 0;
+        //   toReagroupd.push(library.Id)
+        //   this.hideLoadingLibraries();
+        //   continue;
+        // }
 
         this.showLoadingLibraries();
         
@@ -804,8 +805,21 @@ class Jellyfin {
     }
   }
 
+  shouldUseMeiliSearch(libraryId) {
+    const libraryName = this.libaryNameById(libraryId);
+    const library = this.Libraries[libraryName];
+    if (!library)
+      return false;
+    if(!this.Meilisearch.isAvailable)
+      return false;
+    // if(library.CollectionType == "boxsets")
+    //   return false;
+    return true;
+  }
+
   async loadLibraryItems(libraryId, fastLoading = false) {
-    if (this.Meilisearch.isAvailable) {
+    // const IncludeItemsTypes = ["Audio", "Video", "BoxSet", "Book", "Channel", "Movie", "LiveTvChannel", "Playlist", "Series", "TvChannel"]
+    if (this.shouldUseMeiliSearch(libraryId)) {
       return await this.loadLibraryItemsMeiliSearch(libraryId, fastLoading);
     } else {
       return await this.loadLibraryItemsVanilla(libraryId, fastLoading);
@@ -818,10 +832,6 @@ class Jellyfin {
 
     const libraryName = this.libaryNameById(libraryId);
     const library = this.Libraries[libraryName];
-    if (!library || !library.Locations?.length) {
-      console.warn(`Library ${libraryName} has no locations, skipping MeiliSearch load.`);
-      return [];
-    }
 
     const index = this.Meilisearch.Index;
     let loadLimit = this.searchParams.loadLimit;
@@ -840,12 +850,16 @@ class Jellyfin {
     console.log(`🔎 Loading ${libraryName} items via MeiliSearch...`);
 
     // --- Build the STARTS WITH filters dynamically from library.Locations
-    const startsWithFilters = library.Locations
+    let startsWithFilters = "";
+    if(library.Locations?.length > 0) {
+      startsWithFilters = library.Locations
       .map(loc => `(path STARTS WITH "${loc}")`)
       .join(" OR ");
+      startsWithFilters = ` AND (${startsWithFilters})`;
+    }
 
-    const typeFilter = `type = "${this.Meilisearch.TypeMap[library.CollectionType] || 'MediaBrowser.Controller.Entities.TV.Series'}"`;
-    const finalFilter = `(${typeFilter}) AND (${startsWithFilters})`;
+    const typeFilter = `(type = "${this.Meilisearch.TypeMap[library.CollectionType] || 'MediaBrowser.Controller.Entities.TV.Series'}")`;
+    const finalFilter = `${typeFilter} ${startsWithFilters}`;
 
     let offset = 0;
     let totalHits = 0;
@@ -891,10 +905,7 @@ class Jellyfin {
         }
       }
 
-      if (hits.length < loadLimit) {
-        console.log('THIS BROKE HERE')
-        break
-      } // ✅ finished pagination
+      if (hits.length < loadLimit) break;
       offset += loadLimit;
     }
 
