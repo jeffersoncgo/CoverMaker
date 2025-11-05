@@ -914,9 +914,9 @@ class Jellyfin {
       Fields.push(...[
         // "People", //This is way to heavy, take so much time
         "Overview", "Genres", "Studios", "Tags",
-        "DateLastMediaAdded", "RecursiveItemCount", "ChildCount",
-        "MediaSources", "MediaSourceCount",
-        "ParentId", "Path", "Settings"
+        // "DateLastMediaAdded", "RecursiveItemCount", "ChildCount",
+        // "MediaSources", "MediaSourceCount",
+        "ParentId", "Path"
       ])
       
 
