@@ -1,8 +1,8 @@
-# Collection Cover Maker
+# Collection Cover Maker 🎨
 
-## Overview
+Create stunning covers for your media collections with this web-based tool that allows you to design and generate custom composite images. Perfect for organizing movies, TV shows, and more!
 
-Collection Cover Maker is a web-based application that allows you to design and generate custom cover images for your media collections. Whether you're organizing movies, TV shows, or music, this tool helps you create visually appealing covers with various customization options. It can be used as a standalone tool or integrated with Jellyfin to fetch images from your media library.
+🔗 **Live Demo**: [Try it now!](https://jeffersoncgo.github.io/CoverMaker/)
 
 ## Examples
 <details>
@@ -28,134 +28,208 @@ Collection Cover Maker is a web-based application that allows you to design and 
 
 ![Image](https://github.com/user-attachments/assets/dba48f0d-cebe-4ac5-849f-c6923c2836c5)
 
-
 </details>
 
+## 📖 Overview
 
-## Features
+Collection Cover Maker is an intuitive web application that helps you create professional-looking cover images for your media collections. Whether you're organizing movies, TV shows, or music, this tool provides a wide range of customization options and seamless integration with Jellyfin media server.
 
-*   **Create Composite Images:** Combine multiple images into a single cover.
-*   **Flexible Image Sourcing:**
-    *   Load images from your local computer.
-    *   Drag and drop images directly into slots.
-    *   Paste images from your clipboard.
-*   **Jellyfin Integration:**
-    *   Connect to your Jellyfin server.
-    *   Browse your Jellyfin libraries.
-    *   Fetch existing covers or images directly from your Jellyfin instance to use in your composite image.
-    *   Randomize images from your Jellyfin library to fill slots.
-*   **Customization Options:**
-    *   **Text Overlay:** Add custom text with adjustable font, size, color, boldness, and opacity.
-    *   **Image Layout:**
-        *   Define the number of image slots.
-        *   Adjust margins between images.
-        *   Apply blur effects to image reflections.
-        *   Control reflection distance and scale.
-        *   Adjust overall poster scale.
-    *   **Overlay Effects:** Control the opacity of a global overlay on the composite image.
-*   **Image Management:**
-    *   Pin images to slots to prevent them from being changed.
-    *   Easily clear or delete individual image slots.
-    *   Move images between slots.
-    *   Open individual slot images or the final composite image in a new tab.
-*   **Export:** Download your created cover as a PNG file.
-*   **Persistent Settings:** Your settings (like Jellyfin server details, UI preferences) are saved in your browser's local storage for convenience.
+## ✨ Features
 
-## How to Use
+### 🎯 Core Features
+- **Create Composite Images**: Combine multiple images into a single stunning cover
+- **Real-time Preview**: See your changes instantly in the canvas preview
+- **Export Options**: Download as PNG or open in a new tab
+- **Flexible Image Sources**:
+  - Local computer files
+  - Drag and drop support
+  - Clipboard paste functionality
+  - Jellyfin media library integration
 
-1.  **Open the Application:** Access the Collection Cover Maker by opening the `index.html` file in your web browser or by visiting the live application URL (if available).
+### 🛠️ Image Management
+- **Multiple Image Slots**:
+  - Add/remove slots dynamically
+  - Pin images to prevent changes
+  - Move images between slots
+  - Clear individual slots
+  - Random image selection
+- **Drag & Drop Support**:
+  - Reorder images between slots
+  - Import from local files
+  - Move covers from Jellyfin panel
 
-2.  **Adding Images to Slots:**
-    *   **Image Slots Tab:** This is where you manage the images that will form your composite cover.
-    *   **Add Slots:** Click the `+` icon in the "Image Slots" controls to add more image slots. The canvas will automatically adjust to accommodate the number of slots.
-    *   **Load Local Images:**
-        *   Click the "Load Local Image" icon (looks like a picture) on an individual slot to open a file dialog and select an image from your computer.
-        *   Alternatively, you can drag and drop an image file from your computer directly onto a slot.
-        *   You can also paste an image from your clipboard (Ctrl+V or Cmd+V).
-    *   **Using Jellyfin Images (Optional):**
-        *   **Login:** Click the "Login to Jellyfin" button. Enter your Jellyfin server URL, username, and password. Click "Connect".
-        *   **Browse Libraries:** Once connected, the right-side panel will activate. Click the "Load Libraries" icon (looks like a film strip) to display your Jellyfin libraries.
-        *   **Select a Library:** Click on a library banner to view its items.
-        *   **Search:** Use the search bar to find specific items within the selected library.
-        *   **Add to Slot:** Click on an item's cover in the Jellyfin panel to add it to the next available image slot on the left. You can also drag and drop covers from the Jellyfin panel to a specific slot.
-        *   **Randomize:** Use the "Randomize Slot Image" icon (circular arrows) on a slot to fill it with a random image from your currently selected Jellyfin library/search. Use the "Fill Slots Randomly" icon in the "Image Slots" controls to fill all unpinned slots.
+### 🎨 Customization Options
+- **Text Overlay**:
+  - Custom text
+  - Font selection
+  - Size adjustment
+  - Color picker
+  - Bold option
+  - Opacity control
+- **Image Layout**:
+  - Adjustable margins
+  - Reflection effects
+  - Blur control
+  - Scale settings
+  - Global overlay opacity
 
-3.  **Arranging and Managing Images:**
-    *   **Move Images:** Drag and drop a slot to reorder it. Alternatively, use the up/down arrow icons on each slot.
-    *   **Pin Images:** Click the thumbtack icon on a slot to "pin" an image. Pinned images won't be affected by "Fill Slots Randomly" or if you try to add another image to a filled slot without a specific target.
-    *   **Clear/Delete Slots:**
-        *   Click the eraser icon on a slot to clear its image.
-        *   Click the trash can icon on a slot to delete the slot itself.
-        *   Use the "Clear All Slots" icon (large eraser) in the "Image Slots" controls to clear images from all slots.
-    *   **Open in New Tab:** Click the "Open in New Tab" icon (box with an arrow) on a slot to view that individual image in a new browser tab.
+### 🔌 Jellyfin Integration
+- **Server Connection**:
+  - Secure authentication
+  - Library browsing
+  - Image search
+  - Fast loading with MeiliSearch support
+- **Library Management**:
+  - Browse all libraries
+  - Search functionality
+  - Random image selection
+  - Pagination controls
+  - Adjustable results limit
 
-4.  **Customizing the Composite Image (Settings Tab):**
-    *   Navigate to the **Settings** tab on the left panel.
-    *   **Overlay Text:**
-        *   `Overlay Text`: Enter the text you want to display on the cover.
-        *   `Font`: Choose a font style.
-        *   `Font Size (px)`: Set the size of the text.
-        *   `Font Color`: Pick a color for the text.
-        *   `Bold`: Check to make the text bold.
-        *   `Font Opacity (0-1)`: Adjust the transparency of the text.
-    *   **Image Styling:**
-        *   `Margin Size (px)`: Set the space between images on the canvas.
-        *   `Blur Size (px)`: Control the amount of blur for the image reflections.
-        *   `Reflex Distance (0-1)`: Adjust how far the reflection extends.
-        *   `Reflex Scale (0-1)`: Control the intensity/visibility of the reflection.
-        *   `Overlay Opacity (0-1)`: Set the transparency of the dark overlay on the entire composite image.
-        *   `Poster Scale (0-10)`: Adjust the vertical scale of the primary images.
+## 🚀 Getting Started
 
-5.  **Previewing the Composite Image:**
-    *   The central canvas area displays a live preview of your composite image as you make changes.
+### Online Version
+Visit [https://jeffersoncgo.github.io/CoverMaker/](https://jeffersoncgo.github.io/CoverMaker/) to use the tool directly in your browser.
 
-6.  **Exporting Your Cover:**
-    *   Once you are satisfied with your design:
-        *   Click the **"Export Composite Image"** button to download the cover as a PNG file.
-        *   Click the **"Open Composite in New Tab"** button to view the full-resolution composite image in a new browser tab.
+### Local Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/jeffersoncgo/CoverMaker.git
+   ```
+2. Open `index.html` in your web browser
+3. Start creating your covers!
 
-7.  **Managing Settings:**
-    *   **Clean Saved Memory:** Click this button in the header to clear all saved settings from your browser's local storage (Jellyfin credentials, UI settings, etc.) and restore the application to its default state.
+## 🛠️ Usage
 
-## Local Setup
+### Basic Usage
+1. **Start Creating**:
+   - Add image slots using the '+' button
+   - Import images through:
+     - Local file selection
+     - Drag and drop
+     - Clipboard paste
+     - Jellyfin library (if connected)
 
-This project is a static web application and does not require a complex build process or backend server to run locally.
+2. **Customize Your Cover**:
+   - Arrange images by dragging
+   - Add text overlay
+   - Adjust visual effects
+   - Fine-tune layout settings
 
-**Prerequisites:**
+3. **Export Your Work**:
+   - Download as PNG
+   - Preview in new tab
+   - Use in your media collection
 
-*   A modern web browser (e.g., Chrome, Firefox, Edge, Safari).
-*   Git (optional, for cloning the repository).
+### Jellyfin Integration
+1. **Connect to Jellyfin**:
+   - Click "Login to Jellyfin"
+   - Enter server details
+   - Provide credentials
 
-**Steps:**
+2. **Browse Your Library**:
+   - Select a library
+   - Search for media
+   - Use filters and sorting
+   - Set display limits
 
-1.  **Get the Code:**
-    *   **Clone the repository (recommended):**
-        ```bash
-        git clone https://github.com/jeffersoncgo/CoverMaker.git
-        cd CoverMaker
-        ```
-    *   **Or Download ZIP:** Download the project ZIP file from GitHub and extract it.
+3. **Use Media Covers**:
+   - Click to add to slots
+   - Drag to specific positions
+   - Use random selection
 
-2.  **Run the Application:**
-    *   Navigate to the project directory.
-    *   Open the `index.html` file in your web browser.
+## 📦 Technologies
 
-That's it! The application should now be running locally.
+- **Frontend**:
+  - HTML5
+  - CSS3
+  - JavaScript (ES6+)
+  - Canvas API
+  - Drag and Drop API
+  - File API
 
-## Live Application
+- **Jellyfin Integration**:
+  - Jellyfin API
+  - MeiliSearch support
+  - Async/await pattern
+  - REST API integration
 
-You can access the live version of Collection Cover Maker here:
-[https://jeffersoncgo.github.io/CoverMaker/](https://jeffersoncgo.github.io/CoverMaker/)
+## 🔧 Configuration
 
-## Contributing
+### Appearance Settings
+- Font styles and sizes
+- Color schemes
+- Shadow effects
+- Layout dimensions
 
-Contributions are welcome! If you have ideas for new features, find a bug, or want to improve the code, please feel free to:
+### Performance Options
+- Image loading strategies
+- Caching mechanisms
+- MeiliSearch optimization
 
-*   **Open an Issue:** Report bugs or suggest features by opening an issue on the GitHub repository.
-*   **Submit a Pull Request:** If you've made changes you'd like to contribute, please fork the repository and submit a pull request with a clear description of your changes.
+## ✅ Requirements
 
-Please try to follow the existing code style and add comments where necessary.
+- Modern web browser with JavaScript enabled
+- Internet connection for Jellyfin integration
+- (Optional) Jellyfin server for media library access
 
-## License
+## 🤝 Contributing
 
-This project is currently not distributed under a specific license. Please refer to the repository owner for licensing information or consider adding a `LICENSE` file to the project.
+1. Fork the repository
+2. Create a new branch
+3. Make your changes
+4. Submit a pull request
+
+## 📄 Documentation
+
+- Project structure follows standard web conventions
+- Code is extensively commented
+- Modular architecture for easy maintenance
+- Event-driven design for user interactions
+
+## ❤️ Acknowledgements
+
+- [Jellyfin](https://jellyfin.org/) for media server integration
+- [MeiliSearch](https://www.meilisearch.com/) for fast search capabilities
+- [Font Awesome](https://fontawesome.com/) for icons
+
+## 🗂️ Repository Structure
+
+```
+CoverMaker/
+├── css/
+│   └── style.css           # Main stylesheet
+├── images/                 # Image assets
+├── js/
+│   ├── jellyfin.js        # Jellyfin integration
+│   ├── script.js          # Main application logic
+│   ├── windowsHandle.js   # Window management
+│   └── vendor/            # Third-party libraries
+├── index.html             # Main application entry
+└── README.md             # Project documentation
+```
+
+## 🔗 Flow Chart
+
+```mermaid
+graph TD
+    A[User Input] --> B{Source Type}
+    B -->|Local| C[File System]
+    B -->|Jellyfin| D[Media Server]
+    B -->|Clipboard| E[Paste Handler]
+    
+    C --> F[Image Processing]
+    D --> F
+    E --> F
+    
+    F --> G[Canvas Rendering]
+    G --> H[Apply Effects]
+    H --> I[Export Options]
+    
+    I -->|Download| J[PNG File]
+    I -->|Preview| K[New Tab]
+```
+
+---
+
+📝 Last updated: November 7, 2025
