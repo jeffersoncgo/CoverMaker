@@ -24,7 +24,7 @@ const Setup = {
   "Cover": {
     width: 270,
     height: 480,
-    quality: 90,
+    quality: 60
   },
   "Library": {
     loadedLibrary: null
@@ -32,7 +32,8 @@ const Setup = {
   "Images": {
     "loading": "images/loading.gif",
     "error": "images/error.png",
-  }
+  },
+  "loadingType": 'lazy'
 }
 
 // ======================
@@ -158,8 +159,20 @@ function SlotImageOnLoad(el) {
 };
 
 function SlotImageOnError(preview) {
-  // preview.parentElement.style.display = "none";
-  preview.src = Setup.Images.error;
+  jellyfin.findByItemId(preview.getAttribute('item-id')).then(async resp => {
+    const { Library, Item } = resp;
+    if (Library && Item) {
+      jellyfin.removeLibraryItem(Library.Id, Item.Id);
+      preview.parentElement.remove();
+      // jellyfin.searchItems(null, null, null);
+      jellyfin.searchItems(jellyfin.searchParams.Name, jellyfin.searchParams.Library, jellyfin.searchParams.query).then(covers => {
+        if (covers)
+          fillCovers(covers);
+      })
+    } else {
+      preview.src = Setup.Images.error;
+    }
+  })
 };
 
 // ======================
@@ -398,6 +411,8 @@ function selectImageToSlot(cover) {
 }
 
 function addVideoCover(item) {
+  if (!item) return;
+  
   const clone = coverTemplate.content.cloneNode(true);
   const preview = clone.querySelector('.preview');
   const label = clone.querySelector('label');
@@ -405,6 +420,7 @@ function addVideoCover(item) {
   const image = jellyfin.makeImageUrl(item.Id, Setup.Cover.width, Setup.Cover.height, Setup.Cover.quality)
   preview.setAttribute('item-id', item.Id);
   preview.setAttribute('item-name', item.Name);
+  preview.setAttribute('loading', Setup.loadingType)
   preview.src = image;
   preview.onclick = () => selectImageToSlot(preview);
   jellyfinContainer.appendChild(clone);
@@ -418,7 +434,7 @@ function addLibraryBanner(id, name) {
   const image = jellyfin.makeImageUrl(id, Setup.Banner.width, Setup.Banner.height, Setup.Banner.quality)
   preview.setAttribute('library-id', id);
   preview.setAttribute('library-name', name);
-  preview.src = Setup.Images.loading;
+  preview.setAttribute('loading', Setup.loadingType);
   preview.src = image;
 
   preview.onclick = () => selectLibrary(preview);
@@ -684,9 +700,11 @@ function CreateJellyfin() {
     onServerSetupError: () => (OnFail("Server is offline. Please check the address.")),
     onLoginSuccess: () => {
       hideWindow("loginBox");
+
       document.getElementById("loginBtn").setAttribute('logged-in', 'true')      
       document.querySelector("#rightSide").style.display = "block";
       document.querySelector("#jellyfinContent").style.display = "block";
+      setTimeout(() => Setup.loadingType = window.jellyfin.Server.Speed.time > 100 ? 'lazy' : 'eager', 200);
     },
     onLibraryLoad: () => {
       makeDetailList(jellyfinsearchInput, jellyfin.searchParams.Genres);

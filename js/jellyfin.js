@@ -52,7 +52,6 @@ class Jellyfin {
       Tags: [],
       Genres: [],
       Studios: [],
-      // People: [],
       Name: "",
       Library: "",
       OfficialRating: "",
@@ -64,11 +63,11 @@ class Jellyfin {
       offset: 0,
       page: 1,
       hasNextPage: true,
-      sortBy: "Name", // Random, Name, OfficialRating, CommunityRating, ProductionYear, PremiereDate
-      order: "asc", // asc, desc
+      sortBy: "Name", 
+      order: "asc",
     }
 
-    this.currentSearchFilter = null //Will only be set after the first query
+    this.currentSearchFilter = null;
 
     this.Libraries = {}
 
@@ -87,8 +86,6 @@ class Jellyfin {
     this.searchItems = this.searchItems.exec.bind(this.searchItems);
     this.searchItems.Controller = this.Controller;
 
-    // this.searchItems = Controller.wrap(this.searchItems);
-
     this.regex = {
       title: /^(?<title>.+?)\s+\(\d{4}\)\s+\[.*?=.+?\]/,
       year: /\((?<year>\d{4})\)/,
@@ -100,7 +97,6 @@ class Jellyfin {
 
     this.VirtualFolders = [];
 
-    // Our New Melisearch Integration, for faster queries
     this.Meilisearch = {
       "isAvailable": false,
       "Id": null,
@@ -120,14 +116,12 @@ class Jellyfin {
   }
 
   async init() {
-    // Get first the public info of the server
     await this.getPublicInfo();
     if (!this.Server.isOnline)
       throw new Error("Server is offline. Please check the address.")
 
     await this.setFastestAddress();
 
-    // If the server is online, then we can try to login
     if (this.User.Username && this.User.Pw) {
       this.login().then(async () => {
         this.isAuthenticated = true;
@@ -172,17 +166,14 @@ class Jellyfin {
     return new Promise((resolve, reject) => {
       let db;
 
-      // First check if the store exists
       const checkRequest = indexedDB.open(dbName);
       checkRequest.onsuccess = () => {
         db = checkRequest.result;
 
-        // If store exists, return it
         if (db.objectStoreNames.contains(storeName)) {
           return resolve(db);
         }
 
-        // Store missing → close db and reopen with bump
         const version = db.version + 1;
         db.close();
 
@@ -219,12 +210,12 @@ class Jellyfin {
 
       req.onsuccess = () => {
         const result = req.result;
-        if (!result) return resolve(null); // Not found
+        if (!result) return resolve(null);
         try {
           resolve(JSON.parse(result));
         } catch (error) {
           console.error("Error decompressing or parsing data:", error);
-          resolve(null); // Resolve with null on error
+          resolve(null); 
         }
       };
 
@@ -247,7 +238,6 @@ class Jellyfin {
     await this.clearData(this.Server.Id, "Tags");
     await this.clearData(this.Server.Id, "Genres");
     await this.clearData(this.Server.Id, "Studios");
-    // await this.clearData(this.Server.Id, "People");
     for (const lName in this.Libraries) {
       await this.clearData(this.Server.Id, this.Libraries[lName].Id);
     }
@@ -257,7 +247,6 @@ class Jellyfin {
       Tags: [],
       Genres: [],
       Studios: [],
-      // People: [],
       Name: "",
       Library: "",
       OfficialRating: "",
@@ -269,8 +258,8 @@ class Jellyfin {
       offset: 0,
       page: 1,
       hasNextPage: true,
-      sortBy: "Name", // Random, Name, OfficialRating, CommunityRating, ProductionYear, PremiereDate
-      order: "asc", // asc, desc
+      sortBy: "Name",
+      order: "asc",
       PlayedOnly: false,
       UnplayedOnly: false,
     }
@@ -311,18 +300,15 @@ class Jellyfin {
         this.onFetchError(response);
         this.events.onServerSetupError(response);
       } else {
-        // Fallback for fetch-level or network errors
         this.onFetchError(error);
         this.events.onServerSetupError(error);
       }
 
-      return null; // Optional: signal failure to caller
+      return null; 
     }
   }
 
   async setFastestAddress() {
-    // Check external Address and LocalAddress, to see wich one is reachable, and the fastest
-    // do the code
     const controller = new AbortController();
     const signal = controller.signal;
     signal.timeout = 5000;
@@ -330,15 +316,13 @@ class Jellyfin {
     const checkAddress = async (address) => {
       try {
         const start = performance.now();
-        const response = await fetch(`${address}/System/Info/Public`, { method: "GET", signal: signal }); // 5-second timeout
+        const response = await fetch(`${address}/System/Info/Public`, { method: "GET", signal: signal });
         if (response.ok) {
           const end = performance.now();
-          // send and abort to the signal, so the others that use the same signal stop
           controller.abort();
           return { address, time: end - start, reachable: true };
         }
       } catch (error) {
-        // console.warn(`Address ${address} not reachable or timed out:`, error);
       }
       return { address, time: Infinity, reachable: false };
     };
@@ -363,6 +347,7 @@ class Jellyfin {
 
     if (fastestResult.reachable) {
       this.Server.Address = fastestResult.address;
+      this.Server.Speed = fastestResult;
     } else {
       console.warn("No reachable server address found among the provided options.");
       this.Server.isOnline = false;
@@ -418,11 +403,11 @@ class Jellyfin {
     }
   }
 
-  libraryIdByName(name) { // Get the library id by name
+  libraryIdByName(name) {
     return this.Libraries[name] ? this.Libraries[name].Id : null;
   }
 
-  libaryNameById(id) { // Get the library name by id
+  libaryNameById(id) {
     for (const lId in this.Libraries) {
       if (this.Libraries[lId].Id === id)
         return this.Libraries[lId].Name;
@@ -433,7 +418,6 @@ class Jellyfin {
   async getLibraries() {
     if (!this.isAuthenticated) return;
 
-    // Start a variable, so we can know the time it run
     const startTime = performance.now();
     const response = await fetch(`${this.Server.Address}/UserViews?userId=${this.User.Id}`, {
       method: "GET",
@@ -447,41 +431,24 @@ class Jellyfin {
 
     const data = await response.json();
 
-    // We get the VirtualFolders here, so we can actually add then to the correct library
     await this.getVirtualFolders();
 
     this.Libraries = {};
     let toReagroupd = [];
 
 
-    // Try to load the Tags, Genres, Studios and People
     this.searchParams.Tags = await this.loadData(this.Server.Id, "Tags", "result") || [];
     this.searchParams.Genres = await this.loadData(this.Server.Id, "Genres", "result") || [];
     this.searchParams.Studios = await this.loadData(this.Server.Id, "Studios", "result") || [];
-    // this.searchParams.People = await this.loadData(this.Server.Id, "People", "result") || [];
 
     for (let index = 0; index < data.Items.length; index++) {
       const library = data.Items[index];
       const Count = await this.getLibrarySize(library.Id);
-        // if any of the Tags, Genres, Studios or People are empty, this will automatically be added to the updatedLibraries
 
-        // add to library.Locations the info locations from the VirtualFolders where VirtualFolder ItemId is = to library.Id
-        // if (library.CollectionType == "boxsets") {
-        //   if(!this.Libraries[library.Name])
-        //     continue;
-        //   this.Libraries[library.Name].Status = 'Loaded';
-        //   this.Libraries[library.Name].Count = 0;
-        //   toReagroupd.push(library.Id)
-        //   this.hideLoadingLibraries();
-        //   continue;
-        // }
 
         const virtualFolder = this.VirtualFolders.find(vf => vf.ItemId === library.Id);
-        if (virtualFolder && library.CollectionType == "tvshows") {//We only need for tvshows, to separate series from animes
+        if (virtualFolder && library.CollectionType == "tvshows")
           library.Locations = virtualFolder.Locations;
-        }
-
-        
 
         try {
           const loadedData = await this.loadData(this.Server.Id, library.Id, "result");
@@ -519,19 +486,9 @@ class Jellyfin {
           Locations: library.Locations,
         };
 
-        // if Type is boxsets, let's just skip for now
-        // if (library.CollectionType == "boxsets") {
-        //   this.Libraries[library.Name].Status = 'Loaded';
-        //   this.Libraries[library.Name].Count = 0;
-        //   toReagroupd.push(library.Id)
-        //   this.hideLoadingLibraries();
-        //   continue;
-        // }
-
         this.showLoadingLibraries();
         
         this.Libraries[library.Name].Count = Count;
-        // return;
         const items = await this.loadLibraryItems(library.Id);
         if (!items || items.length == 0) {
           this.Libraries[library.Name].Status = 'Loading Error';
@@ -546,13 +503,8 @@ class Jellyfin {
 
         if (!toReagroupd.includes(library.Id))
           toReagroupd.push(library.Id);
-
-        // For debug porposes, i only need the first one to run, break it here
-        // break;
     }
 
-    // For each getLibraryItemsGroups, runs the getLibraryItemsGroups for Tags, Genres, Studios and People
-    // do the loop in getLibraryItemsGroups
     for (const libraryId of toReagroupd) {
       await Promise.all([
         this.getLibraryItemsGroups(libraryId, "Tags").then(tags => {
@@ -567,32 +519,85 @@ class Jellyfin {
           if(studios.length > 0)
           this.searchParams.Studios = this.searchParams.Studios.concat(...studios)
         }),
-        // this.getLibraryItemsGroups(libraryId, "People").then(people => {
-        //   if(people.length > 0)
-        //     this.searchParams.People = this.searchParams.People.concat(...people); 
-        // }),
         this.updateLibraryUserData(libraryId),
       ]);
     }
 
-    // Deduplicate & sanitize metadata
     this.searchParams.Tags = [...new Set(this.searchParams.Tags)].sort().eachWordUp();
     this.searchParams.Genres = [...new Set(this.searchParams.Genres)].sort().eachWordUp();
     this.searchParams.Studios = [...new Set(this.searchParams.Studios)].sort().eachWordUp();
-    // this.searchParams.People = [...new Set(this.searchParams.People)].sort().eachWordUp();
 
-    // Let's save the Tags, Genres and Studios
     this.saveData(this.Server.Id, "Tags", "result", this.searchParams.Tags);
     this.saveData(this.Server.Id, "Genres", "result", this.searchParams.Genres);
     this.saveData(this.Server.Id, "Studios", "result", this.searchParams.Studios);
-    // this.saveData(this.Server.Id, "People", "result", this.searchParams.People);
 
     this.areLibrariesLoaded = true;
     this.events.onLibraryLoad(data);
+
+   
+    
+
     const endTime = performance.now();
     this.hideLoadingLibraries()
     console.log(`All libraries loaded in ${((endTime - startTime) / 1000).toFixed(2)} seconds.`);
     return data;
+  }
+
+  makeLibrarieAll() {
+    this.Libraries['_all_'] = {
+      Id: '_all_',
+      Name: 'All',
+      Items: [],
+      Count: 0,
+      Status: 'Loaded',
+      CollectionType: 'All',
+      Path: 'All',
+      Locations: [],
+      Type: 'All'
+    };
+
+    for (const lName in this.Libraries) {
+      if (lName === '_all_') continue;
+      this.Libraries['_all_'].Items.push(...this.Libraries[lName].Items);
+      this.Libraries['_all_'].Count += this.Libraries[lName].Count;
+    }
+  }
+
+
+  async findInLibraryByItemId(library, itemId) {
+    const libraryName = this.libaryNameById(library);
+    const lib = this.Libraries[libraryName];
+    if (!lib || !lib.Items) {
+      console.warn(`Library ${libraryName} not found or has no items.`);
+      return null;
+    }
+    return lib.Items.find(item => item.Id === itemId);
+  }
+  
+  async findByItemId(itemId) {
+    let Library = null;
+    let Item = null;
+    for (const lName in this.Libraries) {
+      const foundItem = await this.findInLibraryByItemId(this.Libraries[lName].Id, itemId);
+      if (foundItem) {
+        Library = this.Libraries[lName];
+        Item = foundItem;
+        break;
+      }
+    }
+    return { Library, Item };
+  }
+
+  removeLibraryItem(library, itemId) {
+    const libraryName = this.libaryNameById(library);
+    const lib = this.Libraries[libraryName];
+    if (!lib || !lib.Items) {
+      console.warn(`Library ${libraryName} not found or has no items.`);
+      return;
+    }
+    lib.Items = lib.Items.filter(item => item.Id !== itemId);
+    lib.Count = lib.Items.length;
+    this.saveData(this.Server.Id, library, "result", lib);
   }
 
   async nextPage() {
@@ -639,6 +644,7 @@ class Jellyfin {
 
 
   async searchItems(Name, library, query) {
+    const orgQuery = query;
     if (!query) {
       query = {}
       if (Name)
@@ -648,7 +654,7 @@ class Jellyfin {
     }
 
 
-    this.searchParams = { ...this.searchParams, ...query };
+    this.searchParams = { ...this.searchParams, ...query, query: orgQuery  };
 
     if (!this.areLibrariesLoaded) {
       const limit = 20;
@@ -664,7 +670,6 @@ class Jellyfin {
       return [];
     }
 
-    // Validate library exists
     if (this.searchParams.Library && (!this.Libraries?.[this.searchParams.Library]?.Items)) {
       this.events.onSearchFinish([])
       return [];
@@ -677,7 +682,6 @@ class Jellyfin {
       for (const lName in this.Libraries)
         items = items.concat(this.Libraries[lName].Items)
 
-    // If SearchParams has PlayedOnly or UnplayedOnly we will filter by it
     if (this.searchParams.PlayedOnly) {
       items = items.filter(this.isPlayed);
     } else if (this.searchParams.UnplayedOnly) {
@@ -686,7 +690,6 @@ class Jellyfin {
 
     items = await searchInArray(items, this.searchParams.Name)
 
-    // Sort items
     const sortKey = this.searchParams.sortBy;
     if (sortKey === "Random") {
       items = items.sort(() => 0.5 - Math.random());
@@ -710,7 +713,6 @@ class Jellyfin {
           return valA.getTime() - valB.getTime();
         }
 
-        // fallback
         return 0;
       });
     }
@@ -731,7 +733,7 @@ class Jellyfin {
     }
     try {
       const response = await fetch(`${this.Server.Address}/Items/${item.Id}/Refresh?Recursive=${Recursive}&ImageRefreshMode=${ImageRefreshMode}&MetadataRefreshMode=${MetadataRefreshMode}&ReplaceAllImages=${ReplaceAllImages}&RegenerateTrickplay=${RegenerateTrickplay}&ReplaceAllMetadata=${ReplaceAllMetadata}`, {
-        method: "POST", // Changed to POST as per the provided curl example
+        method: "POST",
         headers: this.headers,
         body: null,
         credentials: "include",
@@ -761,7 +763,6 @@ class Jellyfin {
     }
 
     const functions = {
-      People: p => (p.Name?.toLowerCase() || p.toLowerCase()) + '\uFEFF',
       Studios: s => (s.Name?.toLowerCase() || s.toLowerCase()) + '\uFEFF',
       Genres: g => g.toLowerCase() + '\uFEFF',
       Tags: t => t.toLowerCase() + '\uFEFF',
@@ -812,13 +813,10 @@ class Jellyfin {
       return false;
     if(!this.Meilisearch.isAvailable)
       return false;
-    // if(library.CollectionType == "boxsets")
-    //   return false;
     return true;
   }
 
   async loadLibraryItems(libraryId, fastLoading = false) {
-    // const IncludeItemsTypes = ["Audio", "Video", "BoxSet", "Book", "Channel", "Movie", "LiveTvChannel", "Playlist", "Series", "TvChannel"]
     if (this.shouldUseMeiliSearch(libraryId)) {
       return await this.loadLibraryItemsMeiliSearch(libraryId, fastLoading);
     } else {
@@ -841,15 +839,13 @@ class Jellyfin {
       loadLimit = 1000;
 
     if (loadLimit > 1000)
-      loadLimit = 1000; //Meilisearch 1000 rows Cap
-
-    // Ensure Items container exists
+      loadLimit = 1000;
+    
     this.Libraries[libraryName].Items ??= [];
     this.Libraries[libraryName].Items.length = 0;
 
     console.log(`🔎 Loading ${libraryName} items via MeiliSearch...`);
 
-    // --- Build the STARTS WITH filters dynamically from library.Locations
     let startsWithFilters = "";
     if(library.Locations?.length > 0) {
       startsWithFilters = library.Locations
@@ -875,7 +871,6 @@ class Jellyfin {
       const hits = result.hits || [];
       totalHits += hits.length;
 
-      // Log where a message, so we know, the offset and the amount to load
       console.log(`MeiliSearch: Loading ${hits.length} items from offset ${offset}. Total hits so far: ${totalHits}`);
 
       for (const hit of hits) {
@@ -893,7 +888,6 @@ class Jellyfin {
             originalData: hit
           });
 
-          // Collect metadata for filters (Genres, Studios, Tags)
           if (hit.tags) this.searchParams.Tags.push(...hit.tags.map(t => t.toLowerCase() + '\uFEFF'));
           if (hit.genres) this.searchParams.Genres.push(...hit.genres.map(g => g.toLowerCase() + '\uFEFF'));
           if (hit.studios) this.searchParams.Studios.push(...hit.studios.map(s => s.toLowerCase() + '\uFEFF'));
@@ -922,13 +916,7 @@ class Jellyfin {
     const IncludeItemsTypes = ["Audio", "Video", "BoxSet", "Book", "Channel", "Movie", "LiveTvChannel", "Playlist", "Series", "TvChannel"]
 
     if (!fastLoading)
-      Fields.push(...[
-        // "People", //This is way to heavy, take so much time
-        "Overview", "Genres", "Studios", "Tags",
-        // "DateLastMediaAdded", "RecursiveItemCount", "ChildCount",
-        // "MediaSources", "MediaSourceCount",
-        "ParentId", "Path"
-      ])
+      Fields.push(...[ "Overview", "Genres", "Studios", "Tags","ParentId", "Path" ])
       
 
     const libraryName = this.libaryNameById(libraryId);
@@ -938,10 +926,7 @@ class Jellyfin {
     const IncludeItemsTypesText = encodeURIComponent(IncludeItemsTypes.join(","));
     const headers = this.headers;
 
-    // Ensure fresh container
     this.Libraries[libraryName].Items ??= [];
-
-    // const pendingFetches = [];
 
     for (let startIndex = 0; startIndex < librarySize; startIndex += loadLimit) {
       let ncount = startIndex + loadLimit;
@@ -952,8 +937,6 @@ class Jellyfin {
 
       const url = `${this.Server.Address}/Users/${this.User.Id}/Items?SortBy=IndexNumber&Fields=${FieldsText}&ImageTypeLimit=1&EnableImageTypes=Primary&ParentId=${libraryId}&Limit=${loadLimit}&startIndex=${startIndex}&includeItemTypes=${IncludeItemsTypesText}`;
 
-      // Wrap each fetch task into a Promise to await later
-      // const p = new Promise((resolve, reject) => {
       await new Promise((resolve, reject) => {
         this.fetchQueue.fetch(
           url,
@@ -965,11 +948,9 @@ class Jellyfin {
 
               for (const item of items) {
 
-                // ⛏️ Extract metadata while mutating searchParams
                 if (item.Tags) this.searchParams.Tags.push(...item.Tags.map(t => t.toLowerCase() + '\uFEFF'));
                 if (item.Genres) this.searchParams.Genres.push(...item.Genres.map(g => g.toLowerCase() + '\uFEFF'));
                 if (item.Studios) this.searchParams.Studios.push(...item.Studios.map(s => s.Name.toLowerCase() + '\uFEFF'));
-                if (item.People) this.searchParams.People.push(...item.People.map(p => p.Name.toLowerCase() + '\uFEFF'));
 
                 this.Libraries[libraryName].Items.push({
                   Id: item.Id,
@@ -982,7 +963,6 @@ class Jellyfin {
                   Genres: item.Genres,
                   Studios: item.Studios,
                   Tags: item.Tags,
-                  People: item.People,
                   Overview: item.Overview,
                   Type: item.Type,
                   ItemsCount: item.RecursiveItemCount || item.ChildCount || item.MediaSources?.length,
@@ -1011,20 +991,16 @@ class Jellyfin {
                 });
               }
             }
-            resolve(); // ✅ Resolve this page
+            resolve(); 
           },
           (err) => {
             this.onFetchError(err);
-            resolve(); // Still resolve to allow others to complete
+            resolve();
           }
         );
       });
-
-      // pendingFetches.push(p);
     }
 
-    // ⏳ Wait all paginated fetch tasks to complete
-    // await Promise.all(pendingFetches);
     return this.Libraries[libraryName].Items;
   }
 
@@ -1045,7 +1021,6 @@ class Jellyfin {
     const headers = this.headers;
 
     const allItems = []
-    // const pendingFetches = [];
 
     console.log('Updating UserData for library ' + libraryName + '...')
     
@@ -1077,10 +1052,7 @@ class Jellyfin {
         }
       );
     });
-    // pendingFetches.push(p);
-    // await Promise.all(pendingFetches);
 
-    // Update the UserData for each item in the library
     library.Items = library.Items.map(existingItem => {
       const updatedUserData = allItems.find(fetchedItem => fetchedItem.Id === existingItem.Id);
       if (updatedUserData) {
@@ -1089,13 +1061,12 @@ class Jellyfin {
       return existingItem;
     });
 
-    // Save the updated library data back to IndexedDB
     await this.saveData(this.Server.Id, libraryId, "result", this.Libraries[libraryName]
     );
 
   }
 
-  makeImageUrl(itemId, width = 480, height = 270, quality = 80) { // Make the image url
+  makeImageUrl(itemId, width = 480, height = 270, quality = 80) {
     if (!this.isAuthenticated)
       return;
     width = width ? `&fillWidth=${width}` : "&fillWidth=2000";
@@ -1106,7 +1077,7 @@ class Jellyfin {
   }
 
   showLoadingLibraries() {
-    // Create container if it doesn't exist
+
     let container = document.getElementById("loadingLibrariesContainer");
     if (!container) {
       container = document.createElement("div");
@@ -1123,7 +1094,7 @@ class Jellyfin {
       document.body.appendChild(container);
     }
 
-    container.innerHTML = ""; // Clear existing
+    container.innerHTML = "";
 
     const loadingLibraries = Object.values(this.Libraries).filter(lib => lib.Status === "Loading...");
     if (loadingLibraries.length === 0) return;
@@ -1158,12 +1129,11 @@ class Jellyfin {
       } catch (error) {}
     }
 
-    // 🌀 Loop to auto-refresh until done
     if (!this._loadingAnimationFrame) {
       const loop = () => {
         const stillLoading = Object.values(this.Libraries).some(lib => lib.Status === "Loading...");
         if (stillLoading) {
-          this.showLoadingLibraries(); // Recursively refresh
+          this.showLoadingLibraries(); 
           this._loadingAnimationFrame = requestAnimationFrame(loop);
         } else {
           this.hideLoadingLibraries();

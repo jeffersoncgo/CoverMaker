@@ -41,7 +41,7 @@
   <template id="cover-template">
     <div class="cover">
       <label>{{name}}</label>
-      <img src="" draggable="true" ondragstart="onCoverDragStart(event)" class="preview" item-name={{name}} item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)" loading="lazy"></img>
+      <img src="" draggable="true" ondragstart="onCoverDragStart(event)" class="preview" item-name={{name}} item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)" loading={{loading}}></img>
     </div>
   </template>
 
