@@ -11,46 +11,111 @@ const slotsImages = []; // Global array to store slotsImages for each slot
 
 window.Tabs = {}; // Will store tab elements
 
+const composite = { 
+  canvas: new OffscreenCanvas(1920, 1080),
+  size: {
+    width: 1920,
+    height: 1080
+  }
+ }; //Default to FullHD Canvas
+composite.ctx = composite.canvas.getContext("2d");
+
+var drawCompositeImageFun = drawCompositeImageLine;
+
+
 // ======================
 // Some Config Functions
 // ======================
 
 const Setup = {
-  "Banner": {
+  Banner: {
     width: 480,
     height: 270,
     quality: 80,
   },
-  "Cover": {
+  Poster: {
     width: 270,
     height: 480,
     quality: 60
   },
-  "Library": {
+  Library: {
     loadedLibrary: null
   },
-  "Images": {
-    "loading": "images/loading.gif",
-    "error": "images/error.png",
+  Images: {
+    loading: "images/loading.gif",
+    error: "images/error.png",
   },
-  "loadingType": 'lazy'
+  loadingType: 'lazy',
+  Settings: {
+    text: {
+      overlayText: "",
+      font: {
+        family: 'Arial',
+        size: 36,
+        color: 'white',
+        opacity: 1,
+        bold: false,
+      },
+      fontStyle: "",
+      fillStyle: "",
+      overlayOpacity: 0,
+    },
+    canvas: {
+      type: "line",
+      format: "Banner",
+      opacity: 0,
+      reflectionDistance: 0,
+      reflectionScale: 0,
+      baseScale: 1.5,
+      blurAmount: 0,
+      spacing: 0,
+    }
+  }
 }
 
 // ======================
 // Initialization
 // ======================
 const canvas = document.getElementById("myCanvas");
+const ctx = canvas.getContext("2d");
+
+
+// Templates
 const template = document.getElementById('slot-template');
 const bannerTemplate = document.getElementById('banner-template');
 const coverTemplate = document.getElementById('cover-template');
+
+// Slots
 const imageSlots = document.getElementById('image-slots');
-const jellyfinContainer = document.getElementById('jellyfinimages'); // container element in DOM
+
+const RatioSelectElement = document.getElementById("RatioSelect");
+const typeSelectElement = document.getElementById("typeSelect");
+
+const overlayTextElement = document.getElementById("overlayText");
+const fontFamilyElement = document.getElementById("fontSelect");
+const fontSizeElement = document.getElementById("fontSize");
+const fontColorElement = document.getElementById("fontColor");
+const fontOpacityElement = document.getElementById("fontOpacity");
+const boldElement = document.getElementById("boldCheckbox");
+
+const overlayOpacityElement = document.getElementById("overlayOpacity");
+const spacingElement = document.getElementById("spaceSize");
+const blurAmountElement = document.getElementById("blurSize");
+const reflectionScaleElement = document.getElementById("reflexDistance");
+const reflectionDistanceElement = document.getElementById("reflexScale");
+const baseScaleElement = document.getElementById("posterScale");
+
+
+// Jellyfin Images
+const jellyfinContainer = document.getElementById('jellyfinimages');
+
 const jellyfinloadLibraryBtn = document.getElementById('loadLibraryBtn');
 const jellyfinsearchInput = document.getElementById('searchInput');
 const jellyfinCoversLimit = document.getElementById('coverslimit')
 const jellyfinloginActionBtn = document.getElementById('loginAction');
 const jellyfinPreviousPageBtn = document.getElementById('previousPage');
 const jellyfinNextPageBtn = document.getElementById('nextPage');
+
 
 // ======================
 // Storage Functions
@@ -89,6 +154,65 @@ function changeTab(e) {
   window.Tabs[focusTabName].tab.classList.add("active");
   window.Tabs[focusTabName].content.classList.add("active");
 }
+
+// ======================
+// Settings Handle Functions
+// ======================
+
+function updateTextSettings() {
+  Setup.Settings.text.overlayText = overlayTextElement.value || "";
+  Setup.Settings.text.font.family = fontFamilyElement.value;
+  Setup.Settings.text.font.size = parseFloat(fontSizeElement.value) || 36;
+  Setup.Settings.text.font.color = fontColorElement.value || "white";
+  Setup.Settings.text.font.opacity = parseFloat(fontOpacityElement.value) || 0;
+  Setup.Settings.text.font.bold = boldElement.checked;
+
+  Setup.Settings.text.fontStyle = (Setup.Settings.text.font.bold ? "bold" : "normal") + " " + Setup.Settings.text.font.size + "px " + Setup.Settings.text.font.family;
+  
+  const r = parseInt(Setup.Settings.text.font.color.slice(1, 3), 16);
+  const g = parseInt(Setup.Settings.text.font.color.slice(3, 5), 16);
+  const b = parseInt(Setup.Settings.text.font.color.slice(5, 7), 16);
+  Setup.Settings.text.fillStyle = `rgba(${r}, ${g}, ${b}, ${Setup.Settings.text.font.opacity})`;
+  drawCompositeText();
+}
+
+function updateImageSettings() {
+  Setup.Settings.canvas.format = RatioSelectElement.value;
+  const _format = Setup[Setup.Settings.canvas.format]
+  const ratio = _format.width / _format.height;
+
+  if (ratio > 1) { // Banner
+    _format.width = 1920;
+    _format.height = 1920 / ratio;
+  } else { // Poster
+    _format.width = 1920 * ratio;
+    _format.height = 1920;
+  }
+  
+  Setup.Settings.canvas.type = typeSelectElement.value;
+  if(Setup.Settings.canvas.type == 'Line')
+    drawCompositeImageFun = drawCompositeImageLine;
+  else
+    drawCompositeImageFun = drawCompositeImageGrid;
+
+  setCanvasSize(_format.width, _format.height);
+
+  Setup.Settings.canvas.overlayOpacity = parseFloat(overlayOpacityElement.value) || 0;
+  Setup.Settings.canvas.spacing = parseFloat(spacingElement.value) || 0;
+  Setup.Settings.canvas.blurAmount = parseInt(blurAmountElement.value) || 0;
+  Setup.Settings.canvas.reflectionDistance = parseFloat(reflectionScaleElement.value) || 0;
+  Setup.Settings.canvas.reflectionScale = parseFloat(reflectionScaleElement.value) || 0;
+
+  Setup.Settings.canvas.baseScale = parseFloat(baseScaleElement.value) || 1.5;
+  Setup.Settings.canvas.reflectionDistance = parseFloat(reflectionDistanceElement.value) || 0;
+  drawCompositeImage();
+}
+
+function updateSettings() {
+  updateTextSettings();
+  updateImageSettings();
+}
+
 
 // ======================
 // Image Handling Functions
@@ -164,7 +288,6 @@ function SlotImageOnError(preview) {
     if (Library && Item) {
       jellyfin.removeLibraryItem(Library.Id, Item.Id);
       preview.parentElement.remove();
-      // jellyfin.searchItems(null, null, null);
       jellyfin.searchItems(jellyfin.searchParams.Name, jellyfin.searchParams.Library, jellyfin.searchParams.query).then(covers => {
         if (covers)
           fillCovers(covers);
@@ -417,7 +540,7 @@ function addVideoCover(item) {
   const preview = clone.querySelector('.preview');
   const label = clone.querySelector('label');
   label.innerHTML = item.Name;
-  const image = jellyfin.makeImageUrl(item.Id, Setup.Cover.width, Setup.Cover.height, Setup.Cover.quality)
+  const image = jellyfin.makeImageUrl(item.Id, Setup.Poster.width, Setup.Poster.height, Setup.Poster.quality)
   preview.setAttribute('item-id', item.Id);
   preview.setAttribute('item-name', item.Name);
   preview.setAttribute('loading', Setup.loadingType)
@@ -505,30 +628,40 @@ function deleteButtonClick(e) {
 // ======================
 // Canvas Drawing Functions
 // ======================
-function drawComposite() {
-  const ctx = canvas.getContext("2d");
-  
+
+function setCanvasSize(width, height) {
+  composite.size.width = width;
+  composite.size.height = height;
+  composite.canvas.width = width;
+  composite.canvas.height = height;
+  canvas.width = width;
+  canvas.height = height;
+  canvas.style.aspectRatio = width / height;
+  drawComposite();
+}
+
+function drawCompositeImage() {
+  drawCompositeImageFun();
+}
+
+function drawCompositeImageLine() {
+  // set the composite.canvas the same size as the composite.size.width and composite.size.height
+  composite.canvas.width = canvas.width;
+  composite.canvas.height = canvas.height;
+
   // Clear the canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  composite.ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   // Fill background with black
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  composite.ctx.fillStyle = "black";
+  composite.ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const reflectionScale = parseFloat(document.getElementById("reflexDistance").value) || 0;
-  const reflectionDistance = parseFloat(document.getElementById("reflexScale").value) || 0;
-  const baseScale = parseFloat(document.getElementById("posterScale").value) || 1.5;
-  
   // Define overall dimensions for each slot
   const slotWidth = canvas.width / slotsImages.length;
   const slotTotalHeight = canvas.height / 2;
-  const realHeight = slotTotalHeight * baseScale;
-  const reflectionHeight = slotTotalHeight * reflectionDistance;
+  const realHeight = slotTotalHeight * Setup.Settings.canvas.baseScale;
+  const reflectionHeight = slotTotalHeight * Setup.Settings.canvas.reflectionDistance;
   const targetRatio = slotWidth / realHeight;
-  
-  // Margin size
-  const spacing = parseFloat(document.getElementById("spaceSize").value) || 0;
-  const blurAmount = parseInt(document.getElementById("blurSize").value) || 0;
   
   slotsImages.forEach((img, i) => {
     if (img) {
@@ -548,54 +681,123 @@ function drawComposite() {
         sy = (img.height - sHeight) / 2;
       }
       
-      const dx = i * (slotWidth + spacing) - spacing;
+      const dx = i * (slotWidth + Setup.Settings.canvas.spacing) - Setup.Settings.canvas.spacing;
       const dy = 0;
       
-      sWidth -= spacing * 2;
-      sHeight -= spacing * 2;
+      sWidth -= Setup.Settings.canvas.spacing * 2;
+      sHeight -= Setup.Settings.canvas.spacing * 2;
       
       // Draw the "real" image
-      ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, slotWidth, realHeight);
+      composite.ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, slotWidth, realHeight);
       
       // Draw the Reflection
-      const blurredImg = blurImage(img, blurAmount);
-      ctx.save();
-      ctx.translate(dx, realHeight + reflectionHeight);
-      ctx.scale(1, -1);
-      ctx.drawImage(blurredImg, sx, sy, sWidth, sHeight, 0, 0, slotWidth, reflectionHeight);
-      ctx.restore();
+      const blurredImg = blurImage(img, Setup.Settings.canvas.blurAmount);
+      composite.ctx.save();
+      composite.ctx.translate(dx, realHeight + reflectionHeight);
+      composite.ctx.scale(1, -1);
+      composite.ctx.drawImage(blurredImg, sx, sy, sWidth, sHeight, 0, 0, slotWidth, reflectionHeight);
+      composite.ctx.restore();
       
       // Apply Reflection Fade Effect
-      const gradient = ctx.createLinearGradient(0, realHeight, 0, realHeight + reflectionHeight);
+      const gradient = composite.ctx.createLinearGradient(0, realHeight, 0, realHeight + reflectionHeight);
       gradient.addColorStop(0, "rgba(0, 0, 0, 0.12)");
-      gradient.addColorStop(reflectionScale, "rgba(0, 0, 0, 1)");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(dx, realHeight, slotWidth, reflectionHeight);
+      gradient.addColorStop(Setup.Settings.canvas.reflectionScale, "rgba(0, 0, 0, 1)");
+      composite.ctx.fillStyle = gradient;
+      composite.ctx.fillRect(dx, realHeight, slotWidth, reflectionHeight);
     }
   });
+}
 
-  // Draw Overlay
-  const overlayOpacity = parseFloat(document.getElementById("overlayOpacity").value) || 0;
-  ctx.fillStyle = `rgba(0, 0, 0, ${overlayOpacity})`;
+function drawCompositeImageGrid() {
+  const ctx = composite.ctx;
+  composite.canvas.width = canvas.width;
+  composite.canvas.height = canvas.height;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Draw Overlay Text
-  const overlayText = document.getElementById("overlayText").value || "";
-  const fontFamily = document.getElementById("fontSelect").value;
-  const fontSize = document.getElementById("fontSize").value || 36;
-  const fontColor = document.getElementById("fontColor").value || "white";
-  const fontOpacity = parseFloat(document.getElementById("fontOpacity").value) || 0;
-  const bold = document.getElementById("boldCheckbox").checked;
-  const fontStyle = (bold ? "bold" : "normal") + " " + fontSize + "px " + fontFamily;
-  
-  ctx.font = fontStyle;
+  const N = slotsImages.length;
+  if (!N) return;
+
+  const { spacing = 0, baseScale = 1 } = Setup.Settings.canvas;
+  const aspectRatio = canvas.width / canvas.height;
+
+  // 🔹 Step 1: Estimate grid layout
+  // Landscape canvas → more columns, Portrait → more rows
+  const idealCols = aspectRatio > 1 ? Math.ceil(Math.sqrt(N * aspectRatio)) : Math.ceil(Math.sqrt(N / aspectRatio));
+  const idealRows = Math.ceil(N / idealCols);
+
+  // 🔹 Step 2: Distribute images into rows
+  const rows = [];
+  let remaining = N;
+  for (let r = 0; r < idealRows; r++) {
+    const remainingRows = idealRows - r;
+    const colsInRow = Math.ceil(remaining / remainingRows);
+    rows.push(colsInRow);
+    remaining -= colsInRow;
+  }
+
+  // 🔹 Step 3: Compute base row height
+  const totalSpacingY = spacing * (rows.length - 1);
+  const rowHeight = (canvas.height - totalSpacingY) / rows.length;
+
+  // 🔹 Step 4: Draw each image per row
+  let imgIndex = 0;
+  let dy = 0;
+
+  for (let r = 0; r < rows.length; r++) {
+    const cols = rows[r];
+    const totalSpacingX = spacing * (cols - 1);
+    const cellWidth = (canvas.width - totalSpacingX) / cols;
+    const realHeight = rowHeight * baseScale;
+
+    for (let c = 0; c < cols && imgIndex < N; c++, imgIndex++) {
+      const img = slotsImages[imgIndex];
+      if (!img) continue;
+
+      const dx = c * (cellWidth + spacing);
+      const targetRatio = cellWidth / realHeight;
+      const imgRatio = img.width / img.height;
+
+      // Crop image to fit target cell ratio
+      let sx, sy, sWidth, sHeight;
+      if (imgRatio > targetRatio) {
+        sHeight = img.height;
+        sWidth = sHeight * targetRatio;
+        sx = (img.width - sWidth) / 2;
+        sy = 0;
+      } else {
+        sWidth = img.width;
+        sHeight = sWidth / targetRatio;
+        sx = 0;
+        sy = (img.height - sHeight) / 2;
+      }
+
+      ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, cellWidth, realHeight);
+    }
+
+    dy += rowHeight + spacing;
+  }
+}
+
+
+
+function drawCompositeText() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(composite.canvas, 0, 0);
+  ctx.fillStyle = `rgba(0, 0, 0, ${Setup.Settings.text.overlayOpacity})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.font = Setup.Settings.text.fontStyle;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const r = parseInt(fontColor.slice(1, 3), 16);
-  const g = parseInt(fontColor.slice(3, 5), 16);
-  const b = parseInt(fontColor.slice(5, 7), 16);
-  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${fontOpacity})`;
-  ctx.fillText(overlayText, canvas.width / 2, canvas.height / 2);
+  ctx.fillStyle = Setup.Settings.text.fillStyle;
+  ctx.fillText(Setup.Settings.text.overlayText, canvas.width / 2, canvas.height / 2);
+}
+
+function drawComposite() {
+  drawCompositeImage();
+  drawCompositeText();
 }
 
 // ======================
@@ -874,12 +1076,17 @@ function fillJellyfinContainerAttr() {
   jellyfinContainer.setAttribute("search-offset", jellyfin.searchParams.offset);
 }
 
-// const searchController = new Controller(searchOnLibrary);
-// searchOnLibrary = searchController;
-// searchOnLibrary.Controller = searchController;
-// searchOnLibrary = searchOnLibrary.exec.bind(searchOnLibrary);
+// searchOnLibrary = Controller.wrap(searchOnLibrary);
+const searchController = new Controller(searchOnLibrary);
+searchOnLibrary = searchController;
+searchOnLibrary.Controller = searchController;
+searchOnLibrary = searchOnLibrary.exec.bind(searchOnLibrary);
 
-searchOnLibrary = Controller.wrap(searchOnLibrary);
+drawCompositeText = Controller.wrap(drawCompositeText);
+drawCompositeText.Controller.startDelayMs = 100;
+
+drawCompositeImage = Controller.wrap(drawCompositeImage);
+drawCompositeImage.Controller.startDelayMs = 100;
 
 // ======================
 // Event Listeners
@@ -905,13 +1112,39 @@ jellyfinsearchInput.addEventListener('input', () => {
     fillJellyfinContainerAttr();
   })
 })
+
 jellyfinloginActionBtn.addEventListener('click', Login)
 
 // Auto-update canvas when settings change
-const settingsInputs = document.querySelectorAll("#overlayText, #fontSelect, #fontSize, #boldCheckbox, #overlayOpacity, #fontColor, #fontOpacity, #spaceSize, #reflexDistance, #reflexScale, #blurSize, #posterScale");
-settingsInputs.forEach((input) => {
-  input.addEventListener("input", drawComposite);
-});
+
+function addSettingListeners() {
+  [
+    overlayTextElement,
+    fontFamilyElement,
+    fontSizeElement,
+    fontColorElement,
+    fontOpacityElement,
+    boldElement
+  ].forEach((el) => {
+    el.addEventListener("input", updateTextSettings);
+  });
+
+  [
+    RatioSelectElement,
+    typeSelectElement,
+    overlayOpacityElement,
+    spacingElement,
+    blurAmountElement,
+    reflectionScaleElement,
+    reflectionDistanceElement,
+    baseScaleElement
+  ].forEach((el) => {
+    el.addEventListener("input", () => {
+      updateImageSettings();
+      drawComposite();
+    });
+  });
+}
 
 // Export buttons
 document.getElementById("exportBtn").addEventListener("click", exportAsPNG);
@@ -978,8 +1211,10 @@ window.addEventListener('load', () => {
   window.memory = new pageMemory();
   window.memory.addEvent('onMemoryIsEmpty', () => dummyStart())
   window.memory.addEvent('onRestoreSucess', () => window.memoryLoaded = true)
+  window.memory.addEvent('onRestoreSucess', updateSettings)
   window.memory.addEvent('onRestoreError', () =>  window.memoryLoaded = true)
   window.memory.init();
+  addSettingListeners();
 });
 
 
@@ -1001,3 +1236,4 @@ function  makeDetailList(inputTarget, list) {
   inputTarget.setAttribute('list', datalist.id);
   inputTarget.parentNode.insertBefore(datalist, inputTarget.nextSibling);
 }
+
