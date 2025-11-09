@@ -5,16 +5,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script src="js/vendor/meilisearch_index.min.js" defer></script>
-  <title>Collection Cover Maker</title>
+  <title>Collection poster Maker</title>
 </head>
 
 <body>
   <template id="slot-template">
-    <div class="slot" ondragstart="onSlotDragToMove(event)" ondrop="slotOnDropImage(event, this)" ondragover="slotAllowDrop(event)"
-     ondragleave="this.classList.remove('dragover')">
-      <input type="file" accept="image/*" class="fileInput" style="display: none;" onchange="localImageInputChanged(this)">
+    <div class="slot" ondragstart="onSlotDragToMove(event)" ondrop="slotOnDropImage(event, this)"
+      ondragover="slotAllowDrop(event)" ondragleave="this.classList.remove('dragover')">
+      <input type="file" accept="image/*" class="fileInput" style="display: none;"
+        onchange="localImageInputChanged(this)">
       <img src="" class="preview" save customTrigger="reloadSlotImage" src="" loading="lazy"></img>
       <div class="topButtons">
         <i class="fa-solid fa-thumbtack" onclick="toggleSlotPin(this)"></i>
@@ -31,29 +34,32 @@
     </div>
   </template>
 
-  <template id="banner-template">
+  <template id="cover-template">
     <div class="library">
       <label>{{name}}</label>
       <img class="preview" library-name={{name}} library-id={{id}} onclick="selectLibrary(this)" loading="lazy"></img>
-    </div>    
+    </div>
   </template>
-  
-  <template id="cover-template">
-    <div class="cover">
+
+  <template id="poster-template">
+    <div class="poster">
       <label>{{name}}</label>
-      <img src="" draggable="true" ondragstart="onCoverDragStart(event)" class="preview" item-name={{name}} item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)" loading={{loading}}></img>
+      <img src="" draggable="true" ondragstart="onposterDragStart(event)" class="preview" item-name={{name}}
+        item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)" loading={{loading}}></img>
     </div>
   </template>
 
 
   <div class="header">
     <div>
-    <h1>Collection Cover Maker</h1>
-      <p class="tagline">It's recommended to use the <a href="https://github.com/arnesacnussem/jellyfin-plugin-meilisearch" target="_blank">Meilisearch Plugin</a> for faster responses.</p>
+      <h1>Collection poster Maker</h1>
+      <p class="tagline">It's recommended to use the <a
+          href="https://github.com/arnesacnussem/jellyfin-plugin-meilisearch" target="_blank">Meilisearch Plugin</a> for
+        faster responses.</p>
     </div>
     <!-- A Tagline saying that is recommended to use the Meilisearch Plugin for fast responses -->
     <div class="buttons">
-      <a href="https://github.com/jeffersoncgo/CoverMaker" target="_blank"><i class="fa-brands fa-github"></i></a>
+      <a href="https://github.com/jeffersoncgo/posterMaker" target="_blank"><i class="fa-brands fa-github"></i></a>
       <button id="loginBtn" logged-in="false" onClick="showWindow('loginBox');">Login to Jellyfin</button>
       <button onclick="cleanMemory()">Clean Saved Memory</button>
     </div>
@@ -87,91 +93,134 @@
 
       <div id="tabsContents">
 
-        <div class="tabContent " id="imageslotsContent">
+        <div class="tabContent" id="imageslotsContent">
           <div class="controls">
             <i class="fa-solid fa-plus" onclick="addImageSlot()"></i>
             <i class="fa-solid fa-eraser" onclick="clearAllSlots(this)"></i>
             <i class="fa-solid fa-arrows-rotate" onclick="fillSlotsRandomly()"></i>
           </div>
-          <div id="image-slots" class="slots scroll-container" slotsCount="0" customTrigger="setSlots" save>
+          <div id="image-slots" class="slots scroll-container scroll-container" slotsCount="0" customTrigger="setSlots" save>
           </div>
         </div>
 
         <div class="tabContent" id="settingsContent">
-          <div class="settings">
-            <div class="field text">
-              <div>
-                <label for="RatioSelect">Format:</label>
-                  <select id="RatioSelect" save>
-                    <option value="Banner">Banner</option>
-                    <option value="Poster">Poster</option>
-                  </select>
-                <label for="typeSelect">Type:</label>
-                  <select id="typeSelect" save>
-                    <option value="Line">Line</option>
-                    <option value="Grid">Grid</option>
-                  </select>
-              </div>
-              <div>
-                <label for="overlayText">Overlay Text:</label>
-                <input class="teste" type="text" id="overlayText" placeholder="Type your text here" value="Movies" save>
-              </div>
-              <div>
-                <label for="fontSelect">Font:</label>
-                <select id="fontSelect" save>
-                  <option value="Arial">Arial</option>
-                  <option value="Verdana">Verdana</option>
-                  <option value="Times New Roman">Times New Roman</option>
-                  <option value="Helvetica">Helvetica</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="Courier New">Courier New</option>
-                  <option value="Brush Script MT">Brush Script MT</option>
-                </select>
-              </div>
-              <div>
-                <label for="fontSize">Font Size (px):</label>
-                <input type="number" id="fontSize" value="327" save>
-              </div>
-              <div>
-                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                  <label for="fontColor">Font Color:</label>
-                  <input type="color" id="fontColor" value="#ffffff" style="flex: 0 0 2rem; padding: 0;" save>
-                <div style="margin-left: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
-                  <label for="boldCheckbox" style="margin: 0;">Bold:</label>
-                  <input type="checkbox" id="boldCheckbox" checked style="flex: 0 0 auto;" save>
+          <div class="settings scroll-container">
+            <div class="field checkbox">
+              <input type="checkbox" id="expandTextSettings" class="expand-checkbox" save>
+              <label for="expandTextSettings" class="expand-label">Text</label>
+              <div class="expand-content">
+                <div class="field text">
+                  <div>
+                    <label for="overlayText">Overlay Text:</label>
+                    <input class="teste" type="text" id="overlayText" placeholder="Type your text here" value="Movies" save>
+                  </div>
+                  <div>
+                    <label for="fontSelect">Font:</label>
+                    <select id="fontSelect" save></select>
+                  </div>
+
+                  <div>
+                    <label for="fontStyleSelect">Style:</label>
+                    <select id="fontStyleSelect" save>
+                      <option value="normal">Normal</option>
+                      <option value="italic">Italic</option>
+                      <option value="oblique">Oblique</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label for="fontWeightSelect">Weight:</label>
+                    <select id="fontWeightSelect" save>
+                      <option value="lighter">Lighter</option>
+                      <option value="normal">Normal</option>
+                      <option value="bold">Bold</option>
+                      <option value="bolder">Bolder</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label for="fontSize">Font Size (px):</label>
+                    <input type="number" id="fontSize" value="327" save>
+                  </div>
+
+                  <div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                      <label for="fontColor">Font Color:</label>
+                      <input type="color" id="fontColor" value="#ffffff" style="flex: 0 0 2rem; padding: 0;" save>
+                      <div style="margin-left: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
+                      </div>
+                    </div>
+        
+                  </div>
+                  <div>
+                    <label for="fontOpacity">Font Opacity (0-1):</label>
+                    <input type="number" id="fontOpacity" value="0.8" step="0.1" min="0" max="1" save>
+                  </div>
                 </div>
               </div>
-
-              </div>
-              <div>
-                <label for="fontOpacity">Font Opacity (0-1):</label>
-                <input type="number" id="fontOpacity" value="0.8" step="0.1" min="0" max="1" save>
-              </div>
-            </div>
-            <div class="field image">
-              <div>
-                <label for="spaceSize">Margin Size (px):</label>
-                <input type="number" id="spaceSize" value="3" save>
-              </div>
-              <div>
-                <label for="blurSize">Blur Size (px):</label>
-                <input type="number" id="blurSize" value="5" save>
-              </div>
-              <div>
-                <label for="reflexDistance">Reflex Distance (0-1):</label>
-                <input type="number" id="reflexDistance" value="0.8" step="0.1" min="0" max="1" save>
-              </div>
-              <div>
-                <label for="reflexScale">Reflex Scale (0-1):</label>
-                <input type="number" id="reflexScale" value="0.8" step="0.1" min="0" max="1" save>
-              </div>
-              <div>
-                <label for="overlayOpacity">Overlay Opacity (0-1):</label>
-                <input type="number" id="overlayOpacity" value="0.5" step="0.1" min="0" max="1" save>
-              </div>
-              <div>
-                <label for="posterScale">Poster Scale (0-10):</label>
-                <input type="number" id="posterScale" value="1.3" step="0.1" min="0.1" max="10" save>
+        
+              <div class="field checkbox">
+                <input type="checkbox" id="expandImageSettings" class="expand-checkbox" save>
+                <label for="expandImageSettings" class="expand-label">Image</label>
+                <div class="expand-content">
+                  <div class="field image">
+                    <div>
+                      <label for="RatioSelect">Format:</label>
+                      <select id="RatioSelect" save>
+                        <option value="cover">Cover</option>
+                        <option value="poster">Poster</option>
+                        <option value="square">Square</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                      <!-- Two text input where the user can manually set the ratio -->
+                      <div id="customRatioInputs">
+                        <label for="customWidth">Width:</label>
+                        <input type="number" id="customWidth" value="1" min="1" save>
+                        <label for="customHeight">Height:</label>
+                        <input type="number" id="customHeight" value="1" min="1" save>
+                      </div>
+                    </div>
+                    <div>
+                      <label for="typeSelect">Type:</label>
+                      <select id="typeSelect" save>
+                        <option value="Line">Line</option>
+                        <option value="Grid">Grid</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label for="spaceSize">Margin Size (px):</label>
+                      <input type="number" id="spaceSize" value="3" save>
+                    </div>
+                    <div class="field checkbox">
+                      <input type="checkbox" id="expandReflexSettings" class="expand-checkbox" save>
+                      <label for="expandReflexSettings" class="expand-label">Reflex</label>
+                      <div class="expand-content">
+                        <div class="field reflex">
+                          <div>
+                            <label for="blurSize">Blur Strength:</label>
+                            <input type="number" id="blurSize" value="5" save>
+                          </div>
+                          <div>
+                            <label for="reflexDistance">Reflex Distance (0-1):</label>
+                            <input type="number" id="reflexDistance" value="0.8" step="0.1" min="0" max="1" save>
+                          </div>
+                          <div>
+                            <label for="reflexScale">Reflex Scale (0-1):</label>
+                            <input type="number" id="reflexScale" value="0.8" step="0.1" min="0" max="1" save>
+                          </div>
+                          <div>
+                            <label for="overlayOpacity">Overlay Opacity (0-1):</label>
+                            <input type="number" id="overlayOpacity" value="0.5" step="0.1" min="0" max="1" save>
+                          </div>
+                          <div>
+                            <label for="posterScale">Poster Scale (0-10):</label>
+                            <input type="number" id="posterScale" value="1.3" step="0.1" min="0.1" max="10" save>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -194,17 +243,18 @@
           <i id="refreshlibraryBtn" class="fa-solid fa-arrows-rotate" onclick="filterRandom(this)"></i>
           <div class="searchInputDiv">
             <input type="text" id="searchInput" placeholder="Search" input="" save>
-            <i class="fa-solid fa-xmark" id="clearSearchInput" onclick="if(jellyfinsearchInput.value == '') return; jellyfinsearchInput.value = ''; searchOnLibrary(null, true, true)"></i>
+            <i class="fa-solid fa-xmark" id="clearSearchInput"
+              onclick="if(jellyfinsearchInput.value == '') return; jellyfinsearchInput.value = ''; searchOnLibrary(null, true, true)"></i>
           </div>
 
-          <select id="coverslimit" value="10" save onchange="setCoversLimit(this.value)">
+          <select id="posterslimit" value="10" save onchange="setpostersLimit(this.value)">
             <option value="10">10</option>
             <option value="20">20</option>
             <option value="50">50</option>
             <option value="100">100</option>
           </select>
           <i id="previousPage" class="fa-solid fa-left-long" onclick="previousPage(this)"></i>
-          <i id="nextPage"class="fa-solid fa-right-long" onclick="nextPage(this)"></i>
+          <i id="nextPage" class="fa-solid fa-right-long" onclick="nextPage(this)"></i>
         </div>
         <div id="jellyfinimages" class="jellyfinWindow scroll-container" save customTrigger="returnToSearch">
         </div>
@@ -220,7 +270,7 @@
   <script src="https://jeffersoncgo.github.io/cdn/js/pagememory.js"></script>
   <script src="https://jeffersoncgo.github.io/cdn/js/search.js"></script>
   <script src="https://jeffersoncgo.github.io/cdn/js/fetchqueue.js"></script>
-  
+
   <script src="js/jellyfin.js"></script>
   <script src="js/script.js"></script>
   <script src="js/windowsHandle.js"></script>

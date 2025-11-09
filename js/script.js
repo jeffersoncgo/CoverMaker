@@ -9,6 +9,13 @@ if (typeof module != 'undefined') {
 // ======================
 const slotsImages = []; // Global array to store slotsImages for each slot
 
+let FONT_DATABASE = null;
+
+const webSafeFonts = [
+      "Arial", "Verdana", "Times New Roman", "Helvetica",
+      "Georgia", "Courier New", "Brush Script MT"
+    ]
+
 window.Tabs = {}; // Will store tab elements
 
 const composite = { 
@@ -28,15 +35,27 @@ var drawCompositeImageFun = drawCompositeImageLine;
 // ======================
 
 const Setup = {
-  Banner: {
-    width: 480,
-    height: 270,
-    quality: 80,
-  },
-  Poster: {
-    width: 270,
-    height: 480,
-    quality: 60
+  Sizes: {
+    cover: {
+      width: 480,
+      height: 270,
+      quality: 80,
+    },
+    poster: {
+      width: 270,
+      height: 480,
+      quality: 60
+    },
+    square: {
+      width: 1,
+      height: 1,
+      quality: 100
+    },
+    custom: {
+      width: 1920,
+      height: 1080,
+      quality: 100
+    }
   },
   Library: {
     loadedLibrary: null
@@ -53,8 +72,7 @@ const Setup = {
         family: 'Arial',
         size: 36,
         color: 'white',
-        opacity: 1,
-        bold: false,
+        opacity: 1
       },
       fontStyle: "",
       fillStyle: "",
@@ -62,7 +80,7 @@ const Setup = {
     },
     canvas: {
       type: "line",
-      format: "Banner",
+      format: "cover",
       opacity: 0,
       reflectionDistance: 0,
       reflectionScale: 0,
@@ -82,22 +100,25 @@ const ctx = canvas.getContext("2d");
 
 // Templates
 const template = document.getElementById('slot-template');
-const bannerTemplate = document.getElementById('banner-template');
 const coverTemplate = document.getElementById('cover-template');
+const posterTemplate = document.getElementById('poster-template');
 
 // Slots
 const imageSlots = document.getElementById('image-slots');
 
-const RatioSelectElement = document.getElementById("RatioSelect");
-const typeSelectElement = document.getElementById("typeSelect");
 
 const overlayTextElement = document.getElementById("overlayText");
-const fontFamilyElement = document.getElementById("fontSelect");
+const fontSelectElement = document.getElementById("fontSelect");
+const fontWeightSelectElement = document.getElementById("fontWeightSelect");
+const fontStyleSelectElement = document.getElementById("fontStyleSelect");
 const fontSizeElement = document.getElementById("fontSize");
 const fontColorElement = document.getElementById("fontColor");
 const fontOpacityElement = document.getElementById("fontOpacity");
-const boldElement = document.getElementById("boldCheckbox");
 
+const RatioSelectElement = document.getElementById("RatioSelect");
+const typeSelectElement = document.getElementById("typeSelect");
+const customWidthElement = document.getElementById("customWidth");
+const customHeightElement = document.getElementById("customHeight");
 const overlayOpacityElement = document.getElementById("overlayOpacity");
 const spacingElement = document.getElementById("spaceSize");
 const blurAmountElement = document.getElementById("blurSize");
@@ -111,7 +132,7 @@ const jellyfinContainer = document.getElementById('jellyfinimages');
 
 const jellyfinloadLibraryBtn = document.getElementById('loadLibraryBtn');
 const jellyfinsearchInput = document.getElementById('searchInput');
-const jellyfinCoversLimit = document.getElementById('coverslimit')
+const jellyfinpostersLimit = document.getElementById('posterslimit')
 const jellyfinloginActionBtn = document.getElementById('loginAction');
 const jellyfinPreviousPageBtn = document.getElementById('previousPage');
 const jellyfinNextPageBtn = document.getElementById('nextPage');
@@ -159,33 +180,44 @@ function changeTab(e) {
 // Settings Handle Functions
 // ======================
 
-function updateTextSettings() {
+async function updateTextSettings() {
   Setup.Settings.text.overlayText = overlayTextElement.value || "";
-  Setup.Settings.text.font.family = fontFamilyElement.value;
+  Setup.Settings.text.font.family = fontSelectElement.value;
+  Setup.Settings.text.font.weight = fontWeightSelectElement.value;
+  Setup.Settings.text.font.style = fontStyleSelectElement.value;
   Setup.Settings.text.font.size = parseFloat(fontSizeElement.value) || 36;
   Setup.Settings.text.font.color = fontColorElement.value || "white";
   Setup.Settings.text.font.opacity = parseFloat(fontOpacityElement.value) || 0;
-  Setup.Settings.text.font.bold = boldElement.checked;
 
-  Setup.Settings.text.fontStyle = (Setup.Settings.text.font.bold ? "bold" : "normal") + " " + Setup.Settings.text.font.size + "px " + Setup.Settings.text.font.family;
+  Setup.Settings.text.fontStyle =
+    `${Setup.Settings.text.font.style} ${Setup.Settings.text.font.weight} ${Setup.Settings.text.font.size}px "${Setup.Settings.text.font.family}"`;
   
+  await loadFont(Setup.Settings.text.font.family)
+
   const r = parseInt(Setup.Settings.text.font.color.slice(1, 3), 16);
   const g = parseInt(Setup.Settings.text.font.color.slice(3, 5), 16);
   const b = parseInt(Setup.Settings.text.font.color.slice(5, 7), 16);
   Setup.Settings.text.fillStyle = `rgba(${r}, ${g}, ${b}, ${Setup.Settings.text.font.opacity})`;
+
   drawCompositeText();
+}
+
+function updateCustomValues() {
+  Setup.Sizes.custom.width = parseInt(customWidthElement.value) || 1;
+  Setup.Sizes.custom.height = parseInt(customHeightElement.value) || 1;
 }
 
 function updateImageSettings() {
   Setup.Settings.canvas.format = RatioSelectElement.value;
-  const _format = Setup[Setup.Settings.canvas.format]
+  const _format = Setup.Sizes[Setup.Settings.canvas.format]
   const ratio = _format.width / _format.height;
 
-  if (ratio > 1) { // Banner
+  // The idea is that the min size be 1920
+  if (ratio > 1) { // cover
     _format.width = 1920;
-    _format.height = 1920 / ratio;
-  } else { // Poster
-    _format.width = 1920 * ratio;
+    _format.height = Math.round(1920 / ratio);
+  } else { // poster
+    _format.width = Math.round(1920 * ratio);
     _format.height = 1920;
   }
   
@@ -208,8 +240,8 @@ function updateImageSettings() {
   drawCompositeImage();
 }
 
-function updateSettings() {
-  updateTextSettings();
+async function updateSettings() {
+  await updateTextSettings();
   updateImageSettings();
 }
 
@@ -288,9 +320,9 @@ function SlotImageOnError(preview) {
     if (Library && Item) {
       jellyfin.removeLibraryItem(Library.Id, Item.Id);
       preview.parentElement.remove();
-      jellyfin.searchItems(jellyfin.searchParams.Name, jellyfin.searchParams.Library, jellyfin.searchParams.query).then(covers => {
-        if (covers)
-          fillCovers(covers);
+      jellyfin.searchItems(jellyfin.searchParams.Name, jellyfin.searchParams.Library, jellyfin.searchParams.query).then(posters => {
+        if (posters)
+          fillposters(posters);
       })
     } else {
       preview.src = Setup.Images.error;
@@ -526,21 +558,21 @@ function loadLocalImage(el) {
 }
 
 
-function selectImageToSlot(cover) {
-  if (!cover) return;
-  const imageUrl = jellyfin.makeImageUrl(cover.getAttribute("item-id"), null, null, 100)
+function selectImageToSlot(poster) {
+  if (!poster) return;
+  const imageUrl = jellyfin.makeImageUrl(poster.getAttribute("item-id"), null, null, 100)
   if (!imageUrl) return;
   loadImageIntoSlot(imageUrl)
 }
 
-function addVideoCover(item) {
+function addVideoposter(item) {
   if (!item) return;
   
-  const clone = coverTemplate.content.cloneNode(true);
+  const clone = posterTemplate.content.cloneNode(true);
   const preview = clone.querySelector('.preview');
   const label = clone.querySelector('label');
   label.innerHTML = item.Name;
-  const image = jellyfin.makeImageUrl(item.Id, Setup.Poster.width, Setup.Poster.height, Setup.Poster.quality)
+  const image = jellyfin.makeImageUrl(item.Id, Setup.Sizes.poster.width, Setup.Sizes.poster.height, Setup.Sizes.poster.quality)
   preview.setAttribute('item-id', item.Id);
   preview.setAttribute('item-name', item.Name);
   preview.setAttribute('loading', Setup.loadingType)
@@ -549,12 +581,12 @@ function addVideoCover(item) {
   jellyfinContainer.appendChild(clone);
 }
 
-function addLibraryBanner(id, name) {
-  const clone = bannerTemplate.content.cloneNode(true);
+function addLibrarycover(id, name) {
+  const clone = coverTemplate.content.cloneNode(true);
   const preview = clone.querySelector('.preview');
   const label = clone.querySelector('label');
   label.innerHTML = name;
-  const image = jellyfin.makeImageUrl(id, Setup.Banner.width, Setup.Banner.height, Setup.Banner.quality)
+  const image = jellyfin.makeImageUrl(id, Setup.Sizes.cover.width, Setup.Sizes.cover.height, Setup.Sizes.cover.quality)
   preview.setAttribute('library-id', id);
   preview.setAttribute('library-name', name);
   preview.setAttribute('loading', Setup.loadingType);
@@ -587,15 +619,15 @@ function slotOnDropImage(event, el) {
       moveImageSlot(value, index);
       return;
     }
-    if (data.type == "cover") {
+    if (data.type == "poster") {
       loadImageIntoSlot(value, index);
     }
   } catch (error) {}
 }
 
-function onCoverDragStart(event) {
+function onposterDragStart(event) {
   const imageUrl = jellyfin.makeImageUrl(event.target.getAttribute("item-id"), null, null, 100);
-  event.dataTransfer.setData("application/json", JSON.stringify({type: "cover", value: imageUrl}));
+  event.dataTransfer.setData("application/json", JSON.stringify({type: "poster", value: imageUrl}));
 }
 
 function onSlotDragToMove(event) {
@@ -641,21 +673,15 @@ function setCanvasSize(width, height) {
 }
 
 function drawCompositeImage() {
+  composite.canvas.width = canvas.width;
+  composite.canvas.height = canvas.height;
+  composite.ctx.clearRect(0, 0, canvas.width, canvas.height);
+  composite.ctx.fillStyle = "black";
+  composite.ctx.fillRect(0, 0, canvas.width, canvas.height);
   drawCompositeImageFun();
 }
 
 function drawCompositeImageLine() {
-  // set the composite.canvas the same size as the composite.size.width and composite.size.height
-  composite.canvas.width = canvas.width;
-  composite.canvas.height = canvas.height;
-
-  // Clear the canvas
-  composite.ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // Fill background with black
-  composite.ctx.fillStyle = "black";
-  composite.ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   // Define overall dimensions for each slot
   const slotWidth = canvas.width / slotsImages.length;
   const slotTotalHeight = canvas.height / 2;
@@ -690,7 +716,7 @@ function drawCompositeImageLine() {
       // Draw the "real" image
       composite.ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, slotWidth, realHeight);
       
-      // Draw the Reflection
+      // // Draw the Reflection
       const blurredImg = blurImage(img, Setup.Settings.canvas.blurAmount);
       composite.ctx.save();
       composite.ctx.translate(dx, realHeight + reflectionHeight);
@@ -709,14 +735,6 @@ function drawCompositeImageLine() {
 }
 
 function drawCompositeImageGrid() {
-  const ctx = composite.ctx;
-  composite.canvas.width = canvas.width;
-  composite.canvas.height = canvas.height;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   const N = slotsImages.length;
   if (!N) return;
 
@@ -774,7 +792,7 @@ function drawCompositeImageGrid() {
         sy = (img.height - sHeight) / 2;
       }
 
-      ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, cellWidth, realHeight);
+      composite.ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, cellWidth, realHeight);
     }
 
     dy += rowHeight + spacing;
@@ -784,11 +802,12 @@ function drawCompositeImageGrid() {
 
 
 function drawCompositeText() {
+  ctx.font = Setup.Settings.text.fontStyle;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(composite.canvas, 0, 0);
   ctx.fillStyle = `rgba(0, 0, 0, ${Setup.Settings.text.overlayOpacity})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.font = Setup.Settings.text.fontStyle;
+
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = Setup.Settings.text.fillStyle;
@@ -947,7 +966,7 @@ function loadLibraries(el) {
   
   clearJellyfinWindow();
   for (const lName in jellyfin.Libraries)
-    addLibraryBanner(jellyfin.Libraries[lName].Id, jellyfin.Libraries[lName].Name)
+    addLibrarycover(jellyfin.Libraries[lName].Id, jellyfin.Libraries[lName].Name)
 }
 
 function clearJellyfinWindow() {
@@ -981,25 +1000,25 @@ function selectLibrary(el) {
   searchOnLibrary(null, null);
 }
 
-function fillCovers(items) {
+function fillposters(items) {
   return new Promise((resolve) => {
     clearJellyfinWindow();
     
-    const coverPromises = items.map(cover => {
-      return new Promise(resolveCover => {
-        addVideoCover(cover);
-        resolveCover();
+    const posterPromises = items.map(poster => {
+      return new Promise(resolveposter => {
+        addVideoposter(poster);
+        resolveposter();
       });
     });
     
-    Promise.all(coverPromises).then(() => {
+    Promise.all(posterPromises).then(() => {
       jellyfinContainer.scrollTop = 0;
       resolve();
     });
   });
 }
 
-function setCoversLimit(limit) {
+function setpostersLimit(limit) {
   limit = parseInt(limit);
   if (isNaN(limit))
     return;
@@ -1023,7 +1042,7 @@ async function searchOnLibrary(Qry, force = false, useDelay = false) {
     } else
       jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[1]
   }
-  fillCovers(await jellyfin.searchItems(searchQuery, Setup.Library.loadedLibrary, null))
+  fillposters(await jellyfin.searchItems(searchQuery, Setup.Library.loadedLibrary, null))
 }
 
 function filterRandom() {
@@ -1036,16 +1055,16 @@ function filterRandom() {
 
 async function nextPage() {
   jellyfin.setDelay(0)
-  const covers = await jellyfin.nextPage();
-  if (covers)
-    fillCovers(covers);
+  const posters = await jellyfin.nextPage();
+  if (posters)
+    fillposters(posters);
 }
 
 async function previousPage() {
   jellyfin.setDelay(0)
-  const covers = await jellyfin.previousPage();
-  if (covers)
-    fillCovers(covers);
+  const posters = await jellyfin.previousPage();
+  if (posters)
+    fillposters(posters);
 }
 
 async function returnToSearch() {
@@ -1076,17 +1095,9 @@ function fillJellyfinContainerAttr() {
   jellyfinContainer.setAttribute("search-offset", jellyfin.searchParams.offset);
 }
 
-// searchOnLibrary = Controller.wrap(searchOnLibrary);
-const searchController = new Controller(searchOnLibrary);
-searchOnLibrary = searchController;
-searchOnLibrary.Controller = searchController;
-searchOnLibrary = searchOnLibrary.exec.bind(searchOnLibrary);
-
-drawCompositeText = Controller.wrap(drawCompositeText);
-drawCompositeText.Controller.startDelayMs = 100;
-
-drawCompositeImage = Controller.wrap(drawCompositeImage);
-drawCompositeImage.Controller.startDelayMs = 100;
+searchOnLibrary = Controller.wrap(searchOnLibrary, true, 100);
+drawCompositeImage = Controller.wrap(drawCompositeImage, true, 100);
+drawCompositeText = Controller.wrap(drawCompositeText, true, 100);
 
 // ======================
 // Event Listeners
@@ -1108,29 +1119,30 @@ jellyfinsearchInput.addEventListener('input', () => {
   jellyfin.searchParams.page = 1;
   jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[1]
   searchOnLibrary(null, true, true).then(() => {
-    // jellyfin.restoreSearchParams();
     fillJellyfinContainerAttr();
   })
 })
 
 jellyfinloginActionBtn.addEventListener('click', Login)
 
-// Auto-update canvas when settings change
-
 function addSettingListeners() {
   [
     overlayTextElement,
-    fontFamilyElement,
     fontSizeElement,
     fontColorElement,
-    fontOpacityElement,
-    boldElement
+    fontOpacityElement
   ].forEach((el) => {
     el.addEventListener("input", updateTextSettings);
   });
 
+  [RatioSelectElement, customWidthElement, customHeightElement].forEach((el) => {
+    el.addEventListener("input", updateCustomValues);
+  });
+
   [
     RatioSelectElement,
+    customWidthElement,
+    customHeightElement,
     typeSelectElement,
     overlayOpacityElement,
     spacingElement,
@@ -1142,6 +1154,13 @@ function addSettingListeners() {
     el.addEventListener("input", () => {
       updateImageSettings();
       drawComposite();
+    });
+  });
+
+  [fontSelectElement, fontWeightSelectElement, fontStyleSelectElement].forEach((el) => {
+    el.addEventListener("change", () => {
+      if(!FONT_DATABASE) return;
+      updateTextSettings();
     });
   });
 }
@@ -1178,7 +1197,7 @@ function dummyStart() {
 
 
 // On window load
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   loadFieldsFromStorage();
   document.getElementById("Server").addEventListener("change", saveFieldsToStorage);
   document.getElementById("Username").addEventListener("change", saveFieldsToStorage);
@@ -1206,6 +1225,7 @@ window.addEventListener('load', () => {
   // Initial draw and Jellyfin setup
   drawComposite();
   CreateJellyfin();
+  await populateFontSelect();
 
   window.memoryLoaded = false;
   window.memory = new pageMemory();
@@ -1214,6 +1234,7 @@ window.addEventListener('load', () => {
   window.memory.addEvent('onRestoreSucess', updateSettings)
   window.memory.addEvent('onRestoreError', () =>  window.memoryLoaded = true)
   window.memory.init();
+  
   addSettingListeners();
 });
 
@@ -1236,4 +1257,118 @@ function  makeDetailList(inputTarget, list) {
   inputTarget.setAttribute('list', datalist.id);
   inputTarget.parentNode.insertBefore(datalist, inputTarget.nextSibling);
 }
+// =====================================================
+// Load metadata
+// =====================================================
+async function loadFontMetadata() {
+  const response = await fetch("/fonts.json");
+  FONT_DATABASE = await response.json();
+}
 
+// =====================================================
+// Populate FONT list grouped by category
+// =====================================================
+async function populateFontSelect() {
+  await loadFontMetadata();
+
+  const categories = {
+    "Web Safe": webSafeFonts,
+    "Sans Serif": [],
+    "Serif": [],
+    "Display": [],
+    "Handwriting": [],
+    "Monospace": []
+  };
+
+  FONT_DATABASE.familyMetadataList.forEach(font => {
+    if (!categories[font.category]) categories[font.category] = [];
+    categories[font.category].push(font.family);
+  });
+
+  fontSelect.innerHTML = "";
+
+  // Create optgroup blocks
+  for (const category in categories) {
+    const group = document.createElement("optgroup");
+    group.label = category;
+
+    categories[category].sort().forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      group.appendChild(opt);
+    });
+
+    fontSelect.appendChild(group);
+  }
+
+  // Auto-select first font
+  if (fontSelect.selectedIndex == -1)
+    fontSelect.selectedIndex = 0;
+
+  // updateWeightSelect(fontSelect.value);
+}
+
+// =====================================================
+// Extract WEIGHTS (real weights only)
+// =====================================================
+function getWeightsForFont(fontName) {
+  const entry = FONT_DATABASE.familyMetadataList.find(f => f.family === fontName);
+  if (!entry) return [400];
+
+  const weights = Object.keys(entry.fonts)
+    .map(key => parseInt(key.replace(/[^0-9]/g, "")))
+    .filter(n => !isNaN(n));
+
+  return [...new Set(weights)].sort((a, b) => a - b);
+}
+
+function updateWeightSelect(fontName) {
+  const weights = getWeightsForFont(fontName);
+  fontWeightSelect.innerHTML = "";
+
+  weights.forEach(weight => {
+    const opt = document.createElement("option");
+    opt.value = weight;
+    opt.textContent = weight;
+    fontWeightSelect.appendChild(opt);
+  });
+}
+
+// =====================================================
+// Dynamically load font from Google Fonts API
+// =====================================================
+async function loadFont(fontName) {
+  if (!fontName) return;
+  if(webSafeFonts.includes(fontName))
+    return true;
+
+  const normalized = fontName.trim().toLowerCase().replace(/\s+/g, '-');
+  if (!document.querySelector(`link[data-font="${normalized}"]`)) {
+    
+    const cssLoadPromise = new Promise((resolve, reject) => {
+      const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}`;
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = url;
+      link.dataset.font = normalized;
+      
+      link.onload = () => resolve(); 
+      
+      link.onerror = () => reject(new Error(`Failed to load CSS for font: ${fontName}`));
+      
+      document.head.appendChild(link);
+    });
+
+    await cssLoadPromise;
+  }
+  try {
+    await document.fonts.load(`1em "${fontName}"`);
+    await document.fonts.ready;
+    return true;
+    
+  } catch (err) {
+    console.error(`Failed to load font file for: ${fontName}`, err);
+    return false;
+  }
+}

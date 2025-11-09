@@ -20,10 +20,10 @@
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
 
-  --bannerWidth: 300px;
-  --bannerHeight: 168px;
-  --coverWidth: 180px;
-  --coverHeight: 300px;
+  --coverWidth: 300px;
+  --coverHeight: 168px;
+  --posterWidth: 180px;
+  --posterHeight: 300px;
   --slotWidth: 180px;
   --slotHeight: 300px;
 }
@@ -647,7 +647,7 @@ i[disabled="true"], button[disabled="true"] {
   display: none;
 }
 
-#jellyfinContent .library, #jellyfinContent .cover {
+#jellyfinContent .library, #jellyfinContent .poster {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -662,23 +662,23 @@ i[disabled="true"], button[disabled="true"] {
 }
 
 #jellyfinContent .library {
-  width: var(--bannerWidth);
-  height: var(--bannerHeight);
+  width: var(--coverWidth);
+  height: var(--coverHeight);
   aspect-ratio: 16/9;
 }
 
-#jellyfinContent .cover {
-  width: var(--coverWidth);
-  height: var(--coverHeight);
+#jellyfinContent .poster {
+  width: var(--posterWidth);
+  height: var(--posterHeight);
   aspect-ratio: 9/16;
 }
 
-#jellyfinContent .library:hover, #jellyfinContent .cover:hover {
+#jellyfinContent .library:hover, #jellyfinContent .poster:hover {
   border-color: var(--primary-light);
   background: rgba(255, 255, 255, 0.1);
 }
 
-#coverslimit {
+#posterslimit {
   width: 6rem;
   margin-left: 0.2em;
   margin-right: 0.4em;
@@ -715,4 +715,100 @@ i[disabled="true"], button[disabled="true"] {
 
 .floatWindow input {
   margin-bottom: 0.5rem;
+}
+
+/* Let's make an expandable div using this checkbox input expand-checkbox that will expand or retract this div expand-content 
+this is the html
+<div class="field checkbox">
+              <input type="checkbox" id="expandTextSettings" class="expand-checkbox">
+              <label for="expandTextSettings" class="expand-label">Text Settings</label>
+              <div class="expand-content">
+              ...
+*/
+.expand-checkbox {
+  display: none;
+}
+
+.expand-label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--font-color);
+  margin-bottom: 0.5rem;
+}
+
+.expand-label::before {
+  content: "▶"; /* Right-pointing triangle */
+  transition: transform 0.2s ease-in-out;
+}
+
+.expand-checkbox:checked + .expand-label::before {
+  content: "▼"; /* Down-pointing triangle */
+  transform: rotate(90deg);
+}
+
+.expand-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.expand-checkbox:checked ~ .expand-content {
+  max-height: max-content; /* Adjust as needed to accommodate content */
+  transition: max-height 0.3s ease-in;
+}
+
+/* Specific styling for the checkbox field */
+.field.checkbox {
+  margin-bottom: 1rem;
+}
+
+.field.checkbox .expand-content {
+  padding-left: 1rem;
+  border-left: 2px solid var(--primary-dark);
+}
+
+#customRatioInputs {
+  display: none;
+}
+
+/* if #RatioSelect option value is "Custom" 
+This is the HTML
+ <div>
+                      <label for="RatioSelect">Format:</label>
+                      <select id="RatioSelect" save>
+                        <option value="cover">Cover</option>
+                        <option value="poster">Poster</option>
+                        <option value="Custom">Custom</option>
+                      </select>
+                      <!-- Two text input where the user can manually set the ratio -->
+                      <div id="customRatioInputs"> //This will change only when the RatioSelect is Custom
+                        <label for="customWidth">Width:</label>
+                        <input type="number" id="customWidth" value="1" save>
+                        <label for="customHeight">Height:</label>
+                        <input type="number" id="customHeight" value="1" save>
+                      </div>
+                    </div>
+*/
+ 
+#RatioSelect:has(option[value="custom"]:checked) ~ #customRatioInputs {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  align-items: center;
+}
+
+#RatioSelect:has(option[value="custom"]:checked) ~ #customRatioInputs label {
+  margin-bottom: 0;
+  width: auto;
+}
+
+#RatioSelect:has(option[value="custom"]:checked) ~ #customRatioInputs input {
+  width: 5rem;
 }
