@@ -1302,37 +1302,8 @@ async function populateFontSelect() {
     fontSelect.appendChild(group);
   }
 
-  // Auto-select first font
   if (fontSelect.selectedIndex == -1)
     fontSelect.selectedIndex = 0;
-
-  // updateWeightSelect(fontSelect.value);
-}
-
-// =====================================================
-// Extract WEIGHTS (real weights only)
-// =====================================================
-function getWeightsForFont(fontName) {
-  const entry = FONT_DATABASE.familyMetadataList.find(f => f.family === fontName);
-  if (!entry) return [400];
-
-  const weights = Object.keys(entry.fonts)
-    .map(key => parseInt(key.replace(/[^0-9]/g, "")))
-    .filter(n => !isNaN(n));
-
-  return [...new Set(weights)].sort((a, b) => a - b);
-}
-
-function updateWeightSelect(fontName) {
-  const weights = getWeightsForFont(fontName);
-  fontWeightSelect.innerHTML = "";
-
-  weights.forEach(weight => {
-    const opt = document.createElement("option");
-    opt.value = weight;
-    opt.textContent = weight;
-    fontWeightSelect.appendChild(opt);
-  });
 }
 
 // =====================================================
