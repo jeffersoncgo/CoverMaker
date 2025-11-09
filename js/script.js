@@ -917,8 +917,14 @@ function CreateJellyfin() {
     document.getElementById('loginErrorMessage').innerText = message;
   }
   window.jellyfin = new Jellyfin(server, username, password, {
-    onLoginError: () => (OnFail("Authentication failed. Please check your credentials.")),
-    onServerSetupError: () => (OnFail("Server is offline. Please check the address.")),
+    onLoginError: () => {
+      loadEssentials();
+      OnFail("Authentication failed. Please check your credentials.")
+    },
+    onServerSetupError: () => {
+      loadEssentials();
+      OnFail("Server is offline. Please check the address.")
+    },
     onLoginSuccess: () => {
       hideWindow("loginBox");
 
@@ -926,10 +932,12 @@ function CreateJellyfin() {
       document.querySelector("#rightSide").style.display = "block";
       document.querySelector("#jellyfinContent").style.display = "block";
       setTimeout(() => Setup.loadingType = window.jellyfin.Server.Speed.time > 100 ? 'lazy' : 'eager', 200);
+      loadEssentials();
     },
     onLibraryLoad: () => {
       makeDetailList(jellyfinsearchInput, jellyfin.searchParams.Genres);
       searchOnLibrary(null, null);
+      loadEssentials();
     },
     onSearchFinish: () => {
       fillJellyfinContainerAttr();
@@ -953,8 +961,8 @@ function Login() {
 
 function loadLibraries(el) {
   jellyfinsearchInput.value = "";
-  Setup.Library.loadedLibrary = null;
-  jellyfin.searchParams.Library = null;
+  Setup.Library.loadedLibrary = "";
+  jellyfin.searchParams.Library = "";
   if(el instanceof HTMLElement) {
     jellyfinContainer.removeAttribute("search-name");
     jellyfinContainer.removeAttribute("search-library");
@@ -1227,16 +1235,19 @@ window.addEventListener('load', async () => {
   CreateJellyfin();
   await populateFontSelect();
 
+});
+
+function loadEssentials() {
   window.memoryLoaded = false;
   window.memory = new pageMemory();
   window.memory.addEvent('onMemoryIsEmpty', () => dummyStart())
   window.memory.addEvent('onRestoreSucess', () => window.memoryLoaded = true)
   window.memory.addEvent('onRestoreSucess', updateSettings)
+  window.memory.addEvent('onRestoreSucess', () => searchOnLibrary(null, true, true))
   window.memory.addEvent('onRestoreError', () =>  window.memoryLoaded = true)
   window.memory.init();
-  
   addSettingListeners();
-});
+}
 
 
 function cleanMemory() {
