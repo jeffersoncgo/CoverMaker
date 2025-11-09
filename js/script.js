@@ -75,13 +75,13 @@ const Setup = {
         opacity: 1
       },
       fontStyle: "",
-      fillStyle: "",
-      overlayOpacity: 0,
+      fillStyle: ""
     },
     canvas: {
       type: "line",
       format: "cover",
       opacity: 0,
+      overlayOpacity: 0,
       reflectionDistance: 0,
       reflectionScale: 0,
       baseScale: 1.5,
@@ -802,11 +802,11 @@ function drawCompositeImageGrid() {
 
 
 function drawCompositeText() {
-  ctx.font = Setup.Settings.text.fontStyle;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(composite.canvas, 0, 0);
-  ctx.fillStyle = `rgba(0, 0, 0, ${Setup.Settings.text.overlayOpacity})`;
+  ctx.fillStyle = `rgba(0, 0, 0, ${Setup.Settings.canvas.overlayOpacity})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.font = Setup.Settings.text.fontStyle;
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
