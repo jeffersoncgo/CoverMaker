@@ -1261,7 +1261,7 @@ function  makeDetailList(inputTarget, list) {
 // Load metadata
 // =====================================================
 async function loadFontMetadata() {
-  const response = await fetch("/fonts.json");
+  const response = await fetch("./fonts.json");
   FONT_DATABASE = await response.json();
 }
 
