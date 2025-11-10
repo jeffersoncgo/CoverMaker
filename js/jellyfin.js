@@ -110,7 +110,8 @@ class Jellyfin {
         "music": "MediaBrowser.Controller.Entities.Audio.Audio",
         "playlists": "MediaBrowser.Controller.Playlists.Playlist",
         "livetv": "MediaBrowser.Controller.LiveTv.LiveTvChannel"
-      } 
+      },
+      "maxTotalHits": 20000
     }
     this.init();
   }
@@ -833,13 +834,11 @@ class Jellyfin {
 
     const index = this.Meilisearch.Index;
     let loadLimit = this.searchParams.loadLimit;
-    if (loadLimit)
-      loadLimit = loadLimit * 4
-    else
-      loadLimit = 1000;
+    if (!loadLimit)
+      loadLimit = this.Meilisearch.maxTotalHits;
 
-    if (loadLimit > 1000)
-      loadLimit = 1000;
+    if (loadLimit > this.Meilisearch.maxTotalHits)
+      loadLimit = this.Meilisearch.maxTotalHits;
     
     this.Libraries[libraryName].Items ??= [];
     this.Libraries[libraryName].Items.length = 0;
@@ -1168,7 +1167,8 @@ class Jellyfin {
     });
 
     this.Meilisearch.Index = this.Meilisearch.client.index(this.Meilisearch.IndexName);
-    this.Meilisearch.Index.updatePagination({ "maxTotalHits": 20000 });
+    this.Meilisearch.Index.updatePagination({ "maxTotalHits": this.Meilisearch.maxTotalHits });
+    this.searchParams.loadLimit = this.Meilisearch.maxTotalHits;
 
     const filterable = await this.Meilisearch.Index.getFilterableAttributes();
     const sortable = await this.Meilisearch.Index.getSortableAttributes();
