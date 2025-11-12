@@ -812,3 +812,327 @@ This is the HTML
 #RatioSelect:has(option[value="custom"]:checked) ~ #customRatioInputs input {
   width: 5rem;
 }
+
+.text-layers-panel {
+  background: var(--surface);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.text-layer-item {
+  background: var(--background);
+  border: 2px solid transparent;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.text-layer-item:hover {
+  border-color: var(--primary-light);
+}
+
+.text-layer-item.active {
+  border-color: var(--primary);
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.text-layer-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.text-layer-controls i {
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: background 0.2s;
+}
+
+.text-layer-controls i:hover {
+  background: var(--primary-hover);
+}
+
+.image-slot-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 0 0 0 0.5rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 5;
+}
+
+.slot:hover .image-slot-controls {
+  opacity: 1;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.slider-row label {
+  min-width: 120px;
+  font-size: 0.875rem;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--background);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+}
+
+.slider-row input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: none;
+}
+
+.slider-row input[type="number"] {
+  width: 60px;
+  padding: 0.25rem;
+}
+
+.color-picker-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.color-picker-group label {
+  min-width: 120px;
+  font-size: 0.875rem;
+}
+
+.color-picker-group input[type="color"] {
+  width: 50px;
+  height: 35px;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.gradient-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0.375rem;
+}
+
+.gradient-stop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gradient-stop input[type="color"] {
+  width: 40px;
+  height: 30px;
+}
+
+.gradient-stop input[type="range"] {
+  flex: 1;
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.btn-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.btn-icon {
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-section {
+  margin-bottom: 1rem;
+}
+
+.toggle-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--background);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-header:hover {
+  background: var(--primary-darker);
+}
+
+.toggle-content {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  display: none;
+}
+
+.toggle-content.active {
+  display: block;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.preset-item {
+  padding: 1rem;
+  background: var(--background);
+  border: 2px solid transparent;
+  border-radius: 0.375rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preset-item:hover {
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.layout-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.layout-option {
+  padding: 1rem;
+  background: var(--background);
+  border: 2px solid transparent;
+  border-radius: 0.375rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.layout-option:hover {
+  border-color: var(--primary-light);
+}
+
+.layout-option.active {
+  border-color: var(--primary);
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.tabs-horizontal {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--primary-darker);
+  margin-bottom: 1rem;
+}
+
+.tab-button {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--font-color);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab-button:hover {
+  background: var(--primary-darker);
+}
+
+.tab-button.active {
+  border-bottom-color: var(--primary);
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.effect-preview {
+  width: 100%;
+  height: 60px;
+  background: var(--background);
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.info-tooltip {
+  position: relative;
+  display: inline-block;
+  margin-left: 0.25rem;
+  color: var(--primary-light);
+  cursor: help;
+}
+
+.info-tooltip:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 1000;
+}

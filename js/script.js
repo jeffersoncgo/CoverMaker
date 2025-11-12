@@ -1354,3 +1354,13 @@ async function loadFont(fontName) {
     return false;
   }
 }
+
+if (typeof window !== 'undefined' && typeof initializeEnhancedFeatures === 'function') {
+  const originalWindowLoad = window.onload;
+  window.addEventListener('load', () => {
+    if (originalWindowLoad) originalWindowLoad();
+    setTimeout(() => {
+      initializeEnhancedFeatures();
+    }, 500);
+  });
+}
