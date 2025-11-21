@@ -1,0 +1,135 @@
+/* Main App Container */
+#app {
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+  height: calc(100vh - 60px); /* Subtract header height approx */
+  overflow: hidden;
+  padding: var(--space-sm);
+  gap: var(--space-sm);
+}
+
+/* Top Header */
+.header {
+  height: 60px;
+  background: rgba(24, 24, 27, 0.8); /* Semi-transparent */
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--c-border);
+  z-index: 50;
+  padding: 0 var(--space-md);
+  padding-top: 8px;
+  position: relative;
+}
+
+#loginBtn[logged-in="true"] {
+  display: none;
+}
+
+.tagline {
+  font-size: 0.75rem;
+  color: var(--c-text-secondary);
+  margin-top: 0.2rem;
+}
+
+/* ============================
+   Resizable Sidebars
+   ============================ */
+/* Sidebars (Left & Right) */
+#leftSide, #rightSide {
+  position: relative;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0; 
+  transition: border-color 0.2s;
+  
+  /* Default Resize Logic */
+  resize: horizontal; 
+}
+
+/* Specific Logic for Left Side */
+#leftSide { 
+  width: var(--leftSideW); 
+  /* Handle is naturally on bottom-right, which is correct for the left panel */
+}
+
+/* Specific Logic for Right Side */
+#rightSide { 
+  width: var(--rightSideW); 
+  
+  /* THE TRICK: Flip direction to move handle to Bottom-Left */
+  direction: rtl; 
+}
+
+/* IMPORTANT: Reset text direction for content inside Right Side */
+#rightSide > * {
+  direction: ltr;
+}
+
+#leftSide:hover, #rightSide:hover {
+  border-color: var(--c-border-hover);
+}
+
+/* Customizing the Resize Handle (Chrome/Edge/Safari only) */
+::-webkit-resizer {
+  background-color: transparent;
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent var(--c-text-secondary) var(--c-text-secondary) transparent;
+}
+
+/* Flip the triangle for the Right Side (RTL) */
+#rightSide::-webkit-resizer {
+  border-color: transparent transparent var(--c-text-secondary) var(--c-text-secondary);
+}
+
+/* Set initial widths */
+#leftSide { width: var(--leftSideW); }
+#rightSide { width: var(--rightSideW); }
+
+/* Center Canvas Area */
+#canvas-container {
+  flex: 1; /* Take remaining space */
+  height: 100%;
+  background: var(--c-background); /* Darker contrast for canvas area */
+  border: 1px dashed var(--c-border);
+  border-radius: var(--radius-md);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+  min-width: 0; /* Flex fix */
+}
+
+#myCanvas {
+  position: absolute;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  box-shadow: var(--shadow-lg);
+  background: #000; /* Canvas actual bg */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Scroll Utilities within Layout */
+.scroll-container {
+  flex: 1;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding: var(--space-sm);
+}
+
+#RatioSelect:not(:has(option:checked[value="custom"])) ~ #customRatioInputs {
+  display: none;
+}

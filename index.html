@@ -4,7 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/toast.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/utilities.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
     integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -13,57 +19,6 @@
 </head>
 
 <body>
-  <template id="slot-template">
-    <div class="slot" ondragstart="onSlotDragToMove(event)" ondrop="slotOnDropImage(event, this)"
-      ondragover="slotAllowDrop(event)" ondragleave="this.classList.remove('dragover')">
-      <input type="file" accept="image/*" class="fileInput" style="display: none;"
-        onchange="localImageInputChanged(this)">
-      <img src="" class="preview" save customTrigger="reloadSlotImage" src="" loading="lazy"></img>
-      <div class="topButtons">
-        <i class="fa-solid fa-thumbtack" onclick="toggleSlotPin(this)"></i>
-        <i class="fa-solid fa-file-image" onclick="loadLocalImage(this)"></i>
-        <i class="fa-solid fa-up-right-from-square" onclick="openInNewTab(this)"></i>
-        <i class="fa-solid fa-arrows-rotate" onclick="radomizeSlotImage(this)"></i>
-      </div>
-      <div class="bottomButtons">
-        <i class="fa-solid fa-up-long" onclick="moveSlotUp(this)"></i>
-        <i class="fa-solid fa-down-long" onclick="moveSlotDown(this)"></i>
-        <i class="fa-solid fa-trash delete" onclick="deleteButtonClick(this)"></i>
-        <i class="fa-solid fa-eraser clear" onclick="clearButtonClick(this)"></i>
-      </div>
-    </div>
-  </template>
-
-  <template id="cover-template">
-    <div class="library">
-      <label>{{name}}</label>
-      <img class="preview" library-name={{name}} library-id={{id}} onclick="selectLibrary(this)" loading="lazy"></img>
-    </div>
-  </template>
-
-  <template id="poster-template">
-    <div class="poster">
-      <label>{{name}}</label>
-      <img src="" draggable="true" ondragstart="onposterDragStart(event)" class="preview" item-name={{name}}
-        item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)" loading={{loading}}></img>
-    </div>
-  </template>
-
-
-  <div class="header">
-    <div>
-      <h1>Collection poster Maker</h1>
-      <p class="tagline">It's recommended to use the <a
-          href="https://github.com/arnesacnussem/jellyfin-plugin-meilisearch" target="_blank">Meilisearch Plugin</a> for
-        faster responses.</p>
-    </div>
-    <!-- A Tagline saying that is recommended to use the Meilisearch Plugin for fast responses -->
-    <div class="buttons">
-      <a href="https://github.com/jeffersoncgo/CoverMaker" target="_blank"><i class="fa-brands fa-github"></i></a>
-      <button id="loginBtn" logged-in="false" onClick="showWindow('loginBox');">Login to Jellyfin</button>
-      <button onclick="cleanMemory()">Clean Saved Memory</button>
-    </div>
-  </div>
 
   <div class="floatWindow" id="loginBox" style="display: none;">
     <div class="windowBar">
@@ -77,29 +32,267 @@
       <input type="text" id="Username" placeholder="Your username" value="admin" save>
       <label for="Password">Password</label>
       <input type="password" id="Password" placeholder="Your password" value="password" save>
-      <!-- connect Button, it just refresh the page, so the onLoad functions can start -->
       <button id="loginAction">Connect</button>
       <label id="loginErrorMessage"></label>
     </div>
   </div>
 
-  <div id="app">
-    <div id="leftSide">
 
+  <template id="slot-template">
+    <div class="slot" ondragstart="onSlotDragToMove(event)" ondrop="slotOnDropImage(event, this)"
+      ondragover="slotAllowDrop(event)" ondragleave="this.classList.remove('dragover')">
+      <input type="file" accept="image/*" class="fileInput" style="display: none;"
+        onchange="localImageInputChanged(this)">
+      <img src="" class="preview" save customTrigger="reloadSlotImage" src="" loading="lazy"></img>
+      <div class="topButtons">
+        <i class="fa-solid fa-thumbtack" onclick="toggleSlotPin(this)" title="Pin Image"></i>
+        <i class="fa-solid fa-file-image" onclick="loadLocalImage(this)" title="Load Local Image"></i>
+        <i class="fa-solid fa-up-right-from-square" onclick="openInNewTab(this)" title="View Image In New Tab"></i>
+        <i class="fa-solid fa-arrows-rotate" onclick="radomizeSlotImage(this)" title="Randomize Image"></i>
+      </div>
+      <div class="bottomButtons">
+        <i class="fa-solid fa-up-long" onclick="moveSlotUp(this)" title="Move Slot Up"></i>
+        <i class="fa-solid fa-down-long" onclick="moveSlotDown(this)" title="Move Slot Down"></i>
+        <i class="fa-solid fa-trash delete" onclick="deleteButtonClick(this)" title="Remove Slot"></i>
+        <i class="fa-solid fa-eraser clear" onclick="clearButtonClick(this)" title="Clear Slot Image"></i>
+      </div>
+    </div>
+  </template>
+
+  <template id="cover-template">
+    <div class="library">
+      <span>{{name}}</span>
+      <img class="preview" library-name={{name}} library-id={{id}} onclick="selectLibrary(this)" loading="lazy"></img>
+    </div>
+  </template>
+
+  <template id="poster-template">
+    <div class="poster">
+      <span>{{name}}</span>
+      <img src="" draggable="true" ondragstart="onposterDragStart(event)" class="preview" item-name={{name}}
+        item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)" loading={{loading}}></img>
+    </div>
+  </template>
+
+  <template id="text-layer-template">
+    <div class="field checkbox">
+      <input type="checkbox" class="expand-checkbox" save>
+      <label class="expand-label expand-btn relative">Layer</label>
+      <i class="fa-solid fa-trash delete delete-layer-btn delete-button" title="Delete Layer"></i>
+      <i class="fa-solid fa-bookmark default-layer-btn default-button" title="Set as Default Layer Style"></i>
+      <i class="fa-solid fa-clone duplicate-layer-btn duplicate-button" title="Duplicate Layer"></i>
+      <div class="expand-content">
+        <div class="field text-layer-item">
+          <div class="field checkbox">
+            <input type="checkbox" class="expand-checkbox" save>
+            <label class="expand-label expand-btn relative">Text</label>
+            <div class="expand-content">
+              <div class="field text">
+                <div>
+                  <span>Overlay Text:</span>
+                  <input class="overlayText-input" type="text" placeholder="Type your text here" value="Movies">
+                </div>
+                <div>
+                  <span>Font:</span>
+                  <select class="fontSelect-input"></select>
+                </div>
+                <div>
+                  <span>Font Size</span>
+                  <input class="fontSize-input" type="number" value="327">
+                </div>
+                <div class="flex row equalW full100W space-between field">
+                  <div>
+                    <span>Style:</span>
+                    <select class="fontStyleSelect-input">
+                      <option value="normal">Normal</option>
+                      <option value="italic">Italic</option>
+                      <option value="oblique">Oblique</option>
+                    </select>
+                  </div>
+                  <div>
+                    <span>Weight:</span>
+                    <select class="fontWeightSelect-input">
+                      <option value="lighter">Lighter</option>
+                      <option value="normal">Normal</option>
+                      <option value="bold">Bold</option>
+                      <option value="bolder">Bolder</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="flex row equalW full100W space-between field">
+                  <div>
+                    <div>
+                      <span>Font Color:</span>
+                      <input class="fontColor-input" type="color" value="#ffffff" style="flex: 0 0 2rem; padding: 0;">
+                    </div>
+                  </div>
+                  <div>
+                    <span>Font Opacity:</span>
+                    <input class="fontOpacity-input" type="range" value="0.8" step="0.1" min="0" max="1">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field checkbox">
+              <input type="checkbox" class="expand-checkbox">
+              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Position</label>
+              <div class="expand-content">
+                <div class="field text">
+                  <div class="flex row equalW full100W space-between">
+                    <div class="mid50W">
+                      <span>Align:</span>
+                      <select class="textAlign-input">
+                        <option value="center">Center</option>
+                        <option value="left">Left</option>
+                        <option value="right">Right</option>
+                      </select>
+                    </div>
+                    <div class="mid50W">
+                      <span>Baseline:</span>
+                      <select class="textBaseline-input">
+                        <option value="middle">Middle</option>
+                        <option value="top">Top</option>
+                        <option value="bottom">Bottom</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="flex row equalW full100W space-between">
+                    <div class="mid50W">
+                      <span>Offset X:</span>
+                      <input class="positionX-input" type="number" value="0">
+                    </div>
+                    <div class="mid50W">
+                      <span>Offset Y:</span>
+                      <input class="positionY-input" type="number" value="0">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field checkbox">
+              <input type="checkbox" class="expand-checkbox">
+              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Stroke/Outline</label>
+              <i class="fa-solid fa-plus add-stroke-btn add-button" title="Add Stroke/Outline"></i>
+              <div class="expand-content">
+                <div class="strokes-container">
+                </div>
+              </div>
+            </div>
+
+            <div class="field checkbox">
+              <input type="checkbox" class="expand-checkbox">
+              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Glow/Shadow</label>
+              <i class="fa-solid fa-plus add-shadow-btn add-button" title="Add Glow/Shadow"></i>
+              <div class="expand-content">
+                <div class="shadows-container">
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="stroke-template">
+    <div class="field checkbox">
+      <input type="checkbox" class="expand-checkbox" save>
+      <label class="expand-label expand-btn relative">Stroke/Outline</label>
+      <i class="fa-solid fa-trash delete delete-stroke-btn delete-button" title="Delete Stroke/Outline"></i>
+      <i class="fa-solid fa-bookmark default-stroke-btn default-button" title="Set as Default Stroke/Outline Style"></i>
+      <i class="fa-solid fa-clone duplicate-stroke-btn duplicate-button" title="Duplicate Stroke/Outline"></i>
+      <div class="expand-content">
+        <div class="stroke-item">
+          <div class="field text">
+            <div class="flex row equalW full100W space-between field">
+              <div class="mid50W">
+                <span>Color:</span>
+                <input class="strokeColor-input" type="color" value="#000000" style="flex: 0 0 2rem; padding: 0;">
+              </div>
+              <div class="mid50W">
+                <span>Opacity:</span>
+                <input class="strokeOpacity-input" type="range" value="1.0" step="0.1" min="0" max="1">
+              </div>
+            </div>
+            <div class="flex row equalW full100W space-between field">
+              <div class="mid50W">
+                <span>Width:</span>
+                <input class="strokeWidth-input" type="number" value="2" min="1">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="shadow-template">
+    <div class="field checkbox">
+      <input type="checkbox" class="expand-checkbox" save>
+      <label class="expand-label expand-btn relative">Glow/Shadow</label>
+      <i class="fa-solid fa-trash delete delete-shadow-btn delete-button" title="Delete Glow/Shadow"></i>
+      <i class="fa-solid fa-bookmark default-shadow-btn default-button" title="Set as Default Glow/Shadow Style"></i>
+      <i class="fa-solid fa-clone duplicate-shadow-btn duplicate-button" title="Duplicate Glow/Shadow"></i>
+      <div class="expand-content">
+        <div class="shadow-item">
+          <div class="field text">
+            <div class="flex row equalW full100W space-between field">
+              <div class="mid50W">
+                <span>Color:</span>
+                <input class="shadowColor-input" type="color" value="#000000" style="flex: 0 0 2rem; padding: 0;">
+              </div>
+              <div class="mid50W">
+                <span>Blur:</span>
+                <input class="shadowBlur-input" type="number" value="5" min="0">
+              </div>
+            </div>
+            <div class="flex row equalW full100W space-between field">
+              <div class="mid50W">
+                <span>Offset X:</span>
+                <input class="shadowOffsetX-input" type="number" value="5">
+              </div>
+              <div class="mid50W">
+                <span>Offset Y:</span>
+                <input class="shadowOffsetY-input" type="number" value="5">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <div class="header">
+    <div>
+      <h1>Collection Poster Maker</h1>
+      <p class="tagline">It's recommended to use the <a href="https://github.com/arnesacnussem/jellyfin-plugin-meilisearch" target="_blank">Meilisearch Plugin</a> for faster responses.</p>
+    </div>
+    <div class="buttons">
+      <a href="https://github.com/jeffersoncgo/CoverMaker" target="_blank"><i class="fa-brands fa-github" title="Open Project Github Page"></i></a>
+      <button id="loginBtn" logged-in="false" onClick="showWindow('loginBox');" title="Login to Jellyfin">Login to Jellyfin</button>
+      <button onclick="cleanMemory()" title="Clean Saved Memory">Clean Saved Memory</button>
+    </div>
+  </div>
+
+  <div id="app">
+    <div class="field" id="leftSide" save>
       <div id="tabsList">
-        <li class="tab" id="imageslotsTab">Image Slots</li>
-        <li class="tab" id="settingsTab">Settings</li>
+        <li class="tab" id="imageslotsTab"><i class="fa-regular fa-clone" title="Image Slots"></i></li>
+        <li class="tab" id="settingsTab"><i class="fa-solid fa-screwdriver-wrench" title="Settings"></i></li>
       </div>
 
-      <div id="tabsContents">
-
+      <div style="height: -webkit-fill-available; padding-bottom: 30px;">
         <div class="tabContent" id="imageslotsContent">
           <div class="controls">
-            <i class="fa-solid fa-plus" onclick="addImageSlot()"></i>
-            <i class="fa-solid fa-eraser" onclick="clearAllSlots(this)"></i>
-            <i class="fa-solid fa-arrows-rotate" onclick="fillSlotsRandomly()"></i>
+            <i class="fa-solid fa-plus" onclick="addImageSlot()" title="Add Slot"></i>
+            <i class="fa-solid fa-eraser" onclick="clearAllSlots(this)" title="Clear All Slot"></i>
+            <i class="fa-solid fa-trash" onclick="deleteAllSlots()" title="Delete All Slots"></i>
+            <i class="fa-solid fa-arrows-rotate" onclick="fillSlotsRandomly()" title="Randomize All Slots"></i>
           </div>
-          <div id="image-slots" class="slots scroll-container scroll-container" slotsCount="0" customTrigger="setSlots" save>
+          <div id="image-slots" class="slots scroll-container" slotsCount="0" customTrigger="setSlots" save>
           </div>
         </div>
 
@@ -107,64 +300,22 @@
           <div class="settings scroll-container">
             <div class="field checkbox">
               <input type="checkbox" id="expandTextSettings" class="expand-checkbox" save>
-              <label for="expandTextSettings" class="expand-label">Text</label>
-              <div class="expand-content">
-                <div class="field text">
-                  <div>
-                    <label for="overlayText">Overlay Text:</label>
-                    <input class="teste" type="text" id="overlayText" placeholder="Type your text here" value="Movies" save>
-                  </div>
-                  <div>
-                    <label for="fontSelect">Font:</label>
-                    <select id="fontSelect" save></select>
-                  </div>
+              <label for="expandTextSettings" class="expand-label expand-btn relative">Text</label>
+              <select id="fontSelect" style="display: none;"></select>
 
-                  <div>
-                    <label for="fontStyleSelect">Style:</label>
-                    <select id="fontStyleSelect" save>
-                      <option value="normal">Normal</option>
-                      <option value="italic">Italic</option>
-                      <option value="oblique">Oblique</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label for="fontWeightSelect">Weight:</label>
-                    <select id="fontWeightSelect" save>
-                      <option value="lighter">Lighter</option>
-                      <option value="normal">Normal</option>
-                      <option value="bold">Bold</option>
-                      <option value="bolder">Bolder</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label for="fontSize">Font Size (px):</label>
-                    <input type="number" id="fontSize" value="327" save>
-                  </div>
-
-                  <div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                      <label for="fontColor">Font Color:</label>
-                      <input type="color" id="fontColor" value="#ffffff" style="flex: 0 0 2rem; padding: 0;" save>
-                      <div style="margin-left: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
-                      </div>
-                    </div>
-        
-                  </div>
-                  <div>
-                    <label for="fontOpacity">Font Opacity (0-1):</label>
-                    <input type="number" id="fontOpacity" value="0.8" step="0.1" min="0" max="1" save>
-                  </div>
-                </div>
+              <i class="fa-solid fa-plus add-button" id="addTextLayerBtn" title="Add Text Layer"></i>
+              <div class="expand-content"> 
+                <div id="text-layers-container"></div>
               </div>
-        
-              <div class="field checkbox">
-                <input type="checkbox" id="expandImageSettings" class="expand-checkbox" save>
-                <label for="expandImageSettings" class="expand-label">Image</label>
-                <div class="expand-content">
-                  <div class="field image">
-                    <div>
+            </div>
+
+            <div class="field checkbox">
+              <input type="checkbox" id="expandImageSettings" class="expand-checkbox" save>
+              <label for="expandImageSettings" class="expand-label expand-btn relative">Image</label>
+              <div class="expand-content">
+                <div class="field image">
+                  <div class="flex row wrap equalW full100W space-between">
+                    <div style="max-width: 100%;">
                       <label for="RatioSelect">Format:</label>
                       <select id="RatioSelect" save>
                         <option value="cover">Cover</option>
@@ -172,12 +323,15 @@
                         <option value="square">Square</option>
                         <option value="custom">Custom</option>
                       </select>
-                      <!-- Two text input where the user can manually set the ratio -->
-                      <div id="customRatioInputs">
-                        <label for="customWidth">Width:</label>
-                        <input type="number" id="customWidth" value="1" min="1" save>
-                        <label for="customHeight">Height:</label>
-                        <input type="number" id="customHeight" value="1" min="1" save>
+                      <div id="customRatioInputs" class="flex row equalW full100W space-between field">
+                        <div class="mid50W">
+                          <label for="customWidth">Width:</label>
+                          <input type="number" id="customWidth" value="1" min="1" save>
+                        </div>
+                        <div class="mid50W">
+                          <label for="customHeight">Height:</label>
+                          <input type="number" id="customHeight" value="1" min="1" save>
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -187,34 +341,68 @@
                         <option value="Grid">Grid</option>
                       </select>
                     </div>
+                  </div>
+                  <div>
+                    <label for="spaceSize">Margin Size:</label>
+                    <input type="number" id="spaceSize" value="3" save>
+                  </div>
+                  <div>
+                    <label for="randomSalt">Random Salt:</label>
+                    <input type="number" id="randomSalt" value="1" min="1" save>
+                  </div>
+                  <div>
+                    <label for="posterScale">Poster Scale:</label>
+                    <input type="range" id="posterScale" value="1.4" step="0.1" min="0.1" max="10" save>
+                  </div>
+                  <div class="field checkbox">
                     <div>
-                      <label for="spaceSize">Margin Size (px):</label>
-                      <input type="number" id="spaceSize" value="3" save>
-                    </div>
-                    <div class="field checkbox">
                       <input type="checkbox" id="expandReflexSettings" class="expand-checkbox" save>
-                      <label for="expandReflexSettings" class="expand-label">Reflex</label>
+                      <label for="expandReflexSettings" class="expand-label expand-btn relative">Reflex</label>
                       <div class="expand-content">
                         <div class="field reflex">
                           <div>
                             <label for="blurSize">Blur Strength:</label>
-                            <input type="number" id="blurSize" value="5" save>
+                            <input type="range" id="blurSize" value="5" save>
                           </div>
                           <div>
-                            <label for="reflexDistance">Reflex Distance (0-1):</label>
-                            <input type="number" id="reflexDistance" value="0.8" step="0.1" min="0" max="1" save>
+                            <label for="reflexDistance">Reflex Distance:</label>
+                            <input type="range" id="reflexDistance" value="0.8" step="0.1" min="0" max="1" save>
                           </div>
                           <div>
-                            <label for="reflexScale">Reflex Scale (0-1):</label>
-                            <input type="number" id="reflexScale" value="0.8" step="0.1" min="0" max="1" save>
+                            <label for="reflexScale">Reflex Scale:</label>
+                            <input type="range" id="reflexScale" value="0.7" step="0.1" min="0" max="1" save>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <input type="checkbox" id="expandOverlaySettings" class="expand-checkbox" save>
+                      <label for="expandOverlaySettings" class="expand-label expand-btn relative">Overlay</label>
+                      <div class="expand-content">
+                        <div class="field Overlay">
                           <div>
-                            <label for="overlayOpacity">Overlay Opacity (0-1):</label>
-                            <input type="number" id="overlayOpacity" value="0.5" step="0.1" min="0" max="1" save>
-                          </div>
-                          <div>
-                            <label for="posterScale">Poster Scale (0-10):</label>
-                            <input type="number" id="posterScale" value="1.3" step="0.1" min="0.1" max="10" save>
+                            <span>Start</span>
+                            <div class="flex row equalW full100W space-between">
+                              <div class="full100W">
+                                <label for="overlayColorStart">Color</label>
+                                <input type="color" id="overlayColorStart" value="#000000" style="flex: 0 0 2rem; padding: 0;">
+                              </div>
+                              <div class="full100W">
+                                <label for="overlayOpacityStart">Opacity</label>
+                                <input type="range" id="overlayOpacityStart" value="0.5" step="0.1" min="0" max="1" save>
+                              </div>
+                            </div>
+                            <span>End</span>
+                            <div class="flex row equalW full100W space-between">
+                              <div class="full100W">
+                                <label for="overlayColorEnd">Color</label>
+                                <input type="color" id="overlayColorEnd" value="#000000" style="flex: 0 0 2rem; padding: 0;" save>
+                              </div>
+                              <div class="full100W">
+                                <label for="overlayOpacityEnd">Opacity</label>
+                                <input type="range" id="overlayOpacityEnd" value="0.9" step="0.1" min="0" max="1" save>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -229,24 +417,38 @@
     </div>
 
     <div id="canvas-container">
+      <div class="canvasBars field">
+      </div>
       <canvas id="myCanvas" width="1920" height="1080"></canvas>
-      <div id="exportBtns" class="field">
-        <button id="exportBtn">Export Composite Image</button>
-        <button id="openTabBtn">Open Composite in New Tab</button>
+      <div class="canvasBars field">
+        <div id="importProjectBtn" class="button" title="Open Project File">
+          <i class="fa-solid fa-file-pen" title="Open Project File"></i>
+          <input type="file" id="importProjectInput" accept=".json" style="display:none">
+        </div>
+        <div id="exportProjectBtn" class="button" title="Save Project File">
+          <i class="fa-solid fa-file-export" title="Save Project File"></i>
+        </div>
+        <div id="exportBtn" class="button" title="Download Composite Image">
+          <i class="fa-solid fa-download"></i>
+        </div>
+        <div id="openTabBtn" class="button" title="Open Composite in New Tab">
+          <i class="fa-solid fa-up-right-from-square" title="Open Composite in New Tab"></i>
+        </div>
       </div>
     </div>
 
-    <div id="rightSide">
-      <div class="tabContent slots " id="jellyfinContent">
+    <div class="field" id="rightSide" save>
+      <div class="tabContent slots" id="jellyfinContent">
         <div class="controls">
-          <i id="loadLibraryBtn" class="fa-solid fa-photo-film" onclick="loadLibraries(this)"></i>
-          <i id="refreshlibraryBtn" class="fa-solid fa-arrows-rotate" onclick="filterRandom(this)"></i>
-          <div class="searchInputDiv">
-            <input type="text" id="searchInput" placeholder="Search" input="" save>
-            <i class="fa-solid fa-xmark" id="clearSearchInput"
-              onclick="if(jellyfinsearchInput.value == '') return; jellyfinsearchInput.value = ''; searchOnLibrary(null, true, true)"></i>
-          </div>
+          <i id="loadLibraryBtn" class="fa-solid fa-photo-film" onclick="loadLibraries(this)" title="Return to Libraries"></i>
+          <input type="text" id="searchInput" placeholder="Search" input="" class="searchInputDiv" save>
+          <i id="refreshlibraryBtn" class="fa-solid fa-arrows-rotate" onclick="filterRandom(this)" title="Filter Random"></i>
+        </div>
 
+
+        <div id="jellyfinimages" class="jellyfinWindow scroll-container" save customTrigger="returnToSearch"></div>
+
+        <div class="controls">
           <select id="posterslimit" value="10" save onchange="setpostersLimit(this.value)">
             <option value="10">10</option>
             <option value="20">20</option>
@@ -256,24 +458,29 @@
           <i id="previousPage" class="fa-solid fa-left-long" onclick="previousPage(this)"></i>
           <i id="nextPage" class="fa-solid fa-right-long" onclick="nextPage(this)"></i>
         </div>
-        <div id="jellyfinimages" class="jellyfinWindow scroll-container" save customTrigger="returnToSearch">
-        </div>
       </div>
     </div>
-  </div>
 
-  <script src="https://jeffersoncgo.github.io/cdn/js/common.js"></script>
-  <script src="https://jeffersoncgo.github.io/cdn/js/base.js"></script>
-  <script src="https://jeffersoncgo.github.io/cdn/js/object.js"></script>
-  <script src="https://jeffersoncgo.github.io/cdn/js/controller.js"></script>
-  <script src="https://jeffersoncgo.github.io/cdn/js/observer.js"></script>
-  <script src="https://jeffersoncgo.github.io/cdn/js/pagememory.js"></script>
-  <script src="https://jeffersoncgo.github.io/cdn/js/search.js"></script>
-  <script src="https://jeffersoncgo.github.io/cdn/js/fetchqueue.js"></script>
+    <div id="toast-root"></div>
 
-  <script src="js/jellyfin.js"></script>
-  <script src="js/script.js"></script>
-  <script src="js/windowsHandle.js"></script>
+    <script src="https://jeffersoncgo.github.io/cdn/js/common.js"></script>
+    <script src="https://jeffersoncgo.github.io/cdn/js/base.js"></script>
+    <script src="https://jeffersoncgo.github.io/cdn/js/object.js"></script>
+    <script src="https://jeffersoncgo.github.io/cdn/js/controller.js"></script>
+    <script src="https://jeffersoncgo.github.io/cdn/js/observer.js"></script>
+    <script src="https://jeffersoncgo.github.io/cdn/js/pagememory.js"></script>
+    <script src="https://jeffersoncgo.github.io/cdn/js/search.js"></script>
+    <script src="https://jeffersoncgo.github.io/cdn/js/fetchqueue.js"></script>
+
+    <script src="js/jellyfin.js"></script>
+    <script src="js/windowsHandle.js"></script>
+
+    <script src="js/config.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/drawing.js"></script>
+    <script src="js/slots.js"></script>
+    <script src="js/jellyfin_ui.js"></script>
+    <script src="js/app.js"></script>
 </body>
 
 </html>

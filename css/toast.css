@@ -1,0 +1,166 @@
+/* The wrapper that holds toasts in specific fixed positions */
+.toast-container {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  z-index: 9999;
+  pointer-events: none;
+  /* Let clicks pass through the empty container */
+  max-height: 100vh;
+  padding: var(--space-md);
+}
+
+/* Specific Positions */
+.tc-top-left {
+  top: 0;
+  left: 0;
+  align-items: flex-start;
+}
+
+.tc-top-center {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+}
+
+.tc-top-right {
+  top: 0;
+  right: 0;
+  align-items: flex-end;
+}
+
+.tc-center-left {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  align-items: flex-start;
+}
+
+.tc-center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  align-items: center;
+}
+
+.tc-center-right {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  align-items: flex-end;
+}
+
+.tc-bottom-left {
+  bottom: 0;
+  left: 0;
+  align-items: flex-start;
+  flex-direction: column-reverse;
+}
+
+.tc-bottom-center {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  flex-direction: column-reverse;
+}
+
+.tc-bottom-right {
+  bottom: 0;
+  right: 0;
+  align-items: flex-end;
+  flex-direction: column-reverse;
+}
+
+/* The Toast Item itself */
+.toast {
+  pointer-events: auto;
+  background-color: var(--c-surface);
+  border: 1px solid var(--c-border);
+  color: var(--c-text-primary);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 250px;
+  max-width: 350px;
+
+  /* Animation defaults */
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* State: Visible */
+.toast.show {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Toast Variants (colored strip or icon color) */
+.toast-accent-default {
+  border-left: 4px solid var(--c-primary);
+}
+
+.toast-accent-success {
+  border-left: 4px solid var(--c-success);
+}
+
+.toast-accent-danger {
+  border-left: 4px solid var(--c-danger);
+}
+
+/* Cursor Position Special Handling */
+.toast.toast-cursor {
+  position: fixed;
+  z-index: 9999;
+  margin: 0;
+}
+
+/* =================================
+           DEMO UI STYLES
+           ================================= */
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.btn {
+  background-color: var(--c-surface);
+  border: 1px solid var(--c-border);
+  color: var(--c-text-secondary);
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background-color: var(--c-surface-hover);
+  color: var(--c-text-primary);
+  border-color: var(--c-border-hover);
+}
+
+.btn.primary {
+  background-color: var(--c-primary);
+  color: white;
+  border: none;
+}
+
+.btn.primary:hover {
+  background-color: var(--c-primary-hover);
+}
+
+h2 {
+  color: var(--c-text-primary);
+  margin-bottom: var(--space-lg);
+  font-weight: 500;
+}

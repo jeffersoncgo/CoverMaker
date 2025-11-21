@@ -1,0 +1,34 @@
+.relative { position: relative; }
+.block { display: block; }
+.flex { display: flex; }
+.row { flex-direction: row; }
+.column { flex-direction: column; }
+.space-between { justify-content: space-between; }
+.noMargin { margin: 0; }
+.noPadding { padding: 0 }
+.fullW { width: 100vw; }
+.full100W { width: 100%; }
+.mid50W { width: 50%; }
+.fullH { height: 100vh; }
+.full100H { height: 100%; }
+.centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.hidden { display: none; }
+.overflowYScroll { overflow-y: scroll; }
+.overflowXScroll { overflow-x: scroll; }
+.textCenter { text-align: center; }
+.textRight { text-align: right; }
+.justifyCenter { justify-content: center; }
+.justifyStart { justify-content: flex-start; }
+.justifyEnd { justify-content: flex-end; }
+.alignCenter { align-items: center; }
+.wrap { flex-wrap: wrap; }
+.div2 { width: 50%; }
+.gapSm { gap: var(--space-sm); }
+/* childs will use the whole width space, divided between then */
+.equalW > * {
+  flex: 1;
+}

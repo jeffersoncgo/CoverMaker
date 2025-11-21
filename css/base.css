@@ -1,0 +1,122 @@
+/* Reset & Global */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--c-background);
+  color: var(--c-text-primary);
+  font-family: var(--font);
+  font-size: var(--font-size);
+  line-height: 1.5;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--c-text-primary);
+}
+
+h2 { margin-bottom: 1rem; font-size: 1.25rem; }
+
+a {
+  color: var(--c-primary-hover);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover { text-decoration: none; color: var(--c-primary); }
+
+/* Modern Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--c-border-hover);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--c-text-secondary);
+}
+
+/* Image resets */
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* 2. Base styles to reset the input */
+input[type="range"] {
+  -webkit-appearance: none; /* Disable default styling */
+  appearance: none;
+  width: 100%; /* Full width */
+  background: transparent; /* Make the container transparent */
+  cursor: pointer;
+}
+
+/* 3. Chrome, Safari, Edge, Opera (Webkit) */
+
+/* The Track (Background) */
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px; /* Slim height */
+  background: var(--c-text-secondary);
+  border-radius: 2px;
+}
+
+/* The Thumb (Handle) */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px; /* Thumb height */
+  width: 16px;  /* Thumb width */
+  border-radius: 50%; /* Circular */
+  background: var(--c-surface-active);
+  
+  /* Vertical Alignment Math: (TrackHeight / 2) - (ThumbHeight / 2) */
+  /* (4px / 2) - (16px / 2) = 2 - 8 = -6px */
+  margin-top: -6px; 
+  
+  /* Optional: Adds a simple transition for hover effects */
+  transition: transform 0.1s ease;
+}
+
+/* Optional: Hover effect on the thumb */
+input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+/* 4. Firefox (Mozilla) */
+
+/* The Track */
+input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: var(--c-text-secondary);
+  border-radius: 2px;
+}
+
+/* The Thumb */
+input[type="range"]::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border: none; /* Firefox adds a default border */
+  border-radius: 50%;
+  background: var(--c-surface-active);
+}
+
+/* The "Filled" part (Only works natively in Firefox) */
+input[type="range"]::-moz-range-progress {
+  background: var(--c-surface-active);
+  height: 4px;
+  border-radius: 2px;
+}

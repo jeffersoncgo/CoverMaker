@@ -65,6 +65,7 @@ class Jellyfin {
       hasNextPage: true,
       sortBy: "Name", 
       order: "asc",
+      result: []
     }
 
     this.currentSearchFilter = null;
@@ -598,6 +599,7 @@ class Jellyfin {
     }
     lib.Items = lib.Items.filter(item => item.Id !== itemId);
     lib.Count = lib.Items.length;
+    this.searchParams.result = this.searchParams.result.filter(item => item.Id !== itemId);
     this.saveData(this.Server.Id, library, "result", lib);
   }
 
@@ -606,7 +608,7 @@ class Jellyfin {
       return;
     this.searchParams.page++;
     this.searchParams.offset = (this.searchParams.page - 1) * this.searchParams.limit;
-    return await this.searchItems(null, null, null);
+    return await this.searchItems(null, null, null, null);
   }
 
   async previousPage() {
@@ -614,7 +616,7 @@ class Jellyfin {
       return;
     this.searchParams.page--;
     this.searchParams.offset = (this.searchParams.page - 1) * this.searchParams.limit;
-    return await this.searchItems(null, null, null);
+    return await this.searchItems(null, null, null, null);
   }
 
   hasPreviousPage() {
@@ -644,13 +646,13 @@ class Jellyfin {
   }
 
 
-  async searchItems(Name, library, query) {
+  async searchItems(Name = null, library = null, query = null, tempLimit = null) {
     const orgQuery = query;
     if (!query) {
       query = {}
-      if (Name)
+      if (typeof Name == 'string')
         query.Name = Name.trim();
-      if (library)
+      if (typeof library == 'string')
         query.Library = library.trim();
     }
 
@@ -721,9 +723,12 @@ class Jellyfin {
     this.searchParams.hasPreviousPage = this.hasPreviousPage();
     this.searchParams.hasNextPage = this.hasNextPage(items);
 
-    items = items.slice(this.searchParams.offset, this.searchParams.offset + this.searchParams.limit);
+    const mLimit = tempLimit || this.searchParams.limit;
+
+    items = items.slice(this.searchParams.offset, this.searchParams.offset + mLimit);
 
     this.events.onSearchFinish(items)
+    this.searchParams.result = items;
     return items;
   }
 
