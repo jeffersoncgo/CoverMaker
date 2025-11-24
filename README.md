@@ -69,11 +69,11 @@ The app seamlessly connects to your Jellyfin server:
 See what you can create with CoverMaker! Each example includes a downloadable project file.
 
 ### Example 1: Line Layout - Film Collection
-![Line Layout Example](images/demo/cover_lile_filmes.png)
+![Line Layout Example](images/demo/cover_line_filmes.png)
 
 **Features Used:** Line layout mode, reflection effects, gradient overlay, custom text positioning
 
-📦 **[Download Project](images/demo/cover_lile_filmes_project.zip)** | 🖼️ **[View Result](images/demo/cover_lile_filmes_app.png)**
+📦 **[Download Project](images/demo/cover_line_filmes_project.zip)** | 🖼️ **[View Result](images/demo/cover_line_filmes_app.png)**
 
 ---
 
