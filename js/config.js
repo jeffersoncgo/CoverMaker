@@ -78,6 +78,10 @@ var Setup = {
       baseScale: 1.5,
       blurAmount: 0,
       spacing: 0,
+    },
+    export: {
+      format: "png",
+      jpegQuality: 0.95
     }
   },
   defaults: {
@@ -107,7 +111,8 @@ var Setup = {
         x: 0,
         y: 0,
         textAlign: "center",
-        textBaseline: "middle"
+        textBaseline: "middle",
+        rotation: 0 // ⭐️ ADDED rotation property
       },
       strokes: [], // ⭐️ CHANGED to an array
       shadows: []  // ⭐️ CHANGED to an array

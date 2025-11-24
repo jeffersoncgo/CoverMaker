@@ -14,6 +14,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
     integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+    integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="js/vendor/meilisearch_index.min.js" defer></script>
   <title>Collection poster Maker</title>
 </head>
@@ -45,7 +48,7 @@
         onchange="localImageInputChanged(this)">
       <img src="" class="preview" save customTrigger="reloadSlotImage" src="" loading="lazy"></img>
       <div class="topButtons">
-        <i class="fa-solid fa-thumbtack" onclick="toggleSlotPin(this)" title="Pin Image"></i>
+        <i class="fa-solid fa-thumbtack pin-button" onclick="toggleSlotPin(this)" title="Pin Image"></i>
         <i class="fa-solid fa-file-image" onclick="loadLocalImage(this)" title="Load Local Image"></i>
         <i class="fa-solid fa-up-right-from-square" onclick="openInNewTab(this)" title="View Image In New Tab"></i>
         <i class="fa-solid fa-arrows-rotate" onclick="radomizeSlotImage(this)" title="Randomize Image"></i>
@@ -136,7 +139,7 @@
 
             <div class="field checkbox">
               <input type="checkbox" class="expand-checkbox">
-              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Position</label>
+              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Position/Rotation</label>
               <div class="expand-content">
                 <div class="field text">
                   <div class="flex row equalW full100W space-between">
@@ -167,6 +170,9 @@
                       <input class="positionY-input" type="number" value="0">
                     </div>
                   </div>
+                  <div>
+                    <span>Rotation (Degrees):</span>
+                    <input class="rotation-input" type="number" value="0">
                 </div>
               </div>
             </div>
@@ -288,9 +294,13 @@
         <div class="tabContent" id="imageslotsContent">
           <div class="controls">
             <i class="fa-solid fa-plus" onclick="addImageSlot()" title="Add Slot"></i>
+            <i class="fa-solid fa-arrows-up-down-left-right" onclick="moveSlotsRandomly()" title="Randomly Move Slots"></i>
+            <i class="fa-solid fa-arrow-up-wide-short" onclick="moveSlotsReverse()" title="Reverse Slots"></i>
+            <i class="fa-solid fa-thumbtack" onclick="pinAllSlots()" title="Pin All Slots"></i>
+            <i class="fa-solid fa-thumbtack-slash" onclick="unpinAllSlots()" title="Unpin All Slots"></i>
             <i class="fa-solid fa-eraser" onclick="clearAllSlots(this)" title="Clear All Slot"></i>
             <i class="fa-solid fa-trash" onclick="deleteAllSlots()" title="Delete All Slots"></i>
-            <i class="fa-solid fa-arrows-rotate" onclick="fillSlotsRandomly()" title="Randomize All Slots"></i>
+            <i class="fa-solid fa-arrows-rotate" onclick="fillSlotsRandomly()" title="Randomize All Slots Images"></i>
           </div>
           <div id="image-slots" class="slots scroll-container" slotsCount="0" customTrigger="setSlots" save>
           </div>
@@ -411,6 +421,36 @@
                 </div>
               </div>
             </div>
+
+            <div class="field checkbox">
+              <input type="checkbox" id="expandOptionsSettings" class="expand-checkbox" save>
+              <label for="expandOptionsSettings" class="expand-label expand-btn relative">Options</label>
+              <div class="expand-content">
+                <div class="field options">
+                  <div class="field checkbox">
+                    <div>
+                      <input type="checkbox" id="expandExportSettings" class="expand-checkbox" save>
+                      <label for="expandExportSettings" class="expand-label expand-btn relative">Export</label>
+                      <div class="expand-content">
+                        <div class="field Export">
+                          <div>
+                            <label for="exportFormatSelect">Image Format:</label>
+                            <select id="exportFormatSelect" save>
+                              <option value="png">PNG</option>
+                              <option value="jpeg">JPEG</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label for="jpegQuality">JPEG Quality (Only for JPEG):</label>
+                            <input type="number" id="jpegQuality" value="1" step="0.01" min="0" max="1" save>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -418,18 +458,26 @@
 
     <div id="canvas-container">
       <div class="canvasBars field">
+        <!-- <div id="testFillNumbersBtn" class="button" title="Test: Fill Slots with Numbers">
+          <i class="fa-solid fa-vial" title="Test: Fill Slots with Numbers"></i>
+          <span>Test Numbers</span>
+        </div>
+        <div id="debugSlotsBtn" class="button" title="Debug: Log slotsImages Array">
+          <i class="fa-solid fa-bug" title="Debug: Log slotsImages Array"></i>
+          <span>Debug Slots</span>
+        </div> -->
       </div>
       <canvas id="myCanvas" width="1920" height="1080"></canvas>
       <div class="canvasBars field">
         <div id="importProjectBtn" class="button" title="Open Project File">
           <i class="fa-solid fa-file-pen" title="Open Project File"></i>
-          <input type="file" id="importProjectInput" accept=".json" style="display:none">
+          <input type="file" id="importProjectInput" accept=".json,.zip,.covermaker.zip" style="display:none">
         </div>
         <div id="exportProjectBtn" class="button" title="Save Project File">
           <i class="fa-solid fa-file-export" title="Save Project File"></i>
         </div>
         <div id="exportBtn" class="button" title="Download Composite Image">
-          <i class="fa-solid fa-download"></i>
+          <i class="fa-solid fa-download" title="Download Composite Image"></i>
         </div>
         <div id="openTabBtn" class="button" title="Open Composite in New Tab">
           <i class="fa-solid fa-up-right-from-square" title="Open Composite in New Tab"></i>
@@ -477,6 +525,7 @@
 
     <script src="js/config.js"></script>
     <script src="js/toast.js"></script>
+    <script src="js/drawCompositeImage.js"></script>
     <script src="js/drawing.js"></script>
     <script src="js/slots.js"></script>
     <script src="js/jellyfin_ui.js"></script>

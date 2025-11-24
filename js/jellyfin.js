@@ -1173,16 +1173,18 @@ class Jellyfin {
 
     this.Meilisearch.Index = this.Meilisearch.client.index(this.Meilisearch.IndexName);
     this.Meilisearch.Index.updatePagination({ "maxTotalHits": this.Meilisearch.maxTotalHits });
+    // ensure the attributes type is filterable and sortable on the Meilisearch index
+
     this.searchParams.loadLimit = this.Meilisearch.maxTotalHits;
 
     const filterable = await this.Meilisearch.Index.getFilterableAttributes();
     const sortable = await this.Meilisearch.Index.getSortableAttributes();
-    if (!filterable.includes('path')) {
-      await this.Meilisearch.Index.updateFilterableAttributes([...filterable, 'path']);
+    if (!filterable.includes('path') || !filterable.includes('type')) {
+      await this.Meilisearch.Index.updateFilterableAttributes([...[...filterable, 'path', 'type'].filter((item, index, arr) => arr.indexOf(item) === index)]);
       console.log('✅ Added "path" as filterable attribute to Meilisearch index.');
     }
     if (!sortable.includes('path') || !sortable.includes('type')) {
-      let newSortable = [...sortable, 'path', 'type']
+      let newSortable = [...[...sortable, 'path', 'type'].filter((item, index, arr) => arr.indexOf(item) === index)];
       newSortable = newSortable.filter((item, index) => newSortable.indexOf(item) === index);
       await this.Meilisearch.Index.updateSortableAttributes(newSortable);
       console.log('✅ Added "path" as sortable attribute to Meilisearch index.');

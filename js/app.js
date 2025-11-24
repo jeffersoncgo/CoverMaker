@@ -44,6 +44,10 @@ const reflectionScaleElement = document.getElementById("reflexDistance");
 const reflectionDistanceElement = document.getElementById("reflexScale");
 const baseScaleElement = document.getElementById("posterScale");
 
+// Export Settings
+const exportFormatSelectElement = document.getElementById("exportFormatSelect");
+const jpegQualityElement = document.getElementById("jpegQuality");
+
 // Jellyfin UI
 const jellyfinContainer = document.getElementById('jellyfinimages');
 const jellyfinloadLibraryBtn = document.getElementById('loadLibraryBtn');
@@ -78,6 +82,30 @@ function loadFieldsFromStorage() {
   if (password) document.getElementById("Password").value = password;
 }
 
+/**
+ * Deep merge two objects, ensuring all keys from defaults exist in target
+ * @param {Object} target - The target object to merge into
+ * @param {Object} defaults - The default object with all required keys
+ * @returns {Object} - Merged object with all default keys
+ */
+function deepMerge(target, defaults) {
+  const result = { ...target };
+  
+  for (const key in defaults) {
+    if (defaults.hasOwnProperty(key)) {
+      if (defaults[key] && typeof defaults[key] === 'object' && !Array.isArray(defaults[key])) {
+        // Recursively merge nested objects
+        result[key] = deepMerge(result[key] || {}, defaults[key]);
+      } else if (!(key in result)) {
+        // Add missing key from defaults
+        result[key] = defaults[key];
+      }
+    }
+  }
+  
+  return result;
+}
+
 function loadFullProjectFromJson(jsonData) {
   // set the memory as not loaded
   window.memoryLoaded = false;
@@ -86,42 +114,76 @@ function loadFullProjectFromJson(jsonData) {
   // then clear the images using the existing function
   deleteAllSlots();
   if (jsonData.Setup) {
-    Setup = jsonData.Setup;
+    // Get the default Setup from config.js
+    const defaultSetup = window.defaultSetup || Setup;
+    // Merge imported Setup with defaults to ensure all keys exist
+    Setup = deepMerge(jsonData.Setup, defaultSetup);
     loadTextLayers(Setup.Settings.textLayers);
   }
-  // also the images, let's load then, we need to first, theres an example of how to do it in the dummyStart
-  if (jsonData.imageSlots) {
-    setSlots(jsonData.imageSlots.length);
-    jsonData.imageSlots.forEach((src, i) => {
-      if (i >= slotsImages.length)
-        return;
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        slotsImages[i] = img;
-        setSlotImage(i, img)
-        updateImageSettings();
-      };
-      img.src = src;
-    });
+  // restore also the fields from the expandImageSettings element
+  RatioSelectElement.value = Setup.Settings.canvas.format;
+  typeSelectElement.value = Setup.Settings.canvas.type;
+  randomSaltElement.value = Setup.Settings.canvas.salt;
+  overlayColorStartElement.value = Setup.Settings.canvas.overlayColorStart;
+  overlayColorEndElement.value = Setup.Settings.canvas.overlayColorEnd;
+  overlayOpacityStartElement.value = Setup.Settings.canvas.overlayOpacityStart;
+  overlayOpacityEndElement.value = Setup.Settings.canvas.overlayOpacityEnd;
+  spacingElement.value = Setup.Settings.canvas.spacing;
+  blurAmountElement.value = Setup.Settings.canvas.blurAmount;
+  reflectionScaleElement.value = Setup.Settings.canvas.reflectionScale;
+  reflectionDistanceElement.value = Setup.Settings.canvas.reflectionDistance;
+  baseScaleElement.value = Setup.Settings.canvas.baseScale;
+  
+  // Restore export settings
+  if (Setup.Settings.export) {
+    exportFormatSelectElement.value = Setup.Settings.export.format || 'png';
+    jpegQualityElement.value = Setup.Settings.export.jpegQuality || 0.95;
+  }
+  
+  // Note: Images are no longer loaded from JSON for performance reasons.
+  // Images should be exported/imported using ZIP files.
+  // If loading from legacy JSON with image URLs, try to load them
+  if (jsonData.imageSlots && Array.isArray(jsonData.imageSlots)) {
+    const hasImageUrls = jsonData.imageSlots.some(slot => slot && typeof slot === 'string' && slot !== 'placeholder');
+    
+    if (hasImageUrls) {
+      // Legacy format with URLs
+      setSlots(jsonData.imageSlots.length);
+      jsonData.imageSlots.forEach((src, i) => {
+        if (i >= slotsImages.length || !src || src === 'placeholder')
+          return;
+        
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          slotsImages[i] = img;
+          setSlotImage(i, img);
+          updateImageSettings();
+        };
+        img.onerror = () => {
+          console.warn(`Failed to load image from URL: ${src}`);
+        };
+        img.src = src;
+      });
+    } else {
+      // New format without images (just placeholders)
+      setSlots(jsonData.imageSlots.length);
+    }
   }
   window.memoryLoaded = true;
+  updateImageSettings();
+  updateTextSettings();
   saveSetup();
   saveTextLayersToStorage();
   saveFieldsToStorage();
   drawComposite();
 }
 
-
 function makeSaveAllJson() {
   const save = {};
   save.Setup = Setup;
-  save.imageSlots = [];
-  slotsImages.forEach((img) => {
-    if(!img)
-      return;
-    save.imageSlots.push(img.getAttribute('src'));
-  });
+  // Don't include image URLs - images will be exported separately in ZIP
+  save.imageSlots = slotsImages.map(img => img ? 'placeholder' : null);
   return JSON.stringify(save, null, 2);
 }
 
@@ -139,8 +201,11 @@ function saveSetup() {
 
 function loadSetup() {
   const savedSetup = localStorage.getItem("setup");
-  if (savedSetup)
-    Setup = { ...Setup, ...JSON.parse(savedSetup) };
+  if (savedSetup) {
+    const defaultSetup = window.defaultSetup || Setup;
+    // Merge saved Setup with defaults to ensure all keys exist
+    Setup = deepMerge(JSON.parse(savedSetup), defaultSetup);
+  }
 }
 
 function clearSavedSetup() {
@@ -183,6 +248,7 @@ function loadTextLayers(layersData) {
       newLayerEl.querySelector(".textBaseline-input").value = layerData.position.textBaseline;
       newLayerEl.querySelector(".positionX-input").value = layerData.position.x;
       newLayerEl.querySelector(".positionY-input").value = layerData.position.y;
+      newLayerEl.querySelector(".rotation-input").value = layerData.position.rotation || 0;
 
       // Populate strokes
       for (let index2 = 0; index2 < layerData.strokes.length; index2++) {
@@ -306,6 +372,7 @@ async function updateTextSettings() {
     newLayer.position.textBaseline = layerEl.querySelector(".textBaseline-input").value;
     newLayer.position.x = parseFloat(layerEl.querySelector(".positionX-input").value) || 0;
     newLayer.position.y = parseFloat(layerEl.querySelector(".positionY-input").value) || 0;
+    newLayer.position.rotation = parseFloat(layerEl.querySelector(".rotation-input").value) || 0;
     layerEl.parentElement.parentElement.setAttribute('layerIndex', layerIndex);
 
     // 3. Read Stroke Settings
@@ -391,6 +458,17 @@ function updateImageSettings() {
   drawCompositeImage();
 }
 
+function updateExportSettings() {
+  Setup.Settings.export.format = exportFormatSelectElement.value || 'png';
+  Setup.Settings.export.jpegQuality = parseFloat(jpegQualityElement.value) || 0.95;
+  
+  // Clamp quality between 0 and 1
+  if (Setup.Settings.export.jpegQuality < 0) Setup.Settings.export.jpegQuality = 0;
+  if (Setup.Settings.export.jpegQuality > 1) Setup.Settings.export.jpegQuality = 1;
+  
+  saveSetup();
+}
+
 async function updateSettings() {
   updateImageSettings();
   await updateTextSettings();
@@ -444,6 +522,11 @@ function addTextLayer(layerIndex) {
     header.innerText = `Text Layer ${layerIndex + 1}`;
   }
 
+  // get the font select and set its id and label
+  const fontSelectInput = clone.querySelector('.expand-content .field .fontSelect-input');
+  const fontSelectId = `fontSelect-layer-${layerIndex}`;
+  fontSelectInput.id = fontSelectId;
+
   // Find all expandable sections (Position, Stroke, Shadow) within this clone
   const expandSections = clone.querySelectorAll('.expand-content .field.checkbox');
   
@@ -493,6 +576,7 @@ function addTextLayer(layerIndex) {
       clone.querySelector(".textBaseline-input").value = Setup.defaults.TextLayer.position.textBaseline;
       clone.querySelector(".positionX-input").value = Setup.defaults.TextLayer.position.x;
       clone.querySelector(".positionY-input").value = Setup.defaults.TextLayer.position.y;
+      clone.querySelector(".rotation-input").value = Setup.defaults.TextLayer.position.rotation || 0;
 
       // Populate strokes
       for (let index2 = 0; index2 < Setup.defaults.TextLayer.strokes.length; index2++) {
@@ -660,60 +744,441 @@ function initTextLayers() {
 // ======================
 
 function getExportFileName() {
-  // ⭐️ FIXED: Get text from the first layer, or use a default
+  // Get the file extension based on export format
+  const format = Setup.Settings.export.format || 'png';
+  const extension = format === 'jpeg' ? '.jpg' : '.png';
+  
+  // If we have a stored project name from import, use it
+  if (window.projectFileName) {
+    return window.projectFileName + extension;
+  }
+  
+  // Otherwise, build filename from all text layers
   if (Setup.Settings.textLayers.length > 0) {
-    const firstLayerText = Setup.Settings.textLayers[0].overlayText;
-    if (firstLayerText) {
-      return utils.safeWindowsFileName(firstLayerText) + '.png';
+    const allTexts = Setup.Settings.textLayers
+      .map(layer => layer.overlayText)
+      .filter(text => text && text.trim())
+      .join(' - ');
+    
+    if (allTexts) {
+      return utils.safeWindowsFileName(allTexts) + extension;
     }
   }
-  return 'composite.png';
+  
+  return 'composite' + extension;
+}
+
+function getProjectBaseName() {
+  // If we have a stored project name from import, use it
+  if (window.projectFileName) {
+    return window.projectFileName;
+  }
+  
+  // Otherwise, build filename from all text layers
+  if (Setup.Settings.textLayers.length > 0) {
+    const allTexts = Setup.Settings.textLayers
+      .map(layer => layer.overlayText)
+      .filter(text => text && text.trim())
+      .join(' - ');
+    
+    if (allTexts) {
+      return utils.safeWindowsFileName(allTexts);
+    }
+  }
+  
+  return 'composite';
+}
+
+/**
+ * DEBUG FUNCTION: Log current state of slotsImages array
+ */
+function debugSlotsImages() {
+  console.log('=== SLOTS DEBUG ===');
+  console.log(`Total slots: ${slotsImages.length}`);
+  slotsImages.forEach((img, index) => {
+    if (img) {
+      console.log(`Slot ${index}: Image src = ${img.src.substring(0, 80)}...`);
+    } else {
+      console.log(`Slot ${index}: null`);
+    }
+  });
+  console.log('===================');
+}
+
+// Make it globally accessible for console debugging
+window.debugSlotsImages = debugSlotsImages;
+
+/**
+ * TEST FUNCTION: Fill all slots with numbered images
+ * Creates canvas images with numbers from 0 to last slot index
+ */
+function fillSlotsWithNumbers() {
+  const slotCount = slotsImages.length;
+  
+  if (slotCount === 0) {
+    alert('No slots available! Add some slots first.');
+    return;
+  }
+  
+  console.log(`Filling ${slotCount} slots with numbered images...`);
+  
+  for (let i = 0; i < slotCount; i++) {
+    // Create a canvas to draw the number
+    const testCanvas = document.createElement('canvas');
+    testCanvas.width = 270;
+    testCanvas.height = 400;
+    const testCtx = testCanvas.getContext('2d');
+    
+    // Draw background with unique color per slot
+    const hue = (i * 360 / slotCount) % 360;
+    testCtx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+    testCtx.fillRect(0, 0, testCanvas.width, testCanvas.height);
+    
+    // Draw number
+    testCtx.fillStyle = 'white';
+    testCtx.strokeStyle = 'black';
+    testCtx.lineWidth = 3;
+    testCtx.font = 'bold 120px Arial';
+    testCtx.textAlign = 'center';
+    testCtx.textBaseline = 'middle';
+    
+    const text = i.toString();
+    testCtx.strokeText(text, testCanvas.width / 2, testCanvas.height / 2);
+    testCtx.fillText(text, testCanvas.width / 2, testCanvas.height / 2);
+    
+    // Convert canvas to blob and create Image
+    testCanvas.toBlob(blob => {
+      if (!blob) {
+        console.error(`Failed to create blob for slot ${i}`);
+        return;
+      }
+      
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Load the blob URL into the slot (loadImageIntoSlot will handle Image creation)
+      loadImageIntoSlot(blobUrl, i);
+      console.log(`Loaded number ${i} (${blobUrl}) into slot ${i}`);
+    }, 'image/png');
+  }
+  
+  toastMessage('Test: Filling slots with numbers...', { position: 'topRight', type: 'success' });
 }
 
 function exportAsPNG() {
-  const dataURL = canvas.toDataURL("image/png");
-  const fileName = getExportFileName();
-  const link = document.createElement("a");
-  link.href = dataURL;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const btn = document.getElementById('exportBtn');
+  btn.classList.add('disabled');
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '0.5';
+  
+  toastMessage('Generating image...', { position: 'bottomCenter', type: 'info' });
+  
+  // Use setTimeout to let UI update
+  setTimeout(() => {
+    try {
+      // Get export format and quality from settings
+      const format = Setup.Settings.export.format || 'png';
+      const quality = Setup.Settings.export.jpegQuality || 0.95;
+      
+      // Generate data URL with correct format
+      let dataURL;
+      if (format === 'jpeg') {
+        dataURL = canvas.toDataURL("image/jpeg", quality);
+      } else {
+        dataURL = canvas.toDataURL("image/png");
+      }
+      
+      const fileName = getExportFileName();
+      const link = document.createElement("a");
+      link.href = dataURL;
+      link.download = fileName;
+      link.style.display = 'none';
+      
+      // Prevent any navigation or page refresh
+      link.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up after a delay to ensure download started
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+      
+      toastMessage('Image exported successfully!', { position: 'bottomCenter', type: 'success' });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toastMessage('Failed to export image', { position: 'bottomCenter', type: 'danger' });
+    } finally {
+      btn.classList.remove('disabled');
+      btn.style.pointerEvents = '';
+      btn.style.opacity = '';
+    }
+  }, 100);
 }
 
-function exportProjectFile() {
-  const jsonData = makeSaveAllJson();
-  const blob = new Blob([jsonData], { type: "application/json" });
-  const fileName = getExportFileName().replace('.png', '.json');
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+async function exportProjectFile() {
+  if (typeof JSZip === 'undefined') {
+    alert('JSZip library not loaded. Please refresh the page.');
+    return;
+  }
+
+  const btn = document.getElementById('exportProjectBtn');
+  btn.classList.add('disabled');
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '0.5';
+  
+  toastMessage('Exporting project...', { position: 'bottomCenter', type: 'info' });
+
+  try {
+    const zip = new JSZip();
+    const fileName = getProjectBaseName();
+
+    // Add project configuration
+    const jsonData = makeSaveAllJson();
+    zip.file('project.json', jsonData);
+
+    // Add images as separate files
+    const imagePromises = [];
+    for (let i = 0; i < slotsImages.length; i++) {
+      const img = slotsImages[i];
+      if (img) {
+        // Convert image to blob
+        const blobPromise = imgToBlob(img, 'image/png', 1)
+          .then(blob => {
+            zip.file(`images/slot_${i}.png`, blob);
+          })
+          .catch(err => {
+            console.error(`Failed to export image ${i}:`, err);
+          });
+        imagePromises.push(blobPromise);
+      }
+    }
+
+    // Wait for all images to be added
+    toastMessage(`Processing ${imagePromises.length} images...`, { position: 'bottomCenter', type: 'info' });
+    await Promise.all(imagePromises);
+
+    // Generate ZIP file
+    toastMessage('Creating ZIP file...', { position: 'bottomCenter', type: 'info' });
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+    // Download ZIP
+    const link = document.createElement('a');
+    const blobUrl = URL.createObjectURL(zipBlob);
+    link.href = blobUrl;
+    link.download = `${fileName}.covermaker.zip`;
+    link.style.display = 'none';
+    
+    // Prevent any navigation or page refresh
+    link.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    }, 100);
+
+    toastMessage('Project exported successfully!', { position: 'bottomCenter', type: 'success' });
+  } catch (error) {
+    console.error('Export failed:', error);
+    toastMessage('Failed to export project: ' + error.message, { position: 'bottomCenter', type: 'danger' });
+  } finally {
+    btn.classList.remove('disabled');
+    btn.style.pointerEvents = '';
+    btn.style.opacity = '';
+  }
 }
 
-function importProjectFile(event) {
+async function importProjectFile(event) {
   const file = event.target.files[0];
   if (!file) return;
+
+  // Check if it's a ZIP file
+  if (file.name.endsWith('.zip') || file.name.endsWith('.covermaker.zip')) {
+    await importProjectFromZip(file);
+  } else if (file.name.endsWith('.json')) {
+    // Legacy JSON import (without images)
+    importProjectFromJson(file);
+  } else {
+    alert('Unsupported file format. Please use .zip or .json files.');
+  }
+
+  event.target.value = ''; // Clear the input
+}
+
+/**
+ * Import project from ZIP file with images
+ */
+async function importProjectFromZip(file) {
+  if (typeof JSZip === 'undefined') {
+    alert('JSZip library not loaded. Please refresh the page.');
+    return;
+  }
+
+  const btn = document.getElementById('importProjectBtn');
+  btn.classList.add('disabled');
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '0.5';
+  
+  toastMessage('Opening project file...', { position: 'bottomCenter', type: 'info' });
+
+  try {
+    // Store the original filename (without extension) for future exports
+    const fileName = file.name.replace(/\.covermaker\.zip$|\.zip$/i, '');
+    window.projectFileName = utils.safeWindowsFileName(fileName);
+    
+    const zip = new JSZip();
+    const contents = await zip.loadAsync(file);
+
+    // Read project.json
+    const projectJsonFile = contents.file('project.json');
+    if (!projectJsonFile) {
+      throw new Error('Invalid project file: project.json not found');
+    }
+
+    const jsonText = await projectJsonFile.async('text');
+    const projectData = JSON.parse(jsonText);
+
+    // Clear existing data
+    window.memoryLoaded = false;
+    clearTextLayersMemory();
+    deleteAllSlots();
+
+    // Load configuration
+    if (projectData.Setup) {
+      // Get the default Setup from config.js
+      const defaultSetup = window.defaultSetup || Setup;
+      // Merge imported Setup with defaults to ensure all keys exist
+      Setup = deepMerge(projectData.Setup, defaultSetup);
+      loadTextLayers(Setup.Settings.textLayers);
+    }
+
+  // Restore UI fields
+  RatioSelectElement.value = Setup.Settings.canvas.format;
+  typeSelectElement.value = Setup.Settings.canvas.type;
+  randomSaltElement.value = Setup.Settings.canvas.salt;
+  overlayColorStartElement.value = Setup.Settings.canvas.overlayColorStart;
+  overlayColorEndElement.value = Setup.Settings.canvas.overlayColorEnd;
+  overlayOpacityStartElement.value = Setup.Settings.canvas.overlayOpacityStart;
+  overlayOpacityEndElement.value = Setup.Settings.canvas.overlayOpacityEnd;
+  spacingElement.value = Setup.Settings.canvas.spacing;
+  blurAmountElement.value = Setup.Settings.canvas.blurAmount;
+  reflectionScaleElement.value = Setup.Settings.canvas.reflectionScale;
+  reflectionDistanceElement.value = Setup.Settings.canvas.reflectionDistance;
+  baseScaleElement.value = Setup.Settings.canvas.baseScale;
+  
+  // Restore export settings
+  if (Setup.Settings.export) {
+    exportFormatSelectElement.value = Setup.Settings.export.format || 'png';
+    jpegQualityElement.value = Setup.Settings.export.jpegQuality || 0.95;
+  }    // Load images from ZIP
+    toastMessage('Reading project data...', { position: 'bottomCenter', type: 'info' });
+    const imageFiles = [];
+    contents.folder('images').forEach((relativePath, file) => {
+      if (relativePath.endsWith('.png')) {
+        const match = relativePath.match(/slot_(\d+)\.png/);
+        if (match) {
+          const slotIndex = parseInt(match[1]);
+          imageFiles.push({ slotIndex, file });
+        }
+      }
+    });
+
+    // Sort by slot index
+    imageFiles.sort((a, b) => a.slotIndex - b.slotIndex);
+
+    // Set up slots
+    const maxSlotIndex = imageFiles.length > 0 ? Math.max(...imageFiles.map(f => f.slotIndex)) : 0;
+    setSlots(maxSlotIndex + 1);
+
+    // Load each image
+    toastMessage(`Loading ${imageFiles.length} images...`, { position: 'bottomCenter', type: 'info' });
+    for (const { slotIndex, file } of imageFiles) {
+      try {
+        const blob = await file.async('blob');
+        const img = await loadImage(blob);
+        slotsImages[slotIndex] = img;
+        setSlotImage(slotIndex, img);
+      } catch (err) {
+        console.error(`Failed to load image ${slotIndex}:`, err);
+      }
+    }
+
+    // Finalize
+    toastMessage('Finalizing...', { position: 'bottomCenter', type: 'info' });
+    window.memoryLoaded = true;
+    updateImageSettings();
+    updateTextSettings();
+    saveSetup();
+    saveTextLayersToStorage();
+    saveFieldsToStorage();
+    drawComposite();
+
+    toastMessage('Project imported successfully!', { position: 'bottomCenter', type: 'success' });
+  } catch (error) {
+    console.error('Import failed:', error);
+    toastMessage('Failed to import project: ' + error.message, { position: 'bottomCenter', type: 'danger' });
+  } finally {
+    const btn = document.getElementById('importProjectBtn');
+    btn.classList.remove('disabled');
+    btn.style.pointerEvents = '';
+    btn.style.opacity = '';
+  }
+}
+
+/**
+ * Import project from legacy JSON file (without images)
+ */
+async function importProjectFromJson(file) {
+  const btn = document.getElementById('importProjectBtn');
+  btn.classList.add('disabled');
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '0.5';
+  
+  toastMessage('Importing legacy project...', { position: 'bottomCenter', type: 'info' });
+  
+  try {
+    // Store the original filename (without extension) for future exports
+    const fileName = file.name.replace(/\.json$/i, '');
+    window.projectFileName = utils.safeWindowsFileName(fileName);
+    
+    await _importProjectFromJsonCore(file);
+    toastMessage('Project imported successfully!', { position: 'bottomCenter', type: 'success' });
+  } catch (error) {
+    console.error('Import failed:', error);
+    toastMessage('Failed to import project', { position: 'bottomCenter', type: 'danger' });
+  } finally {
+    btn.classList.remove('disabled');
+    btn.style.pointerEvents = '';
+    btn.style.opacity = '';
+  }
+}
+
+function _importProjectFromJsonCore(file) {
   const reader = new FileReader();
   reader.onload = function(e) {
     const contents = e.target.result;
     try {
       const importedSetup = JSON.parse(contents);
       loadFullProjectFromJson(importedSetup);
+      toastMessage('Project imported (without images)', { position: 'bottomCenter', type: 'warning' });
     } catch (err) {
-      alert("Error reading project file: " + err.message);
+      alert('Error reading project file: ' + err.message);
       throw err;
     }
   };
   reader.readAsText(file);
-  event.target.value = ""; // Clear the input
 }
 
 function openInNewTab(source) {
   let dataURL = "";
-  if (source?.target?.id == "openTabBtn")
+  if (source?.target?.id == "openTabBtn" || source?.target?.parentElement?.id == "openTabBtn")
     dataURL = canvas.toDataURL("image/png");
   else {
     const slotImage = getSlotPreviewByIndex(getIndexFromButtonClick(source))
@@ -963,6 +1428,11 @@ function addSettingListeners() {
     });
   });
   
+  // Export settings listeners
+  [exportFormatSelectElement, jpegQualityElement].forEach((el) => {
+    el.addEventListener("input", updateExportSettings);
+  });
+  
   // Note: The font listeners are removed, as they are now handled by the main 'input' listener
 }
 
@@ -976,6 +1446,12 @@ document.getElementById("importProjectBtn").addEventListener("click", () => {
 });
 
 document.getElementById("addTextLayerBtn").addEventListener("click", () => addTextLayer());
+
+// Test button to fill slots with numbered images
+document.getElementById("testFillNumbersBtn")?.addEventListener("click", fillSlotsWithNumbers);
+
+// Debug button to log slotsImages array state
+document.getElementById("debugSlotsBtn")?.addEventListener("click", debugSlotsImages);
 
 // ======================
 // App Initialization
@@ -997,6 +1473,12 @@ function dummyStart() {
   values.forEach((src, i) => {
     if (i >= slotsImages.length)
       return;
+    
+    // Revoke old Blob URL before loading new image
+    if (slotsImages[i]) {
+      revokeBlobUrl(slotsImages[i]);
+    }
+    
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
@@ -1012,6 +1494,9 @@ function dummyStart() {
 
 // On window load
 window.addEventListener('load', async () => {
+  // Store a deep copy of the default Setup before any modifications
+  window.defaultSetup = JSON.parse(JSON.stringify(Setup));
+  
   loadFieldsFromStorage();
   document.getElementById("Server").addEventListener("change", saveFieldsToStorage);
   document.getElementById("Username").addEventListener("change", saveFieldsToStorage);
@@ -1041,6 +1526,7 @@ window.addEventListener('load', async () => {
   drawComposite();
   CreateJellyfin();
   await populateFontSelect();
+
   loadSetup();
   initTextLayers();
   loadEssentials();
@@ -1062,39 +1548,13 @@ function loadEssentials() {
   window.memory.addEvent('onSaveMemory', saveSetup)
   window.memory.init();
   addSettingListeners();
+  
+  window.addEventListener('beforeunload', () => {
+    cleanupAllBlobUrls();
+  });
 }
 
 function addtypeSelectOptions() {
-  /*
-const drawCompositeImageFn = {
-  "Line": drawCompositeImageLine,
-  "Grid": drawCompositeImageGrid,
-  "Circle": drawCompositeImageCircle,
-  "Stack": drawCompositeImageStack,
-  "Italic Line": drawCompositeImageItalicLineFixed,
-
-  "Carousel Cylinder": drawCompositeImageCarouselCylinder,
-  "Carousel Flat": drawCompositeImageCarouselFlat,
-
-  "Mosaic Classic": drawCompositeImageMosaicClassic,
-  "Mosaic Adaptive": drawCompositeImageMosaicAdaptive,
-  "Mosaic Irregular": drawCompositeImageMosaicIrregular,
-
-  "Circle": drawCompositeImageCircle,
-  "Circle Pizza": drawCompositeImageCirclePizza,
-
-  "Collage Layered": drawCompositeImageCollageLayered,
-  "Collage Spread": drawCompositeImageCollageSpread,
-  "Collage Minimal": drawCompositeImageCollageMinimal,
-
-  "Stack": drawCompositeImageStack,
-  "Stack Pyramid": drawCompositeImageStackPyramid,
-  "Stack Scatter": drawCompositeImageStackScatter,
-  "Stack Grid": drawCompositeImageStackGrid
-};
-
-  */
-  // get the types from the drawCompositeImageFn and add then to the typeSelectElement options (Clear first)
   typeSelectElement.innerHTML = '';
   for (const type in drawCompositeImageFn) {
     const option = document.createElement('option');
@@ -1105,11 +1565,14 @@ const drawCompositeImageFn = {
 }
 
 
+
 function cleanMemory() {
   window.memoryLoaded = false;
+  window.projectFileName = null;
   memory.reset().then(() => {
     jellyfin.cleanDb();
     clearSavedSetup();
     clearTextLayersMemory();
   });
 }
+

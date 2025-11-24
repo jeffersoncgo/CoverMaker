@@ -11,6 +11,10 @@
 .mid50W { width: 50%; }
 .fullH { height: 100vh; }
 .full100H { height: 100%; }
+.minW100 { min-width: 100%; }
+.minH100 { min-height: 100%; }
+.useMinContent { width: fit-content; height: fit-content; }
+
 .centered {
   display: flex;
   justify-content: center;
@@ -26,6 +30,8 @@
 .justifyEnd { justify-content: flex-end; }
 .alignCenter { align-items: center; }
 .wrap { flex-wrap: wrap; }
+.nowrap { flex-wrap: nowrap; }
+.gapMd { gap: var(--space-md); }
 .div2 { width: 50%; }
 .gapSm { gap: var(--space-sm); }
 /* childs will use the whole width space, divided between then */
