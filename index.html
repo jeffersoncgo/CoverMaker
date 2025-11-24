@@ -80,7 +80,9 @@
   <template id="text-layer-template">
     <div class="field checkbox">
       <input type="checkbox" class="expand-checkbox" save>
+      <input type="checkbox" class="layer-enabled-checkbox toggle-checkbox" checked>
       <label class="expand-label expand-btn relative">Layer</label>
+      <i class="fa-solid fa-eye toggle-button" title="Enable/Disable Layer"></i>
       <i class="fa-solid fa-trash delete delete-layer-btn delete-button" title="Delete Layer"></i>
       <i class="fa-solid fa-bookmark default-layer-btn default-button" title="Set as Default Layer Style"></i>
       <i class="fa-solid fa-clone duplicate-layer-btn duplicate-button" title="Duplicate Layer"></i>
@@ -179,8 +181,8 @@
 
             <div class="field checkbox">
               <input type="checkbox" class="expand-checkbox">
-              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Stroke/Outline</label>
-              <i class="fa-solid fa-plus add-stroke-btn add-button" title="Add Stroke/Outline"></i>
+              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Frame</label>
+              <i class="fa-solid fa-plus add-stroke-btn add-button" title="Add Frame"></i>
               <div class="expand-content">
                 <div class="strokes-container">
                 </div>
@@ -189,8 +191,8 @@
 
             <div class="field checkbox">
               <input type="checkbox" class="expand-checkbox">
-              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Glow/Shadow</label>
-              <i class="fa-solid fa-plus add-shadow-btn add-button" title="Add Glow/Shadow"></i>
+              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Bloom</label>
+              <i class="fa-solid fa-plus add-shadow-btn add-button" title="Add Bloom"></i>
               <div class="expand-content">
                 <div class="shadows-container">
                 </div>
@@ -206,10 +208,12 @@
   <template id="stroke-template">
     <div class="field checkbox">
       <input type="checkbox" class="expand-checkbox" save>
-      <label class="expand-label expand-btn relative">Stroke/Outline</label>
-      <i class="fa-solid fa-trash delete delete-stroke-btn delete-button" title="Delete Stroke/Outline"></i>
-      <i class="fa-solid fa-bookmark default-stroke-btn default-button" title="Set as Default Stroke/Outline Style"></i>
-      <i class="fa-solid fa-clone duplicate-stroke-btn duplicate-button" title="Duplicate Stroke/Outline"></i>
+      <input type="checkbox" class="stroke-enabled-checkbox toggle-checkbox" checked>
+      <label class="expand-label expand-btn relative">Frame</label>
+      <i class="fa-solid fa-eye toggle-button" title="Enable/Disable Stroke"></i>
+      <i class="fa-solid fa-trash delete delete-stroke-btn delete-button" title="Delete Frame"></i>
+      <i class="fa-solid fa-bookmark default-stroke-btn default-button" title="Set as Default Frame Style"></i>
+      <i class="fa-solid fa-clone duplicate-stroke-btn duplicate-button" title="Duplicate Frame"></i>
       <div class="expand-content">
         <div class="stroke-item">
           <div class="field text">
@@ -238,10 +242,12 @@
   <template id="shadow-template">
     <div class="field checkbox">
       <input type="checkbox" class="expand-checkbox" save>
-      <label class="expand-label expand-btn relative">Glow/Shadow</label>
-      <i class="fa-solid fa-trash delete delete-shadow-btn delete-button" title="Delete Glow/Shadow"></i>
-      <i class="fa-solid fa-bookmark default-shadow-btn default-button" title="Set as Default Glow/Shadow Style"></i>
-      <i class="fa-solid fa-clone duplicate-shadow-btn duplicate-button" title="Duplicate Glow/Shadow"></i>
+      <input type="checkbox" class="shadow-enabled-checkbox toggle-checkbox" checked>
+      <label class="expand-label expand-btn relative">Bloom</label>
+      <i class="fa-solid fa-eye toggle-button" title="Enable/Disable Shadow"></i>
+      <i class="fa-solid fa-trash delete delete-shadow-btn delete-button" title="Delete Bloom"></i>
+      <i class="fa-solid fa-bookmark default-shadow-btn default-button" title="Set as Default Bloom Style"></i>
+      <i class="fa-solid fa-clone duplicate-shadow-btn duplicate-button" title="Duplicate Bloom"></i>
       <div class="expand-content">
         <div class="shadow-item">
           <div class="field text">

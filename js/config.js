@@ -89,13 +89,15 @@ var Setup = {
       color: "#000000",
       blur: 5,
       offsetX: 5,
-      offsetY: 5
+      offsetY: 5,
+      enabled: true // ⭐️ ADDED enabled property
     },
     stroke: {
       color: "#000000",
       width: 2,
       opacity: 1,
-      style: "rgba(0, 0, 0, 1)" // Will be built by updateTextSettings
+      style: "rgba(0, 0, 0, 1)", // Will be built by updateTextSettings
+      enabled: true // ⭐️ ADDED enabled property
     },
     TextLayer: {
       overlayText: "Movies",
@@ -115,7 +117,8 @@ var Setup = {
         rotation: 0 // ⭐️ ADDED rotation property
       },
       strokes: [], // ⭐️ CHANGED to an array
-      shadows: []  // ⭐️ CHANGED to an array
+      shadows: [], // ⭐️ CHANGED to an array
+      enabled: true // ⭐️ ADDED enabled property
     }
   }
 }

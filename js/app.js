@@ -242,6 +242,12 @@ function loadTextLayers(layersData) {
       newLayerEl.querySelector(".fontSize-input").value = layerData.font.size;
       newLayerEl.querySelector(".fontColor-input").value = layerData.font.color;
       newLayerEl.querySelector(".fontOpacity-input").value = layerData.font.opacity;
+      
+      // ⭐️ Restore enabled state for layer
+      const layerEnabledCheckbox = newLayerEl.parentElement.parentElement.querySelector(".layer-enabled-checkbox");
+      if (layerEnabledCheckbox) {
+        layerEnabledCheckbox.checked = layerData.enabled !== false;
+      }
 
       // Populate position settings
       newLayerEl.querySelector(".textAlign-input").value = layerData.position.textAlign;
@@ -257,6 +263,12 @@ function loadTextLayers(layersData) {
         strokeEl.querySelector(".strokeColor-input").value = strokeData.color;
         strokeEl.querySelector(".strokeWidth-input").value = strokeData.width;
         strokeEl.querySelector(".strokeOpacity-input").value = strokeData.opacity;
+        
+        // ⭐️ Restore enabled state for stroke
+        const strokeEnabledCheckbox = strokeEl.parentElement.parentElement.querySelector(".stroke-enabled-checkbox");
+        if (strokeEnabledCheckbox) {
+          strokeEnabledCheckbox.checked = strokeData.enabled !== false;
+        }
       }
 
       // Populate shadows
@@ -267,6 +279,12 @@ function loadTextLayers(layersData) {
         shadowEl.querySelector(".shadowBlur-input").value = shadowData.blur;
         shadowEl.querySelector(".shadowOffsetX-input").value = shadowData.offsetX;
         shadowEl.querySelector(".shadowOffsetY-input").value = shadowData.offsetY;
+        
+        // ⭐️ Restore enabled state for shadow
+        const shadowEnabledCheckbox = shadowEl.parentElement.parentElement.querySelector(".shadow-enabled-checkbox");
+        if (shadowEnabledCheckbox) {
+          shadowEnabledCheckbox.checked = shadowData.enabled !== false;
+        }
       }
     }
   }
@@ -287,6 +305,12 @@ function loadTextShadows(layerIndex, shadowsData) {
       shadowEl.querySelector(".shadowBlur-input").value = shadowData.blur;
       shadowEl.querySelector(".shadowOffsetX-input").value = shadowData.offsetX;
       shadowEl.querySelector(".shadowOffsetY-input").value = shadowData.offsetY;
+      
+      // ⭐️ Restore enabled state for shadow
+      const shadowEnabledCheckbox = shadowEl.parentElement.parentElement.querySelector(".shadow-enabled-checkbox");
+      if (shadowEnabledCheckbox) {
+        shadowEnabledCheckbox.checked = shadowData.enabled !== false;
+      }
     }
   }
   updateTextSettings(); // Redraw canvas with loaded settings
@@ -301,6 +325,12 @@ function loadTextStrokes(layerIndex, strokesData) {
       strokeEl.querySelector(".strokeColor-input").value = strokeData.color;
       strokeEl.querySelector(".strokeWidth-input").value = strokeData.width;
       strokeEl.querySelector(".strokeOpacity-input").value = strokeData.opacity;
+      
+      // ⭐️ Restore enabled state for stroke
+      const strokeEnabledCheckbox = strokeEl.parentElement.parentElement.querySelector(".stroke-enabled-checkbox");
+      if (strokeEnabledCheckbox) {
+        strokeEnabledCheckbox.checked = strokeData.enabled !== false;
+      }
     }
   }
   updateTextSettings(); // Redraw canvas with loaded settings
@@ -353,6 +383,10 @@ async function updateTextSettings() {
     newLayer.font.size = parseFloat(layerEl.querySelector(".fontSize-input").value) || 36;
     newLayer.font.color = layerEl.querySelector(".fontColor-input").value || "#ffffff";
     newLayer.font.opacity = parseFloat(layerEl.querySelector(".fontOpacity-input").value) || 0;
+    
+    // ⭐️ Read enabled state for layer (checkbox is in parent container)
+    const layerEnabledCheckbox = layerEl.parentElement.parentElement.querySelector(".layer-enabled-checkbox");
+    newLayer.enabled = layerEnabledCheckbox ? layerEnabledCheckbox.checked : true;
 
     // Build main font string
     newLayer.fontStyle =
@@ -383,6 +417,10 @@ async function updateTextSettings() {
       newStroke.color = strokeEl.querySelector(".strokeColor-input").value;
       newStroke.width = parseFloat(strokeEl.querySelector(".strokeWidth-input").value) || 1;
       newStroke.opacity = parseFloat(strokeEl.querySelector(".strokeOpacity-input").value) || 0;
+      
+      // ⭐️ Read enabled state for stroke (checkbox is in parent container)
+      const strokeEnabledCheckbox = strokeEl.parentElement.parentElement.querySelector(".stroke-enabled-checkbox");
+      newStroke.enabled = strokeEnabledCheckbox ? strokeEnabledCheckbox.checked : true;
 
       // Build strokeStyle
       r = parseInt(newStroke.color.slice(1, 3), 16);
@@ -404,6 +442,11 @@ async function updateTextSettings() {
       newShadow.blur = parseFloat(shadowEl.querySelector(".shadowBlur-input").value) || 0;
       newShadow.offsetX = parseFloat(shadowEl.querySelector(".shadowOffsetX-input").value) || 0;
       newShadow.offsetY = parseFloat(shadowEl.querySelector(".shadowOffsetY-input").value) || 0;
+      
+      // ⭐️ Read enabled state for shadow (checkbox is in parent container)
+      const shadowEnabledCheckbox = shadowEl.parentElement.parentElement.querySelector(".shadow-enabled-checkbox");
+      newShadow.enabled = shadowEnabledCheckbox ? shadowEnabledCheckbox.checked : true;
+      
       shadowEl.parentElement.parentElement.setAttribute('layerIndex', layerIndex);
       shadowEl.parentElement.parentElement.setAttribute('shadowIndex', shadowIndex);
       newLayer.shadows.push(newShadow);
@@ -639,7 +682,7 @@ function addStroke(e) {
     const {uniqueId, index} = ensureUniqueId(`layer-${layerIndex}-stroke-{n}-check`, container.childElementCount);
     input.id = uniqueId;
     label.setAttribute('for', uniqueId);
-    label.innerText = `Stroke/Outline ${index + 1}`;
+    label.innerText = `Frame ${index + 1}`;
 
     if (Setup.defaults.stroke) {
       const strokeColorInput = clone.querySelector(".strokeColor-input");
@@ -695,7 +738,7 @@ function addShadow(e) {
     const {uniqueId, index} = ensureUniqueId(`layer-${layerIndex}-shadow-{n}-check`, container.childElementCount);
     input.id = uniqueId;
     label.setAttribute('for', uniqueId);
-    label.innerText = `Glow/Shadow ${index + 1}`; 
+    label.innerText = `Bloom ${index + 1}`; 
 
     if (Setup.defaults.shadow) {
       const shadowColorInput = clone.querySelector(".shadowColor-input");
@@ -1398,6 +1441,28 @@ function addSettingListeners() {
     // We only call updateTextSettings if a text input changed
     if (e.target.closest('.text-layer-item')) {
       updateTextSettings();
+    }
+  });
+  
+  // ⭐️ Listener for toggle checkboxes (enable/disable)
+  document.getElementById('settingsContent').addEventListener('change', (e) => {
+    if (e.target.classList.contains('toggle-checkbox')) {
+      updateTextSettings();
+    }
+  });
+  
+  // ⭐️ Listener for toggle buttons (click to toggle checkbox)
+  document.getElementById('settingsContent').addEventListener('click', (e) => {
+    const toggleButton = e.target.closest('.toggle-button');
+    if (toggleButton) {
+      // Find the associated checkbox in the same parent
+      const parent = toggleButton.parentElement;
+      const checkbox = parent.querySelector('.toggle-checkbox');
+      if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        // Trigger change event to update canvas
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     }
   });
 

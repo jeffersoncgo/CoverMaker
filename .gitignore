@@ -1,4 +1,6 @@
 images/Thumbs.db
 .vscode/
 .github/*.md
+.github/copilot/
 .env
+.backup/

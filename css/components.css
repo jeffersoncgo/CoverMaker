@@ -428,7 +428,7 @@ i.delete:hover { background: var(--c-danger); }
   font-size: 0.7rem;
   box-shadow: var(--shadow-md);
 }
-.expand-btn:hover, .add-button:hover, .delete-button:hover, .default-button:hover, .duplicate-button:hover {
+.expand-btn:hover, .add-button:hover, .delete-button:hover, .default-button:hover, .duplicate-button:hover, .toggle-button:hover {
   background: var(--c-primary);
   color: white;
   border-color: var(--c-primary);
@@ -436,7 +436,35 @@ i.delete:hover { background: var(--c-danger); }
 .expand-checkbox { display: none; }
 
 
-.add-button, .delete-button, .default-button, .duplicate-button {
+/* ============================
+   Action Buttons
+   ============================ */
+
+.toggle-checkbox {
+  display: none;
+}
+
+.toggle-checkbox:not(:checked) ~ .expand-label {
+  background: var(--c-surface);
+}
+
+.toggle-checkbox:checked ~ .toggle-button {
+  background: transparent;
+}
+
+.toggle-checkbox:not(:checked) ~ .toggle-button {
+  background: var(--c-surface);
+}
+
+.toggle-checkbox:checked ~ .toggle-button::before {
+  content: "\f06e"; /* fa-eye */
+}
+
+.toggle-checkbox:not(:checked) ~ .toggle-button::before {
+  content: "\f070"; /* fa-eye-slash */
+}
+
+.add-button, .delete-button, .default-button, .duplicate-button, .toggle-button {
   position: absolute;
   right: 0;
   top: 0;
@@ -457,6 +485,11 @@ i.delete:hover { background: var(--c-danger); }
 .duplicate-button {
   right: 3.4rem;
   border-radius: 0;
+}
+
+.toggle-button {
+  right: 5.1rem;
+  border-radius: 0;  
 }
 
 /* ============================

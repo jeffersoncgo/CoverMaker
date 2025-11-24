@@ -178,6 +178,9 @@ function drawCompositeText() {
 
   // 4. ⭐️ NEW: Loop over each text layer and draw it ⭐️
   Setup.Settings.textLayers.forEach(layer => {
+    // ⭐️ Skip disabled layers
+    if (layer.enabled === false) return;
+    
     const text = layer.overlayText;
 
     // --- Calculate Position ---
@@ -218,6 +221,9 @@ function drawCompositeText() {
     // We draw shadows FIRST, from bottom to top
     // This implementation draws shadows as offset, blurred text
     layer.shadows.forEach(shadow => {
+      // ⭐️ Skip disabled shadows
+      if (shadow.enabled === false) return;
+      
       ctx.save();
       ctx.fillStyle = shadow.color;
       ctx.shadowColor = shadow.color;
@@ -231,6 +237,9 @@ function drawCompositeText() {
     // --- Draw Strokes ---
     // We draw strokes SECOND, from bottom to top
     layer.strokes.forEach(stroke => {
+      // ⭐️ Skip disabled strokes
+      if (stroke.enabled === false) return;
+      
       ctx.save();
       ctx.strokeStyle = stroke.style;
       ctx.lineWidth = stroke.width;

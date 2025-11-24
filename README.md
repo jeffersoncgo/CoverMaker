@@ -22,7 +22,7 @@ No installation required! Open the link and start creating stunning collection p
 
 ## 🧩 Overview
 
-**CoverMaker** is a sophisticated web-based canvas tool designed for creating custom collection posters for Jellyfin media servers. Built with pure vanilla JavaScript and modern browser APIs, it provides real-time poster composition with advanced text effects, multiple layout engines, per-image filters, and seamless Jellyfin integration.
+**CoverMaker** is a sophisticated web-based canvas tool designed for creating custom collection posters for Jellyfin media servers. Built with pure vanilla JavaScript and modern browser APIs, it provides real-time poster composition with advanced text effects (3D, gradients, strokes, shadows, glow), multiple layout engines (18 modes), per-image filters and transforms, custom backgrounds (solid, gradient, patterns), and seamless Jellyfin integration.
 
 The application runs entirely in the browser with **zero build tools** required. Features OffscreenCanvas rendering for performance, IndexedDB for persistent caching, and optional Meilisearch integration for fast library searches.
 
@@ -34,7 +34,7 @@ The application runs entirely in the browser with **zero build tools** required.
 - **✏️ Multi-Layer Text System**: Unlimited text layers with 3D effects, gradients, strokes, and shadows
 - **🖼️ Per-Image Filters**: Individual transform, rotation, and scale for each image
 - **🎭 18 Layout Modes**: Line, Grid, Mosaic, Circle, Collage, Italic Line, Carousel, Fan Spread, Scattered Stack, Spiral, Waves, Book Stack, Polaroid Wall, Shrink, Scattered Photos, Card Fan, Mondrian's Grid, and Framed Grid
-- **🎨 Custom Backgrounds**: Solid colors and gradient overlays
+- **🎨 Custom Backgrounds**: Solid colors, gradient overlays, and patterns (checkerboard, stripes, dots)
 - **💾 Project Management**: Save/load complete projects as JSON files
 - **🎯 Drag & Drop**: Intuitive slot management with reordering and pin protection
 - **🌐 No Backend Required**: Fully client-side with localStorage and IndexedDB persistence
@@ -71,16 +71,29 @@ See what you can create with CoverMaker! Each example includes a downloadable pr
 ### Example 1: Line Layout - Film Collection
 ![Line Layout Example](images/demo/cover_line_movies.png)
 
-**Features Used:** Line layout mode, reflection effects, gradient overlay, custom text positioning
+**Features Used:** 
+- Line layout mode with reflection effects (distance: 0.7, scale: 0.8)
+- Single text layer ("MOVIES") with Francois One font (382px)
+- Multiple strokes: white outline (35px), yellow border (28px), black inner stroke (14px)
+- 4 directional shadows in red (#ff7a7a) for glow effect
+- Cover format (1920x1080)
 
 📦 **[Download Project](images/demo/cover_line_movies_project.zip)** | 🖼️ **[View Result](images/demo/cover_line_movies_app.png)**
 
 ---
 
-### Example 2: Collage Layout - Scary Movie Collection
-![Collage Layout Example](images/demo/poster_scatared-photos_collecion-scary-movie.png)
+### Example 2: Scattered Photos Layout - Scary Movie Collection
+![Scattered Photos Layout Example](images/demo/poster_scatared-photos_collecion-scary-movie.png)
 
-**Features Used:** Collage layout, scattered positioning, individual image transforms, creative text effects
+**Features Used:**
+- Scattered Photos layout mode with 26 image slots
+- 3 independent text layers with Paytone One font (168px title, 120px subtitle)
+- Layer 1: "SCARY" - rotated -17°, left-aligned
+- Layer 2: "MOVIE" - rotated 24°, right-aligned
+- Layer 3: "COLLECTION" - bottom positioned
+- Each layer with white stroke (2px) and white offset shadow
+- Poster format (1080x1920)
+- Salt value: 20 for controlled randomization
 
 📦 **[Download Project](images/demo/poster_scatared-photos_collecion-scary-movie_project.zip)** | 🖼️ **[View Result](images/demo/poster_scatared-photos_collecion-scary-movie_app.png)**
 
@@ -89,7 +102,14 @@ See what you can create with CoverMaker! Each example includes a downloadable pr
 ### Example 3: Collage Layout - Anime Collection
 ![Anime Collection Example](images/demo/cover_collage_animes.png)
 
-**Features Used:** Collage arrangement, multiple text layers with 3D effects, gradient backgrounds
+**Features Used:**
+- Collage layout mode with 20 image slots
+- Single text layer ("ANIMES") with Akaya Kanadaka font (462px, italic)
+- Thick black stroke (18px) for high contrast
+- Dual shadows: white glow (45px blur) + black depth (8px blur, 20px offset)
+- Gradient overlay (opacity 0.1-0.4) for subtle darkening
+- Cover format (1920x1080)
+- Salt value: 3
 
 📦 **[Download Project](images/demo/cover_collage_animes_project.zip)** | 🖼️ **[View Result](images/demo/cover_collage_animes_app.png)**
 
@@ -160,6 +180,9 @@ Concentric layers shrinking toward center. Each layer 85% of previous (15% reduc
 ### **Scattered Photos**
 First image fills canvas as background, remaining images scattered as polaroid-style photos. Deterministic randomization based on salt controls position, rotation, and scale. Features white borders, realistic shadows, and varied aspect ratios (portrait, square, landscape).
 
+### **Shrink**
+Concentric layers shrinking toward center. Each layer 85% of previous (15% reduction ensures 20%+ of previous layer visible). No salt influence—pure geometric progression. Front layers have scaled shadows and optional white borders.
+
 ### **Card Fan**
 Playing card fan spread effect. First image as background, remaining cards arranged in arc from bottom-center. Features depth-based opacity, progressive shadows, and smooth rotation spread. Maximum angle controlled by card count.
 
@@ -211,18 +234,43 @@ Create unlimited text layers with professional typography:
 **Basic Settings:**
 - 800+ Google Fonts available
 - Custom font size, weight, and style
-- Color with opacity control (0-1, default 0.8)
-- Position and alignment controls
+- Solid color or gradient fills (linear/radial with multiple color stops)
+- Opacity control (0-1)
+- Position (X, Y) and alignment controls (left, center, right / top, middle, bottom)
+
+**3D Effects:**
+- Depth control (0-50 pixels)
+- Angle control (0-360°)
+- Custom 3D layer color
+- Optional shadow projection
 
 **Stroke/Outline:**
-- Width: 1+ pixels (default 2)
-- Custom color
-- Opacity: 0-1 (default 1.0)
+- Width: 0-20+ pixels
+- Custom color with opacity (0-1)
+- Multiple strokes per layer supported
 
 **Shadow Effects:**
 - Blur radius: 0+ (default 5)
 - X and Y offset controls
-- Custom shadow color
+- Custom shadow color with RGBA support
+- Multiple shadows per layer supported
+
+**Glow Effects:**
+- Blur radius control
+- Intensity adjustment (0-3)
+- Custom glow color
+- Perfect for neon/glowing text
+
+**Transform Options:**
+- Rotation (-180° to 180°)
+- Scale X and Y independently
+- Skew X and Y for perspective effects
+
+**Advanced:**
+- Blend modes (normal, multiply, screen, overlay, etc.)
+- Layer visibility toggle
+- Layer reordering (drag or up/down buttons)
+- 8 text presets: Classic, Neon, Gold 3D, Chrome, Fire, Ice, Retro, Comic
 
 ---
 
@@ -237,15 +285,32 @@ Create unlimited text layers with professional typography:
 **Text System:**
 - ✅ Unlimited independent text layers
 - ✅ 800+ Google Fonts with async loading
+- ✅ 3D effects with adjustable depth and angle
+- ✅ Gradient fills (linear and radial) with multiple color stops
 - ✅ Multiple strokes and shadows per layer
-- ✅ Layer visibility toggle
-- ✅ Custom positioning and rotation
+- ✅ Glow effects with customizable intensity
+- ✅ Transform controls (rotation, scale, skew)
+- ✅ Blend modes and opacity control
+- ✅ Layer visibility toggle and reordering
+- ✅ 8 professional text presets
 
 **Image Management:**
 - ✅ Unlimited image slots with drag-and-drop reordering
+- ✅ Per-image filters (brightness, contrast, saturation, hue, blur, grayscale, sepia, invert)
+- ✅ Per-image transforms (rotation, scale X/Y, flip, position offset)
+- ✅ Image cropping and masking
+- ✅ Border controls (width, color, style)
 - ✅ Pin protection to lock specific images
 - ✅ Random image selection from library
+- ✅ 8 image filter presets (Normal, Vivid, B&W, Sepia, Cool, Warm, Dreamy, Dramatic)
 - ✅ Loading placeholders and error handling
+
+**Background System:**
+- ✅ Solid colors with color picker
+- ✅ Gradient backgrounds (linear/radial) with angle control
+- ✅ Pattern backgrounds (checkerboard, stripes, dots)
+- ✅ 8 canvas background presets
+- ✅ Gradient overlay with adjustable opacity
 
 **Jellyfin Integration:**
 - ✅ Server authentication with fastest-address auto-detection
@@ -372,6 +437,25 @@ MIT License - See [LICENSE](LICENSE) for details
 
 ---
 
+## 🚧 Features In Development
+
+The following features have backend implementation ready but are pending UI integration:
+
+**Image Effects - Advanced Controls:**
+- [ ] **Image Cropping**: Backend supports crop with X, Y, Width, Height controls (0-1 range) - UI controls needed
+- [ ] **Image Masking**: Backend supports mask types (none, circle, rounded) with borderRadius (0-50) - UI controls needed
+- [ ] **Border Controls**: Backend supports borders with width (0-20), color, and style (solid, dashed, dotted) - UI controls needed
+- [ ] **Invert Filter**: Backend supports invert (0-100) - UI slider needed to complete filter set
+
+**Text Effects:**
+- [ ] **3D Effect**: Backend fully implemented with depth and angle controls - UI integration pending
+- [ ] **Glow Effect**: Backend supports glow with blur and intensity - UI controls pending
+- [ ] **Gradient Fills**: Backend supports linear/radial gradients - UI controls pending
+- [ ] **Blend Modes**: Backend supports multiple blend modes - UI dropdown pending
+- [ ] **Transform Controls**: Backend supports scale, skew, advanced positioning - UI controls pending
+
+---
+
 ## 🙏 Contributing
 
 Contributions welcome! Areas of interest:
@@ -379,6 +463,7 @@ Contributions welcome! Areas of interest:
 - UI/UX improvements
 - New layout algorithms
 - Jellyfin API extensions
+- Implementing planned features listed above
 
 ---
 

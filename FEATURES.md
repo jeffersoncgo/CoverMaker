@@ -1,249 +1,302 @@
-# Enhanced Features Documentation
+# CoverMaker Features Documentation
 
-## New Advanced Controls
+## Current Features (Fully Implemented)
 
 ### Multiple Text Layers System
 
 Create unlimited text layers with independent controls for each layer.
 
 **Features:**
-- Add, remove, duplicate, and reorder text layers
-- Show/hide layers independently
-- Active layer selection for editing
+- Add, remove, duplicate text layers
+- Show/hide layers independently (eye icon)
+- Reorder layers via drag or buttons
+- Set default layer styles
 
-**Location:** Text Layers tab
+**Location:** Settings tab → Text section
 
-### Advanced Text Effects
+### Text Layer Controls (UI Available)
 
-Each text layer supports:
+Each text layer currently supports:
 
-#### 3D Effects
-- Adjustable depth (0-50px)
-- Angle control (0-360°)
-- Custom 3D color
-- Shadow projection
+#### Basic Text
+- Text content input
+- Font selection (800+ Google Fonts)
+- Font size (numeric input)
+- Font style (normal, italic, oblique)
+- Font weight (lighter, normal, bold, bolder)
+- Font color (color picker)
+- Font opacity (0-1 slider)
 
-#### Gradient Fills
-- Linear and radial gradients
-- Multiple color stops
-- Angle control
-- Solid color alternative
+#### Position & Rotation
+- Text alignment (left, center, right)
+- Baseline (top, middle, bottom)
+- Offset X and Y (numeric input)
+- Rotation in degrees (numeric input)
 
-#### Stroke & Outline
-- Adjustable width (0-20px)
-- Custom color
-- Can be combined with other effects
+#### Frame (Stroke)
+- Multiple frames per layer
+- Frame color with opacity
+- Frame width control
+- Enable/disable individual frames
+- Duplicate and delete frames
 
-#### Shadow Effects
-- X and Y offset control
-- Blur intensity
-- Custom shadow color
-- RGBA support
+#### Bloom (Shadow)
+- Multiple bloom effects per layer
+- Color selection
+- Blur amount
+- Offset X and Y controls
+- Enable/disable individual blooms
+- Duplicate and delete blooms
 
-#### Glow Effects
-- Blur radius control
-- Intensity adjustment (0-3)
-- Custom glow color
-- Perfect for neon effects
+### Image Slot Management
 
-#### Transform Options
-- Rotation (-180° to 180°)
-- Scale X and Y independently
-- Skew X and Y
-- Position control (X, Y from 0-1)
+**Slot Controls:**
+- Add/remove slots
+- Reorder via drag-and-drop or buttons
+- Pin/unpin slots to protect from randomization
+- Clear slot content
+- Randomize individual or all slots
+- Load local images via file picker
+- View images in new tab
 
-#### Additional Controls
-- Opacity (0-1)
-- Blend modes (multiply, screen, overlay, etc.)
-- Font family, size, weight, and style
+**Bulk Operations:**
+- Pin/unpin all slots
+- Clear all slots
+- Delete all slots
+- Reverse slot order
+- Randomly shuffle slots
 
-### Per-Image Controls
+### Layout Modes (18 Total)
 
-Select any image slot to edit its properties:
+Select from 18 different layout algorithms:
 
-#### Transform
-- Rotation (-180° to 180°)
-- Scale X and Y (0.1-3x)
-- Position offset (X, Y)
-- Flip horizontally or vertically
+1. **Line** - Horizontal line with optional reflections
+2. **Grid** - Auto-calculated optimal grid
+3. **Mosaic** - Binary space partitioning mosaic
+4. **Circle** - Circular pizza-slice arrangement
+5. **Collage** - Scattered polaroid-style
+6. **Italic Line** - Skewed line layout
+7. **Carousel** - 3D carousel effect
+8. **Fan Spread** - Cards in fan pattern
+9. **Scattered Stack** - Book-like stacking
+10. **Spiral** - Logarithmic spiral
+11. **Waves** - Sinusoidal wave pattern
+12. **Book Stack** - Physical book stacking
+13. **Polaroid Wall** - Photos with tape
+14. **Shrink** - Concentric shrinking layers
+15. **Scattered Photos** - Random polaroids
+16. **Card Fan** - Playing card spread
+17. **Mondrian** - Mondrian-inspired grid
+18. **Framed Grid** - Gallery-style frames
 
-#### Filters
-- Brightness (0-200%)
-- Contrast (0-200%)
-- Saturation (0-200%)
-- Hue rotation (0-360°)
-- Blur (0-20px)
-- Grayscale (0-100%)
-- Sepia (0-100%)
-- Opacity (0-100%)
+**Location:** Settings tab → Image section → Type dropdown
 
-### Canvas Background Controls
+### Canvas Settings
 
-Customize the canvas background:
+**Format Options:**
+- Cover (16:9 landscape)
+- Poster (9:16 portrait)
+- Square (1:1)
+- Custom (specify width/height)
 
-#### Solid Colors
-- Any color via color picker
+**Layout Options:**
+- Type: Select from 18 layout modes
+- Margin Size: Spacing between elements
+- Random Salt: Seed for randomization (layouts that support it)
+- Poster Scale: Overall image sizing (0.1-10)
 
-#### Gradients
-- Linear or radial
-- Angle control (0-360°)
-- Multiple color stops support
+**Reflex Settings (Line layouts):**
+- Blur Strength (0-100)
+- Reflex Distance (0-1)
+- Reflex Scale (0-1)
 
-#### Patterns
-- Checkerboard
-- Horizontal stripes
-- Vertical stripes
-- Dots
-- Adjustable size and colors
+**Overlay Settings:**
+- Start: Color and opacity
+- End: Color and opacity
+- Creates gradient overlay on final composition
 
-### New Layout Modes
+**Export Options:**
+- Format: PNG or JPEG
+- JPEG Quality: 0-1 (for JPEG only)
 
-Choose from 6 different layout arrangements:
+**Location:** Settings tab → Image section
 
-1. **Line** - Horizontal/vertical line arrangement with reflections
-2. **Grid** - Auto-calculated grid layout
-3. **Mosaic** - Smart arrangement for 1-4 images
-4. **Circle** - Circular arrangement around center
-5. **Collage** - Random-style placement
-6. **Free Position** - Manual positioning for each image
+### Project Management
 
-### Preset System
+**Save/Load Projects:**
+- Export Project: Saves complete project as .covermaker.zip
+- Import Project: Load previously saved projects
+- Projects include: all settings, text layers, slot images, and configurations
 
-Quick-apply professional presets:
+**Storage:**
+- localStorage: Automatic save of current state
+- IndexedDB: Jellyfin library cache
+- Session restore on page reload
 
-#### Text Presets
-- Classic (white text with black stroke)
-- Neon (glowing cyan effect)
-- Gold 3D (metallic gradient with 3D)
-- Chrome (reflective metal look)
-- Fire (red-yellow gradient with glow)
-- Ice (blue-white gradient with glow)
-- Retro (colorful gradient with offset shadow)
-- Comic (bold black outline)
+### Jellyfin Integration
 
-#### Image Presets
-- Normal
-- Vivid (enhanced colors)
-- Black & White
-- Sepia
-- Cool (blue tint)
-- Warm (orange tint)
-- Dreamy (soft and bright)
-- Dramatic (high contrast)
+**Features:**
+- Direct server login
+- Library browsing
+- Meilisearch auto-detection for fast search
+- IndexedDB caching for offline access
+- Drag-and-drop images to slots
+- Click images to load into first empty slot
+
+**Search & Pagination:**
+- Search bar for filtering
+- Configurable page size (10, 20, 50, 100)
+- Previous/Next page navigation
+- Random filter button
 
 ## How to Use
 
-### Creating Text with 3D Effects
-
-1. Go to **Text Layers** tab
-2. Click **+** to add a new text layer
-3. Enter your text in "Text Content"
-4. Check "3D Effect" checkbox
-5. Adjust Depth (try 15)
-6. Adjust Angle (try 135°)
-7. Choose a 3D color
-8. Optionally add shadow for more depth
-
-### Applying Image Filters
-
-1. Click on any image slot in **Image Slots** tab
-2. Go to **Image Effects** tab
-3. Adjust sliders for desired effect
-4. Or click a preset for instant styling
-
-### Creating Custom Backgrounds
+### Creating Multi-Layer Text
 
 1. Go to **Settings** tab
-2. Find "Background" dropdown
-3. Choose:
-   - **Solid**: Pick a color
-   - **Gradient**: Choose type, angle, and colors
-   - **Pattern**: Select pattern type and customize
+2. Expand **Text** section
+3. Click **+** to add a new text layer
+4. Enter your text and configure:
+   - Font, size, color
+   - Position and rotation
+   - Add Frame (stroke) effects
+   - Add Bloom (shadow) effects
+5. Toggle layer visibility with eye icon
+6. Duplicate successful layers
+
+### Adding Multiple Frames
+
+1. In a text layer, expand **Frame** section
+2. Click **+** to add frames
+3. Configure each frame:
+   - Color and opacity
+   - Width
+4. Stack multiple frames for outlined effects
+5. Toggle individual frames on/off
+
+### Adding Multiple Blooms
+
+1. In a text layer, expand **Bloom** section
+2. Click **+** to add blooms
+3. Configure each bloom:
+   - Color
+   - Blur amount
+   - X and Y offsets
+4. Create glow effects with multiple blooms
+5. Use different colors for rainbow effects
 
 ### Trying Different Layouts
 
 1. Go to **Settings** tab
-2. Find "Layout" dropdown
-3. Select different modes to see how your images arrange
-4. **Free Position** mode allows manual placement
+2. Expand **Image** section
+3. Select from **Type** dropdown
+4. Adjust **Random Salt** to vary randomized layouts
+5. Adjust **Poster Scale** to change image sizing
+6. For Line layouts, configure **Reflex** settings
+
+### Working with Jellyfin
+
+1. Click **Login to Jellyfin** button
+2. Enter server URL, username, password
+3. Click library to browse
+4. Use search bar to filter items
+5. Drag images to slots OR click to auto-fill
+6. Use pagination controls to browse pages
 
 ## Tips and Tricks
 
-### Creating Professional Looking Text
+### Creating Layered Text Effects
 
-1. Start with a preset (Gold 3D or Chrome work great)
-2. Adjust the position to center it properly
-3. Add a subtle glow or shadow for depth
-4. Scale if needed using Transform controls
+1. Create base text layer with solid color
+2. Add multiple frames of decreasing width for outline effect
+3. Add bloom underneath for glow
+4. Duplicate layer and rotate slightly for shadow
 
-### Achieving Cohesive Image Look
+### Layout Salt Experimentation
 
-1. Select all images you want to match
-2. Apply the same image preset to each
-3. Or manually adjust filters to match
-4. Use opacity to blend images into background
-
-### Using Multiple Text Layers
-
-1. Create a title layer (large, bold, 3D)
-2. Create a subtitle layer (smaller, different position)
-3. Create accent text (different color/effect)
-4. Layer order matters - drag to reorder
+- Change Random Salt value (1-100+) to get different variations
+- Same salt = same result (deterministic)
+- Works for: Mosaic, Collage, Spiral, Waves, Polaroid Wall, Scattered Photos, Mondrian
 
 ### Performance Optimization
 
-- Hide layers you're not actively editing
-- Reduce blur values if rendering is slow
-- Use fewer gradient stops for smoother performance
+- Hide layers you're not editing (eye icon)
+- Reduce bloom blur values if slow
+- Use fewer text layers for complex projects
+- Choose simpler layouts for many images (Grid vs Collage)
 
-## Keyboard Shortcuts
+### Saving Your Work
 
-- **Click image slot** → Select for editing
-- **Click text layer** → Make active
-- **Checkbox effects** → Quick enable/disable
+- Click **Save Project File** regularly
+- Projects save as .covermaker.zip
+- Include project filename in save dialog
+- Can re-open and continue editing anytime
 
 ## Browser Compatibility
 
 All features work in modern browsers:
 - Chrome 90+
 - Firefox 88+
-- Safari 14+
+- Safari 14.1+
 - Edge 90+
+
+**Required APIs:** Canvas, OffscreenCanvas, IndexedDB, localStorage
 
 ## Troubleshooting
 
-**Text not rendering:**
-- Check if layer is visible (eye icon)
-- Verify opacity is not 0
-- Check position values (should be 0-1)
+### Text Issues
 
-**Images look wrong:**
-- Click "Reset All" in Image Effects
-- Verify filters are at default values
-- Check transform values
+**Text not visible:**
+- Check layer enabled (eye icon should show eye, not crossed)
+- Verify opacity slider is not at 0
+- Ensure text color contrasts with background
+- Check position offsets aren't pushing text off canvas
 
-**Performance issues:**
+**Font not loading:**
+- Wait a few seconds for Google Fonts to load
+- Check browser console for errors
+- Try a different font
+
+### Image Issues
+
+**Slots not displaying images:**
+- Check Jellyfin server is accessible
+- Verify image loaded successfully (no error icon)
+- Try refreshing the slot (rotate icon)
+
+**Layout looks wrong:**
+- Adjust Poster Scale slider
+- Try different Random Salt value
+- Check Margin Size isn't too large
+- Verify enough slots exist for chosen layout
+
+### Performance Issues
+
+**Slow rendering:**
 - Reduce number of text layers
-- Lower blur values
-- Disable unused effects
-- Use simpler layouts
+- Lower bloom blur values
+- Disable complex layouts (use Grid instead)
+- Reduce canvas dimensions
 
-## Technical Details
+**Browser freezing:**
+- Use fewer image slots
+- Clear browser cache
+- Restart browser
+- Try Chrome/Edge for better OffscreenCanvas support
 
-### Text Rendering
-- Uses HTML5 Canvas 2D context
-- Real-time effects rendering
-- OffscreenCanvas for performance
-- Font loading via Google Fonts API
+## Features In Development
 
-### Image Processing
-- Filter composition via CSS filters
-- Transform matrix for rotation/scale/skew
-- Clipping paths for masks
-- Alpha compositing for opacity
+These features have backend code ready but need UI integration:
 
-### Layout Engine
-- Modular layout system
-- Auto-calculated positioning
-- Responsive to canvas size
-- Supports custom arrangements
+- **3D Text Effects**: Depth, angle, projection
+- **Gradient Text Fills**: Linear/radial gradients
+- **Text Glow Effects**: Advanced glow controls  
+- **Blend Modes**: For text layers
+- **Image Filters**: Brightness, contrast, saturation, etc.
+- **Image Transforms**: Scale, skew, flip
+- **Image Borders**: Custom border styles
+- **Image Cropping**: Manual crop controls
+- **Image Masking**: Circle and rounded masks
+- **Background Patterns**: Checkerboard, stripes, dots
+
+**Note:** Some of these can be accessed by manually editing saved project JSON files.
