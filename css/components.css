@@ -170,16 +170,15 @@ div.button {
     flex-wrap: wrap;
     gap: var(--space-sm);
     padding: var(--space-sm);
-    height: calc(100% - 78px);
-    flex: none;
     align-content: start;
 }
 
 #image-slots > * {
-    flex: 1 1 120px; /* grow, shrink, minimum width */
-    min-width: 120px;
-    height: min-content;
+    flex: 0 0 120px; /* no grow, no shrink, fixed width */
+    width: 120px;
+    height: min-content; /* or fixed height if needed */
 }
+
 
 .slot {
   width: 100%;
