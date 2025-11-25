@@ -69,7 +69,7 @@ The app seamlessly connects to your Jellyfin server:
 See what you can create with CoverMaker! Each example includes a downloadable project file.
 
 ### Example 1: Line Layout - Film Collection
-![Line Layout Example](images/demo/cover_line_movies.png)
+![Line Layout Example](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_line_movies_app.png)
 
 **Features Used:** 
 - Line layout mode with reflection effects (distance: 0.7, scale: 0.8)
@@ -78,12 +78,19 @@ See what you can create with CoverMaker! Each example includes a downloadable pr
 - 4 directional shadows in red (#ff7a7a) for glow effect
 - Cover format (1920x1080)
 
-📦 **[Download Project](images/demo/cover_line_movies_project.zip)** | 🖼️ **[View Result](images/demo/cover_line_movies_app.png)**
+📦 **[Download Project](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_line_movies_project.zip)**
+
+<details>
+<summary>🖼️ <b>View Final Result</b> (Click to expand)</summary>
+
+![Final Result](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_line_movies_reulst.png)
+
+</details>
 
 ---
 
 ### Example 2: Scattered Photos Layout - Scary Movie Collection
-![Scattered Photos Layout Example](images/demo/poster_scatared-photos_collecion-scary-movie.png)
+![Scattered Photos Layout Example](https://jeffersoncgo.github.io/CoverMaker/images/demo/poster_scatared-photos_collecion-scary-movie_app.png)
 
 **Features Used:**
 - Scattered Photos layout mode with 26 image slots
@@ -95,12 +102,19 @@ See what you can create with CoverMaker! Each example includes a downloadable pr
 - Poster format (1080x1920)
 - Salt value: 20 for controlled randomization
 
-📦 **[Download Project](images/demo/poster_scatared-photos_collecion-scary-movie_project.zip)** | 🖼️ **[View Result](images/demo/poster_scatared-photos_collecion-scary-movie_app.png)**
+📦 **[Download Project](https://jeffersoncgo.github.io/CoverMaker/images/demo/poster_scatared-photos_collecion-scary-movie_project.zip)**
+
+<details>
+<summary>🖼️ <b>View Final Result</b> (Click to expand)</summary>
+
+![Final Result](https://jeffersoncgo.github.io/CoverMaker/images/demo/poster_scatared-photos_collecion-scary-movie_reulst.png)
+
+</details>
 
 ---
 
 ### Example 3: Collage Layout - Anime Collection
-![Anime Collection Example](images/demo/cover_collage_animes.png)
+![Anime Collection Example](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_animes_app.png)
 
 **Features Used:**
 - Collage layout mode with 20 image slots
@@ -111,7 +125,35 @@ See what you can create with CoverMaker! Each example includes a downloadable pr
 - Cover format (1920x1080)
 - Salt value: 3
 
-📦 **[Download Project](images/demo/cover_collage_animes_project.zip)** | 🖼️ **[View Result](images/demo/cover_collage_animes_app.png)**
+📦 **[Download Project](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_animes_project.zip)**
+
+<details>
+<summary>🖼️ <b>View Final Result</b> (Click to expand)</summary>
+
+![Final Result](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_animes_reulst.png)
+
+</details>
+
+---
+
+### Example 4: Collage Layout - War Collection
+![War Collection Example](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_war_project_app.png)
+
+**Features Used:**
+- Collage layout mode with multiple image slots
+- Custom text layers with professional styling
+- Strategic use of frames (strokes) and blooms (shadows)
+- Cover format (1920x1080)
+- Optimized salt value for balanced composition
+
+📦 **[Download Project](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_war_project.covermaker.zip)**
+
+<details>
+<summary>🖼️ <b>View Final Result</b> (Click to expand)</summary>
+
+![Final Result](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_war_project_reulst.png)
+
+</details>
 
 ---
 
