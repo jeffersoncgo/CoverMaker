@@ -124,14 +124,122 @@ function fillposters(items, clear = true) {
 }
 
 function setpostersLimit(limit) {
-  limit = parseInt(limit);
+  const customInput = document.getElementById('customPostersLimit');
+  const selectElement = document.getElementById('posterslimit');
+  
+  if(limit === null || limit === undefined)
+    limit = selectElement.value;
+  
+  // Show/hide custom input based on selection
+  if (limit === 'custom') {
+    customInput.style.display = 'inline-block';
+    customInput.focus(); // Focus on input for better UX
+    return; // Don't trigger search yet
+  } else {
+    customInput.style.display = 'none';
+    limit = parseInt(limit);
+  }
+  
   if (isNaN(limit))
     return;
+    
   jellyfin.searchParams.limit = limit;
   jellyfin.searchParamsToRestore.limit = limit;
   if(jellyfinContainer.hasAttribute("search-limit"))
     jellyfinContainer.setAttribute("search-limit", limit)
   searchOnLibrary(null, null);
+}
+
+function saveCustomPostersLimits() {
+  const selectElement = document.getElementById('posterslimit');
+  const defaultValues = ['10', '20', '50', '100', 'custom'];
+  
+  // Get all custom numeric options (not in default list)
+  const customOptions = Array.from(selectElement.options)
+    .filter(opt => !defaultValues.includes(opt.value))
+    .map(opt => parseInt(opt.value))
+    .filter(val => !isNaN(val));
+  
+  localStorage.setItem('customPostersLimits', JSON.stringify(customOptions));
+}
+
+function loadCustomPostersLimits() {
+  const selectElement = document.getElementById('posterslimit');
+  const saved = localStorage.getItem('customPostersLimits');
+  
+  if (!saved) return;
+  
+  try {
+    const customLimits = JSON.parse(saved);
+    customLimits.forEach(limit => {
+      addCustomLimitOption(limit, false); // false = don't save again
+    });
+  } catch (e) {
+    console.error('Failed to load custom posters limits:', e);
+  }
+}
+
+function addCustomLimitOption(customValue, shouldSave = true) {
+  const selectElement = document.getElementById('posterslimit');
+  
+  // Check if this custom value already exists in options
+  const existingOption = Array.from(selectElement.options).find(option => option.value === customValue.toString());
+  
+  if (existingOption) return; // Already exists
+  
+  // Get all numeric options (excluding 'custom')
+  const numericOptions = Array.from(selectElement.options)
+    .filter(opt => opt.value !== 'custom' && !isNaN(parseInt(opt.value)))
+    .map(opt => parseInt(opt.value));
+  
+  // Add the new value and sort
+  numericOptions.push(customValue);
+  numericOptions.sort((a, b) => a - b);
+  
+  // Find the correct position to insert
+  const insertIndex = numericOptions.indexOf(customValue);
+  const customOption = selectElement.querySelector('option[value="custom"]');
+  
+  // Create new option
+  const newOption = document.createElement('option');
+  newOption.value = customValue.toString();
+  newOption.text = customValue.toString();
+  
+  // Insert at the correct sorted position
+  if (insertIndex === numericOptions.length - 1) {
+    // Insert before 'custom' if it's the largest value
+    selectElement.insertBefore(newOption, customOption);
+  } else {
+    // Insert before the next larger value
+    const nextValue = numericOptions[insertIndex + 1];
+    const nextOption = selectElement.querySelector(`option[value="${nextValue}"]`);
+    selectElement.insertBefore(newOption, nextOption);
+  }
+  
+  // Save to localStorage if needed
+  if (shouldSave) {
+    saveCustomPostersLimits();
+  }
+}
+
+function applyCustomPostersLimit() {
+  const customInput = document.getElementById('customPostersLimit');
+  const selectElement = document.getElementById('posterslimit');
+  const customValue = parseInt(customInput.value);
+  
+  if (isNaN(customValue) || customValue <= 0) {
+    return; // Invalid value, do nothing
+  }
+  
+  // Add the option (will save to localStorage)
+  addCustomLimitOption(customValue, true);
+  
+  // Select the new/existing custom value
+  selectElement.value = customValue.toString();
+  customInput.style.display = 'none';
+  
+  // Apply the limit
+  setpostersLimit(customValue);
 }
 
 async function searchOnLibrary(Qry, force = false, useDelay = false) {

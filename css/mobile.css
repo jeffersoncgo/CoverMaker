@@ -1,0 +1,479 @@
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   Adjusts layout for mobile devices without
+   modifying the original desktop CSS
+   ============================================ */
+
+/* Mobile breakpoint: 768px and below */
+@media (max-width: 768px) {
+  
+  /* ============================
+     Fix 100vh Issue on Mobile
+     ============================ */
+  body, html {
+    height: auto; /* Remove fixed height */
+    min-height: 100dvh; /* Dynamic viewport height - adjusts for mobile address bar */
+    min-height: var(--app-height, 100vh); /* Fallback with JS variable */
+    overflow: auto; /* Allow scrolling */
+  }
+
+  /* ============================
+     Vertical Layout: Top/Middle/Bottom
+     ============================ */
+  #app {
+    flex-direction: column; /* Stack vertically instead of horizontally */
+    width: 100vw;
+    height: auto; /* Remove fixed height */
+    min-height: calc(100dvh - 60px); /* Use dynamic viewport height */
+    min-height: calc(var(--app-height, 100vh) - 60px); /* JS fallback */
+    max-height: none; /* Remove maximum height */
+    padding: var(--space-xs);
+    gap: var(--space-xs);
+    overflow: visible; /* Allow content to expand */
+  }
+
+  /* ============================
+     Header Adjustments
+     ============================ */
+  .header {
+    height: 50px; /* Slightly shorter on mobile */
+    padding: 0 var(--space-sm);
+    flex-wrap: wrap;
+  }
+
+  .header h1 {
+    font-size: 1.2rem;
+  }
+
+  .header .tagline {
+    display: none; /* Hide tagline on very small screens */
+  }
+
+  .header .buttons {
+    display: flex;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+  }
+
+  .header button {
+    font-size: 0.85rem;
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  /* ============================
+     Sidebars: Top and Bottom Panels
+     ============================ */
+  #leftSide, #rightSide {
+    width: 100% !important; /* Full width */
+    height: auto;
+    min-height: unset; /* Remove minimum height restriction */
+    max-height: none; /* Remove maximum height restriction */
+    resize: vertical !important; /* Allow vertical resize instead of horizontal */
+    flex-shrink: 0;
+    overflow: visible; /* Allow content to be visible */
+  }
+
+  /* Top Panel (Settings/Slots) */
+  #leftSide {
+    order: 1; /* Appears first */
+  }
+
+  /* Canvas in the middle */
+  #canvas-container {
+    order: 2; /* Appears second */
+    flex: 1; /* Takes remaining space */
+    /* Calculate min-height based on max canvas width (95vw) and 16:9 ratio */
+    /* Plus space for canvas bars (approx 80px total) */
+    min-height: calc((95vw * 9 / 16) + 100px); /* Maintain canvas aspect ratio + controls */
+    max-height: none; /* Remove maximum height restriction */
+    height: auto;
+    overflow: visible; /* Don't clip canvas */
+    position: relative; /* Ensure proper positioning context */
+  }
+
+  /* Bottom Panel (Jellyfin) */
+  #rightSide {
+    order: 3; /* Appears last */
+    direction: ltr !important; /* Reset RTL for mobile */
+  }
+
+  /* Reset the resizer triangle for mobile vertical resize */
+  ::-webkit-resizer {
+    border-color: transparent transparent var(--c-text-secondary) var(--c-text-secondary);
+  }
+
+  #rightSide::-webkit-resizer {
+    border-color: transparent transparent var(--c-text-secondary) var(--c-text-secondary);
+  }
+
+  /* ============================
+     Canvas Adjustments
+     ============================ */
+  #myCanvas {
+    position: relative; /* Override absolute positioning */
+    max-width: 95%;
+    max-height: calc(100% - 140px); /* Account for both canvas bars */
+    object-fit: contain;
+    left: auto;
+    top: auto;
+    transform: none; /* Remove centering transform */
+    margin: auto; /* Center naturally */
+  }
+
+  .canvasBars {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs);
+  }
+
+  .canvasBars .button {
+    flex: 0 1 auto;
+    min-width: 60px;
+  }
+
+  /* ============================
+     Tabs List - Vertical Icons
+     ============================ */
+  #tabsList {
+    flex-direction: row; /* Horizontal tabs on mobile */
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--c-border);
+    overflow-x: auto; /* Allow horizontal scroll if needed */
+    flex-shrink: 0;
+  }
+
+  .tab {
+    flex: 1;
+    min-width: 50px;
+    border-right: none;
+    border-bottom: 3px solid transparent;
+    padding: var(--space-sm);
+  }
+
+  .tab.active {
+    border-right: none;
+    border-bottom-color: var(--c-primary);
+  }
+
+  /* ============================
+     Slots Grid - Fewer Columns
+     ============================ */
+  #image-slots {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Smaller slots */
+    gap: var(--space-xs);
+    padding: var(--space-xs);
+  }
+
+  .slot {
+    aspect-ratio: 2/3;
+    min-height: 120px;
+  }
+
+  .slot .topButtons,
+  .slot .bottomButtons {
+    padding: 4px;
+    gap: 4px;
+    justify-content: space-around; /* Distribute buttons evenly */
+  }
+
+  .slot .topButtons i,
+  .slot .bottomButtons i {
+    font-size: 0.7rem;
+    padding: 6px;
+    min-width: 24px;
+    min-height: 24px;
+    width: auto;
+    height: auto;
+  }
+
+  /* ============================
+     Jellyfin Content Grid
+     ============================ */
+  #jellyfinimages {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Fewer columns */
+    gap: var(--space-xs);
+    padding: var(--space-xs);
+    max-height: none; /* Remove height restriction */
+    height: auto; /* Allow natural height */
+  }
+
+  .poster {
+    min-height: 150px;
+  }
+
+  .library {
+    min-height: 120px;
+  }
+
+  /* ============================
+     Controls and Buttons
+     ============================ */
+  .controls {
+    padding: var(--space-xs);
+    gap: var(--space-xs);
+    flex-wrap: nowrap; /* Keep everything in one line */
+  }
+
+  .controls i {
+    font-size: 1rem;
+    padding: var(--space-xs);
+  }
+
+  /* Pagination controls inherit full100W from parent */
+  .controls select,
+  .controls input[type="number"] {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  /* ============================
+     Settings/Form Fields
+     ============================ */
+  .settings {
+    padding: var(--space-xs);
+  }
+
+  .field {
+    margin-bottom: var(--space-xs);
+    max-width: none; /* Remove width restriction */
+  }
+
+  .field label {
+    font-size: 0.85rem;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 0.9rem;
+  }
+
+  /* Stack side-by-side fields vertically on mobile */
+  .flex.row.equalW {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .flex.row.equalW > * {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* ============================
+     Float Windows (Login, etc)
+     ============================ */
+  .floatWindow {
+    width: 90% !important;
+    max-width: 400px;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .floatWindow .content {
+    padding: var(--space-sm);
+  }
+
+  /* ============================
+     Text Layer Controls
+     ============================ */
+  .text-layer-item {
+    padding: var(--space-xs);
+  }
+
+  /* Buttons in layers */
+  .add-button,
+  .delete-button,
+  .duplicate-button,
+  .default-button,
+  .toggle-button {
+    font-size: 0.85rem;
+    padding: 4px 6px;
+  }
+
+  /* ============================
+     Search Input
+     ============================ */
+  .searchInputDiv {
+    min-width: 100px;
+    flex: 1;
+  }
+
+  /* ============================
+     Scroll Containers
+     ============================ */
+  .scroll-container {
+    padding: var(--space-xs);
+  }
+
+  /* ============================
+     Toast Notifications
+     ============================ */
+  #toast-root {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+  }
+
+  .toast {
+    font-size: 0.85rem;
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  /* ============================
+     Touch Improvements
+     ============================ */
+  
+  /* Larger touch targets */
+  button, .button, i[onclick], 
+  .tab, .slot, .poster, .library {
+    min-height: 44px; /* iOS recommended touch target */
+    min-width: 44px;
+  }
+
+  /* Prevent text selection on touch */
+  .slot, .poster, .library, .tab, 
+  .controls, button, .button {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Smoother scrolling on touch devices */
+  .scroll-container, #jellyfinimages, #image-slots {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Disable double-tap zoom on buttons */
+  button, .button, i[onclick] {
+    touch-action: manipulation;
+  }
+
+  /* Better input zoom prevention */
+  input, select, textarea {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+
+  /* ============================
+     Drag and Drop on Mobile
+     ============================ */
+  
+  /* Make draggable elements more obvious */
+  [draggable="true"] {
+    cursor: grab;
+  }
+
+  [draggable="true"]:active {
+    cursor: grabbing;
+  }
+
+  /* Show visual feedback during drag */
+  .slot.dragover {
+    transform: scale(1.05);
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 3px var(--c-primary-ring);
+  }
+}
+
+/* ============================
+   Extra Small Devices (< 480px)
+   ============================ */
+@media (max-width: 480px) {
+  
+  .header {
+    height: 45px;
+    padding: 0 var(--space-xs);
+  }
+
+  .header h1 {
+    font-size: 1rem;
+  }
+
+  .header button {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+
+  #app {
+    height: auto; /* Remove fixed height */
+    min-height: calc(100dvh - 45px);
+    min-height: calc(var(--app-height, 100vh) - 45px);
+    max-height: none; /* Remove maximum height */
+  }
+
+  #leftSide, #rightSide {
+    min-height: unset; /* Remove minimum height */
+    max-height: none; /* Remove maximum height */
+  }
+
+  #image-slots {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  }
+
+  .slot {
+    min-height: 90px;
+  }
+
+  #jellyfinimages {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+
+  .controls i {
+    font-size: 0.9rem;
+    padding: 6px;
+  }
+}
+
+/* ============================
+   Landscape Mode on Mobile
+   ============================ */
+@media (max-width: 768px) and (orientation: landscape) {
+  
+  #app {
+    flex-direction: row; /* Back to horizontal in landscape */
+    height: calc(100dvh - 45px);
+    height: calc(var(--app-height, 100vh) - 45px);
+  }
+
+  #leftSide {
+    width: 30vw !important;
+    height: 100%;
+    max-width: 250px;
+    resize: horizontal !important;
+    order: 1;
+  }
+
+  #canvas-container {
+    flex: 1;
+    /* Calculate min-height based on available height minus panels and bars */
+    /* In landscape, canvas width is limited by height, so ensure visible space */
+    min-height: calc(100dvh - 45px - 80px); /* Full height minus header and controls */
+    min-height: calc(var(--app-height, 100vh) - 45px - 80px);
+    order: 2;
+  }
+
+  #rightSide {
+    width: 30vw !important;
+    height: 100%;
+    max-width: 250px;
+    resize: horizontal !important;
+    order: 3;
+    direction: rtl !important;
+  }
+
+  #rightSide > * {
+    direction: ltr;
+  }
+
+  #leftSide, #rightSide {
+    max-height: none;
+  }
+}

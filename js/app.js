@@ -1595,6 +1595,15 @@ window.addEventListener('load', async () => {
   loadSetup();
   initTextLayers();
   loadEssentials();
+  
+  // Load custom posters limits from localStorage
+  loadCustomPostersLimits();
+  
+  // Initialize posters limit (show custom input if needed)
+  const postersLimitSelect = document.getElementById('posterslimit');
+  if (postersLimitSelect) {
+    setpostersLimit(postersLimitSelect.value);
+  }
 });
 
 function loadEssentials() {

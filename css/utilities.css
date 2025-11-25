@@ -15,6 +15,9 @@
 .minH100 { min-height: 100%; }
 .useMinContent { width: fit-content; height: fit-content; }
 
+.grow { flex-grow: 1; }
+.shrink { flex-shrink: 1; }
+
 .centered {
   display: flex;
   justify-content: center;

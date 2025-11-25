@@ -3,7 +3,10 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
@@ -11,6 +14,7 @@
   <link rel="stylesheet" href="css/toast.css">
   <link rel="stylesheet" href="css/animations.css">
   <link rel="stylesheet" href="css/utilities.css">
+  <link rel="stylesheet" href="css/mobile.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
     integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -18,6 +22,7 @@
     integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="js/vendor/meilisearch_index.min.js" defer></script>
+  <script src="js/mobileViewport.js"></script>
   <title>Collection poster Maker</title>
 </head>
 
@@ -503,14 +508,21 @@
         <div id="jellyfinimages" class="jellyfinWindow scroll-container" save customTrigger="returnToSearch"></div>
 
         <div class="controls">
-          <select id="posterslimit" value="10" save onchange="setpostersLimit(this.value)">
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-          <i id="previousPage" class="fa-solid fa-left-long" onclick="previousPage(this)"></i>
-          <i id="nextPage" class="fa-solid fa-right-long" onclick="nextPage(this)"></i>
+          <div class="flex row alignCenter gapSm grow full100W">
+            <select id="posterslimit" class="full100W" value="10" save onchange="setpostersLimit(this.value)">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="custom">Custom</option>
+            </select>
+            <input type="number" id="customPostersLimit" class="full100W" value="10" min="1" style="display: none;" save
+              onkeydown="if(event.key === 'Enter') applyCustomPostersLimit()" onblur="applyCustomPostersLimit()" customTrigger="applyCustomPostersLimit">
+          </div>
+          <div class="flex row right gapSm alignCenter shrink">
+            <i id="previousPage" class="fa-solid fa-left-long" onclick="previousPage(this)"></i>
+            <i id="nextPage" class="fa-solid fa-right-long" onclick="nextPage(this)"></i>
+          </div>
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ body {
   font-size: var(--font-size);
   line-height: 1.5;
   height: 100vh;
+  height: var(--app-height, 100vh); /* Support dynamic height from JS */
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
