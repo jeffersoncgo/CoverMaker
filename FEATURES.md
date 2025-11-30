@@ -212,6 +212,11 @@ Select from 18 different layout algorithms:
 3. Add bloom underneath for glow
 4. Duplicate layer and rotate slightly for shadow
 
+#### Text Effects Seed
+
+- Many text effects that use randomness now expose a `Seed` parameter; using the same seed will produce deterministic, repeatable results across renders.
+- Set `Seed` to 0 to fall back to non-deterministic Math.random behavior (default).
+
 ### Layout Salt Experimentation
 
 - Change Random Salt value (1-100+) to get different variations

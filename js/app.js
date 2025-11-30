@@ -1,3 +1,527 @@
+// Adiciona sliders de parâmetros de efeito dinamicamente
+function addEffectParamsOptions(paramsContainer, effectType, paramsObj, effectIndex) {
+  const effectDef = EFFECTS_REGISTRY[effectType];
+  if (!effectDef) return;
+  paramsContainer.innerHTML = '';
+
+  // Top: Effect Type Selector (Only once per paramsContainer)
+  const typeContainer = document.createElement('div');
+  typeContainer.className = 'field effect-type-field';
+  const typeLabel = document.createElement('label');
+  typeLabel.textContent = 'Effect Type:';
+  const typeSelect = document.createElement('select');
+  typeSelect.className = 'effectTypeSelect-input';
+  availableEffects.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    opt.textContent = e.name;
+    typeSelect.appendChild(opt);
+  });
+  const eff = Setup.Settings.canvas.effects[effectIndex];
+  if (eff) typeSelect.value = eff.type;
+  typeSelect.addEventListener('change', changeEffectLayerType);
+  typeContainer.appendChild(typeLabel);
+  typeContainer.appendChild(typeSelect);
+  paramsContainer.appendChild(typeContainer);
+
+  // Render parameters via shared renderer helper
+  ParamsRenderer.renderParamsOptions(paramsContainer, effectDef.params || [], paramsObj || {}, {
+    paramTemplate: document.getElementById('effect-param-template'),
+    groupTemplate: document.getElementById('options-param-group-template'),
+    onChange: onEffectParamChange,
+    extraDataset: [['effectIndex', (typeof effectIndex === 'number') ? String(effectIndex) : '']]
+    , skipUnknown: true
+  });
+  // If caller expects unknown effect params to be hidden, pass skipUnknown=true
+}
+
+// Add parameters options for Text Effect Layers (per text layer)
+function addTextEffectParamsOptions(paramsContainer, effectType, paramsObj, layerIndex, effectIndex) {
+  const effectDef = TEXT_EFFECTS[effectType];
+  if (!effectDef) {
+    console.warn('Text effect not found:', effectType);
+    paramsContainer.innerHTML = '';
+    return;
+  }
+  paramsContainer.innerHTML = '';
+
+  // Top: Effect Type Selector (Only once per paramsContainer)
+  const typeContainer = document.createElement('div');
+  typeContainer.className = 'field effect-type-field';
+  const typeLabel = document.createElement('label');
+  typeLabel.textContent = 'Effect Type:';
+  const typeSelect = document.createElement('select');
+  typeSelect.className = 'effectTypeSelect-input';
+  availableTextEffects.forEach(e => {
+    const option = document.createElement('option');
+    option.value = e.id;
+    option.textContent = e.name;
+    typeSelect.appendChild(option);
+  });
+  typeSelect.value = effectType;
+  typeSelect.addEventListener('change', changeTextEffectLayerType);
+  typeContainer.appendChild(typeLabel);
+  typeContainer.appendChild(typeSelect);
+  paramsContainer.appendChild(typeContainer);
+
+  // Render parameters via shared renderer helper
+  ParamsRenderer.renderParamsOptions(paramsContainer, effectDef.params || [], paramsObj || {}, {
+    paramTemplate: document.getElementById('effect-param-template'),
+    groupTemplate: document.getElementById('options-param-group-template'),
+    onChange: onTextEffectParamChange,
+    extraDataset: [['layerIndex', (typeof layerIndex === 'number') ? String(layerIndex) : ''], ['effectIndex', (typeof effectIndex === 'number') ? String(effectIndex) : '']],
+    skipUnknown: true
+  });
+}
+
+// Global handler used by effect slider template's inline oninput
+function onEffectParamChange(event) {
+  const slider = event.target;
+  if (!slider) return;
+  const idx = parseInt(slider.closest('.effect-layer-item').id.replace('effect_', ''), 10);
+  const key = slider.dataset.paramKey;
+  if (isNaN(idx) || !key) return;
+  const parsedValue = getControlValue(slider);
+
+  const effects = Setup?.Settings?.canvas?.effects;
+  if (!effects || !effects[idx]) return;
+  effects[idx].params = effects[idx].params || {};
+  effects[idx].params[key] = parsedValue;
+
+  slider.title = parsedValue;
+
+  // Update visible value text in the DOM (find nearest .effect-param-item)
+  // const paramItem = slider.closest('.effect-param-item');
+  // const valueSpan = paramItem?.querySelector('.effect-param-value');
+  // if (valueSpan) valueSpan.textContent = slider.value;
+
+  drawComposite();
+};
+
+// ======================
+// Effect Layers UI & Logic
+// ======================
+const effectLayerTemplate = document.getElementById("effect-layer-template");
+const effectLayersContainer = document.getElementById("effect-layers-container");
+const addEffectLayerBtn = document.getElementById("addEffectLayerBtn");
+let availableEffects = [];
+// Text effect layer template & container
+const textEffectLayerTemplate = document.getElementById("text-effect-layer-template");
+let availableTextEffects = [];
+
+// Carregar registro de efeitos
+if (typeof EFFECTS_REGISTRY === 'undefined') {
+  // Se não estiver global, tente importar
+  // (no HTML, garantir que effectsRegistry.js seja carregado antes de app.js)
+  console.warn('EFFECTS_REGISTRY não encontrado!');
+} else {
+  availableEffects = getAvailableEffects();
+}
+// Text effects list
+if (typeof getAvailableTextEffects !== 'undefined') {
+  availableTextEffects = getAvailableTextEffects();
+} else {
+  console.warn('Text effects registry not loaded (getAvailableTextEffects)');
+}
+
+function changeEffectLayerType(event) {
+  const field = event.target.closest('.effect-layer-item');
+  const newType = event.target.value;
+  // When we change the info of one layer only, we use it to update only that layer
+  const idx = parseInt(field.closest('.effect-layer-item').id.replace('effect_', ''), 10);
+  let eff = Setup.Settings.canvas.effects[idx];
+  const newTypeDef = EFFECTS_REGISTRY[newType];
+
+  if (!newTypeDef) return;
+
+  const expandLabel = field.querySelector('label.expand-label');
+  const effectName = newTypeDef?.name || 'Effect';
+  
+  if (expandLabel)
+      expandLabel.textContent = effectName;
+
+  eff.type = newType;
+  // Convert registry-defined params array into an object map of { key: value }
+  const registryDefaults = {};
+  for (const p of newTypeDef.params ?? []) {
+    // p.default might be undefined; preserve undefined vs null semantics
+    registryDefaults[p.key] = p.default;
+  }
+  eff.params = { ...registryDefaults };
+
+
+  const paramsContainer = field.querySelector('.effect-params-container');
+  addEffectParamsOptions(paramsContainer, eff.type, eff.params, idx);
+
+  // Update only this effect's UI and image render. Avoid re-rendering the whole list
+  renderImageEffectLayer(idx);
+}
+
+// Normalize effects params into an object mapping so different import/save
+// formats (legacy arrays vs current objects) won't break the UI
+function normalizeEffectParams(effects) {
+  if (!effects) return;
+  (effects || []).forEach((eff) => {
+    if (!eff) return;
+    // If params is already an object, ensure it's defined
+    if (eff.params == null) {
+      eff.params = {};
+      return;
+    }
+    if (Array.isArray(eff.params)) {
+      // Convert array of param descriptors into a key->value object.
+      const paramObj = {};
+      for (const p of eff.params) {
+        if (!p) continue;
+        // When p has key and value/default fields, use either value or default
+        if (typeof p.key === 'string') {
+          paramObj[p.key] = (p.value !== undefined) ? p.value : p.default;
+        }
+      }
+      eff.params = paramObj;
+    }
+  });
+}
+
+function renderEffectLayers() {
+  const effects = Setup.Settings.canvas.effects || [];
+  // Ensure each effect DOM exists and is in correct order
+  for (let i = 0; i < effects.length; i++) {
+    const id = `effect_${i}`;
+    let node = document.getElementById(id);
+    if (!node) {
+      renderImageEffectLayer(i);
+      node = document.getElementById(id);
+    } else {
+      // If existing but not in the correct order within the container, reposition
+      if (effectLayersContainer.children[i] !== node) {
+        effectLayersContainer.insertBefore(node, effectLayersContainer.children[i] || null);
+      }
+      renderImageEffectLayer(i);
+    }
+  }
+  // Remove any extra dom nodes after the last effect
+  const existing = Array.from(effectLayersContainer.querySelectorAll('.effect-layer-item'));
+  for (let j = existing.length - 1; j >= effects.length; j--) {
+    effectLayersContainer.removeChild(existing[j]);
+  }
+  drawComposite();
+}
+
+// Update a single image effect layer DOM based on current Setup.Settings
+function renderImageEffectLayer(idx) {
+  const eff = Setup.Settings.canvas.effects?.[idx];
+  if (!eff) return;
+  const field = document.getElementById(`effect_${idx}`);
+  // If element missing, create it by cloning the template and append
+  let created = false;
+  let node = field;
+  if (!node) {
+    const clone = effectLayerTemplate.content.cloneNode(true);
+    node = clone.querySelector('.effect-layer-item');
+    node.id = `effect_${idx}`;
+    effectLayersContainer.appendChild(clone);
+    created = true;
+  }
+
+  // Update label
+  const expandLabel = node.querySelector('label.expand-label');
+  const effectName = EFFECTS_REGISTRY[eff.type]?.name || 'Effect';
+  if (expandLabel) expandLabel.textContent = effectName;
+
+  // Update enabled state
+  const enabledCheckbox = node.querySelector('.effect-enabled-checkbox');
+  if (enabledCheckbox) {
+    enabledCheckbox.checked = eff.enabled !== false;
+    enabledCheckbox.onchange = () => {
+      eff.enabled = enabledCheckbox.checked;
+      drawComposite();
+    };
+  }
+
+  // Rebuild params UI for this effect only if DOM differs from data
+  const paramsContainer = node.querySelector('.effect-params-container');
+  let shouldUpdateParams = true;
+  if (paramsContainer) {
+    const domParams = readParamsFromContainer(paramsContainer);
+    try {
+      const a = (typeof PipelineStep !== 'undefined' && PipelineStep._stableStringify) ? PipelineStep._stableStringify(domParams) : JSON.stringify(domParams);
+      const b = (typeof PipelineStep !== 'undefined' && PipelineStep._stableStringify) ? PipelineStep._stableStringify(eff.params || {}) : JSON.stringify(eff.params || {});
+      shouldUpdateParams = a !== b;
+    } catch (err) {
+      shouldUpdateParams = true;
+    }
+    if (shouldUpdateParams) addEffectParamsOptions(paramsContainer, eff.type, eff.params, idx);
+  }
+
+  // Reattach buttons (use onclick to avoid duplicate listeners)
+  const deleteBtn = node.querySelector('.delete-effect-btn');
+  if (deleteBtn) deleteBtn.onclick = deleteImageEffectLayer;
+  const duplicateBtn = node.querySelector('.duplicate-effect-btn');
+  if (duplicateBtn) duplicateBtn.onclick = duplicateImageEffectLayer;
+  const defaultBtn = node.querySelector('.default-effect-btn');
+  if (defaultBtn) defaultBtn.onclick = setImageEffectLayerDefault;
+
+  // Update visible rendering
+  if (created) {
+    // Set expand checkbox/label id and text for the newly created element
+    const expandCheck = node.querySelector('input.expand-checkbox');
+    const expandLabel = node.querySelector('label.expand-label');
+    const uniqueId = `effect_check_${idx}`;
+    if (expandCheck) expandCheck.id = uniqueId;
+    if (expandLabel) {
+      expandLabel.setAttribute('for', uniqueId);
+      expandLabel.textContent = effectName;
+    }
+  }
+  // Always update rendering after param changes (use unified drawComposite to
+  // respect the pipeline when available)
+  drawComposite();
+}
+
+// Helper: read params object from a params container DOM
+function readParamsFromContainer(container) {
+  const params = {};
+  if (!container) return params;
+  const controls = container.querySelectorAll('[data-param-key]');
+  controls.forEach((c) => {
+    const key = c.dataset.paramKey;
+    if (!key) return;
+    params[key] = getControlValue(c);
+  });
+  return params;
+
+}
+
+// ======================
+// Text Effect Layers UI + Logic
+// ======================
+
+function addTextEffectToLayer(layerIndex, userDefault) {
+  if (!Array.isArray(Setup.Settings.textLayers)) Setup.Settings.textLayers = [];
+  if (!Setup.Settings.textLayers[layerIndex]) return;
+
+  const userDefaultObj = userDefault || {};
+  const effectType = userDefaultObj.type ?? availableTextEffects?.[0]?.id ?? 'fade';
+
+  const registryDefaults = {};
+  for (const p of (TEXT_EFFECTS[effectType]?.params ?? [])) {
+    registryDefaults[p.key] = p.default;
+  }
+
+  const finalParams = { ...registryDefaults, ...(userDefaultObj.params ?? {}) };
+
+  Setup.Settings.textLayers[layerIndex].effects = Setup.Settings.textLayers[layerIndex].effects || [];
+  Setup.Settings.textLayers[layerIndex].effects.push({ type: effectType, params: finalParams, enabled: true });
+  // Render the new effect only
+  renderTextEffectLayer(layerIndex, Setup.Settings.textLayers[layerIndex].effects.length - 1);
+}
+
+function addTextEffectLayer(e) {
+  // event handler on button inside layer
+  const layerItem = e.target.closest('.text-layer-item');
+  const allLayers = Array.from(textLayersContainer.querySelectorAll('.text-layer-item'));
+  const layerIndex = allLayers.indexOf(layerItem);
+  if (layerIndex < 0) return;
+  addTextEffectToLayer(layerIndex);
+}
+
+function deleteTextEffectLayer(e) {
+  // 1. PREVENT DOUBLE FIRING
+  if (e) {
+      e.preventDefault(); // Stop default browser behavior (like form submissions)
+      e.stopPropagation(); // Stop event from bubbling to parents
+      e.stopImmediatePropagation(); // Stop other listeners on this same element
+  }
+
+  // id = text_effect_{layer}_{idx}
+  const indexId = e.target.parentElement.id || e.target.closest('.text-effect-layer-item')?.id; 
+  if (!indexId) return;
+
+  const parts = indexId.replace('text_effect_', '').split('_');
+  const layerIndex = parseInt(parts[0]);
+  const effectIndex = parseInt(parts[1]);
+
+  if (isNaN(layerIndex) || isNaN(effectIndex)) return;
+  if (!Setup.Settings.textLayers[layerIndex] || !Array.isArray(Setup.Settings.textLayers[layerIndex].effects)) return;
+
+  Setup.Settings.textLayers[layerIndex].effects.splice(effectIndex, 1);
+  renderTextEffectLayersFor(layerIndex);
+}
+
+function duplicateTextEffectLayer(e) {
+  const indexId = e.target.parentElement.id || e.target.closest('.text-effect-layer-item')?.id; // fallback
+  if (!indexId) return;
+  const parts = indexId.replace('text_effect_', '').split('_');
+  const layerIndex = parseInt(parts[0]);
+  const effectIndex = parseInt(parts[1]);
+  if (isNaN(layerIndex) || isNaN(effectIndex)) return;
+  const effectCopy = JSON.parse(JSON.stringify(Setup.Settings.textLayers[layerIndex].effects[effectIndex]));
+  Setup.Settings.textLayers[layerIndex].effects.splice(effectIndex + 1, 0, effectCopy);
+  renderTextEffectLayersFor(layerIndex);
+}
+
+function setTextEffectLayerDefault(e) {
+  const indexId = e.target.parentElement.id || e.target.closest('.text-effect-layer-item')?.id; // fallback
+  if (!indexId) return;
+  const parts = indexId.replace('text_effect_', '').split('_');
+  const layerIndex = parseInt(parts[0]);
+  const effectIndex = parseInt(parts[1]);
+  if (isNaN(layerIndex) || isNaN(effectIndex)) return;
+  Setup.defaults.textEffect = {...Setup.Settings.textLayers[layerIndex].effects[effectIndex]};
+  saveSetup();
+  toastMessage('Text Effect default set', { position: 'bottomCenter', type: 'success' });
+}
+
+function renderTextEffectLayersFor(layerIndex) {
+  const layerEl = textLayersContainer.querySelectorAll('.text-layer-item')[layerIndex];
+  if (!layerEl) return;
+  const container = layerEl.querySelector('.text-effects-container');
+  if (!container) return;
+  const effects = Setup.Settings.textLayers[layerIndex].effects || [];
+
+  // Ensure each effect DOM exists, is in the correct order and updated
+  for (let i = 0; i < effects.length; i++) {
+    const id = `text_effect_${layerIndex}_${i}`;
+    let node = document.getElementById(id);
+    if (!node) {
+      // create via renderer (it appends to the container)
+      renderTextEffectLayer(layerIndex, i);
+      node = document.getElementById(id);
+    } else {
+      // Move into correct order if necessary
+      if (container.children[i] !== node) {
+        container.insertBefore(node, container.children[i] || null);
+      }
+      // Update node content
+      renderTextEffectLayer(layerIndex, i);
+    }
+  }
+
+  // Remove extra DOM nodes beyond the current effects length
+  const existing = Array.from(container.querySelectorAll('.text-effect-layer-item'));
+  for (let j = existing.length - 1; j >= effects.length; j--) {
+    const last = existing[j];
+    container.removeChild(last);
+  }
+}
+
+function renderTextEffectLayers() {
+  // loop all layers and render
+  const layers = textLayersContainer.querySelectorAll('.text-layer-item');
+  layers.forEach((item, idx) => renderTextEffectLayersFor(idx));
+}
+
+function changeTextEffectLayerType(event) {
+  const field = event.target.closest('.text-effect-layer-item');
+  const newType = event.target.value;
+  const idxParts = field.id.replace('text_effect_', '').split('_');
+  const layerIndex = parseInt(idxParts[0]);
+  const effIndex = parseInt(idxParts[1]);
+  if (!Setup.Settings.textLayers[layerIndex]) return;
+  const eff = Setup.Settings.textLayers[layerIndex].effects[effIndex];
+  const newTypeDef = TEXT_EFFECTS[newType];
+  if (!newTypeDef) return;
+  eff.type = newType;
+  const registryDefaults = {};
+  for (const p of newTypeDef.params ?? []) registryDefaults[p.key] = p.default;
+  eff.params = {...registryDefaults, ...(eff.params || {}) };
+  // Update only the specific text effect item instead of the whole layer list
+  renderTextEffectLayer(layerIndex, effIndex);
+}
+
+// Update a single text effect layer's DOM
+function renderTextEffectLayer(layerIndex, effIndex) {
+  const layer = Setup.Settings.textLayers?.[layerIndex];
+  if (!layer || !Array.isArray(layer.effects) || !layer.effects[effIndex]) return;
+  const eff = layer.effects[effIndex];
+  const container = textLayersContainer.querySelectorAll('.text-layer-item')[layerIndex]?.querySelector('.text-effects-container');
+  if (!container) return;
+
+  const fieldId = `text_effect_${layerIndex}_${effIndex}`;
+  let field = document.getElementById(fieldId);
+  // Create if missing
+  if (!field) {
+    const clone = textEffectLayerTemplate.content.cloneNode(true);
+    field = clone.querySelector('.text-effect-layer-item');
+    field.id = fieldId;
+    container.appendChild(clone);
+  }
+
+  // Enabled checkbox
+  const enabledCheckbox = field.querySelector('.text-effect-enabled-checkbox');
+  if (enabledCheckbox) {
+    enabledCheckbox.checked = eff.enabled !== false;
+    enabledCheckbox.id = `text_effect_enabled_${layerIndex}_${effIndex}`;
+    enabledCheckbox.onchange = () => {
+      eff.enabled = enabledCheckbox.checked;
+      updateTextSettings();
+    };
+  }
+
+  // Expand checkbox + label
+  const expandCheck = field.querySelector('input.expand-checkbox');
+  const expandLabel = field.querySelector('label.expand-label');
+  if (expandCheck && expandLabel) {
+    const expandId = `text_effect_expand_${layerIndex}_${effIndex}`;
+    expandCheck.id = expandId;
+    expandLabel.htmlFor = expandId;
+    const effectFriendlyName = (TEXT_EFFECTS && TEXT_EFFECTS[eff.type] && TEXT_EFFECTS[eff.type].name) ? TEXT_EFFECTS[eff.type].name : eff.type;
+    expandLabel.textContent = `${effectFriendlyName}`;
+  }
+
+  // Params container
+  const paramsContainer = field.querySelector('.text-effect-params-container');
+    if (paramsContainer) {
+    const domParams = readParamsFromContainer(paramsContainer);
+    try {
+      const a = (typeof PipelineStep !== 'undefined' && PipelineStep._stableStringify) ? PipelineStep._stableStringify(domParams) : JSON.stringify(domParams);
+      const b = (typeof PipelineStep !== 'undefined' && PipelineStep._stableStringify) ? PipelineStep._stableStringify(eff.params || {}) : JSON.stringify(eff.params || {});
+      if (a !== b) {
+        addTextEffectParamsOptions(paramsContainer, eff.type, eff.params || {}, layerIndex, effIndex);
+      }
+    } catch (err) {
+      addTextEffectParamsOptions(paramsContainer, eff.type, eff.params || {}, layerIndex, effIndex);
+    }
+  }
+
+  // Buttons
+  const deleteBtn = field.querySelector('.delete-text-effect-btn');
+  if (deleteBtn) deleteBtn.onclick = deleteTextEffectLayer;
+  const duplicateBtn = field.querySelector('.duplicate-text-effect-btn');
+  if (duplicateBtn) duplicateBtn.onclick = duplicateTextEffectLayer;
+  const defaultBtn = field.querySelector('.default-text-effect-btn');
+  if (defaultBtn) defaultBtn.onclick = setTextEffectLayerDefault;
+
+  // Trigger update to re-render text
+  updateTextSettings();
+}
+
+function onTextEffectParamChange(event) {
+  const control = event.target;
+  const layerIndex = parseInt(control.dataset.layerIndex);
+  const effIndex = parseInt(control.dataset.effectIndex);
+  const key = control.dataset.paramKey;
+  if (isNaN(layerIndex) || isNaN(effIndex) || !key) return;
+  const parsedValue = getControlValue(control);
+  const effects = Setup?.Settings?.textLayers?.[layerIndex]?.effects;
+  if (!effects || !effects[effIndex]) return;
+  effects[effIndex].params = effects[effIndex].params || {};
+  effects[effIndex].params[key] = parsedValue;
+  control.title = String(parsedValue);
+  updateTextSettings();
+}
+
+// Hooks from addTextLayer - attach listener to add-text-effect-btn
+
+addEffectLayerBtn?.addEventListener('click', addImageEffectLayer);
+
+
+window.addEventListener('DOMContentLoaded', renderEffectLayers);
+window.addEventListener('DOMContentLoaded', renderTextEffectLayers);
+
+// drawCompositeEffects removed — effects are applied within drawCompositeImage() now
+// ======================
 if (typeof module != 'undefined') {
   utils = require("../../scripts/components/utils/common");
   Jellyfin = require("./jellyfin");
@@ -6,8 +530,8 @@ if (typeof module != 'undefined') {
 // ======================
 // DOM Element References
 // ======================
-const canvas = document.getElementById("myCanvas");
-const ctx = canvas.getContext("2d");
+const mainCanvas = document.getElementById("myCanvas");
+const mainCtx = mainCanvas.getContext("2d");
 
 // Templates
 const template = document.getElementById('slot-template');
@@ -31,18 +555,9 @@ const fontSelectElement = document.getElementById("fontSelect");
 // Canvas Settings
 const RatioSelectElement = document.getElementById("RatioSelect");
 const typeSelectElement = document.getElementById("typeSelect");
+const typeSettingsContainer = document.getElementById("typeSettingsContainer");
 const customWidthElement = document.getElementById("customWidth");
 const customHeightElement = document.getElementById("customHeight");
-const overlayOpacityStartElement = document.getElementById("overlayOpacityStart");
-const overlayOpacityEndElement = document.getElementById("overlayOpacityEnd");
-const overlayColorStartElement = document.getElementById("overlayColorStart");
-const overlayColorEndElement = document.getElementById("overlayColorEnd");
-const spacingElement = document.getElementById("spaceSize");
-const randomSaltElement = document.getElementById("randomSalt");
-const blurAmountElement = document.getElementById("blurSize");
-const reflectionScaleElement = document.getElementById("reflexDistance");
-const reflectionDistanceElement = document.getElementById("reflexScale");
-const baseScaleElement = document.getElementById("posterScale");
 
 // Export Settings
 const exportFormatSelectElement = document.getElementById("exportFormatSelect");
@@ -118,21 +633,21 @@ function loadFullProjectFromJson(jsonData) {
     const defaultSetup = window.defaultSetup || Setup;
     // Merge imported Setup with defaults to ensure all keys exist
     Setup = deepMerge(jsonData.Setup, defaultSetup);
+    // Normalize params for effects so UI expects an object map
+    normalizeEffectParams(Setup.Settings.canvas.effects);
+    // Remove unsupported/legacy param level data
+    try { (Setup.Settings.canvas.effects || []).forEach(e => delete e.params_enabled); } catch(err) {}
     loadTextLayers(Setup.Settings.textLayers);
   }
+  // Normalize composite params after merge (applied after ensureCompositeDefaults below)
   // restore also the fields from the expandImageSettings element
   RatioSelectElement.value = Setup.Settings.canvas.format;
   typeSelectElement.value = Setup.Settings.canvas.type;
-  randomSaltElement.value = Setup.Settings.canvas.salt;
-  overlayColorStartElement.value = Setup.Settings.canvas.overlayColorStart;
-  overlayColorEndElement.value = Setup.Settings.canvas.overlayColorEnd;
-  overlayOpacityStartElement.value = Setup.Settings.canvas.overlayOpacityStart;
-  overlayOpacityEndElement.value = Setup.Settings.canvas.overlayOpacityEnd;
-  spacingElement.value = Setup.Settings.canvas.spacing;
-  blurAmountElement.value = Setup.Settings.canvas.blurAmount;
-  reflectionScaleElement.value = Setup.Settings.canvas.reflectionScale;
-  reflectionDistanceElement.value = Setup.Settings.canvas.reflectionDistance;
-  baseScaleElement.value = Setup.Settings.canvas.baseScale;
+  // Ensure composite object exists and UI is in sync
+  ensureCompositeDefaults();
+  addTypeParamsOptions(typeSettingsContainer, Setup.Settings.canvas.composite.type, Setup.Settings.canvas.composite.params || {});
+  // Make sure any registry params/defaults are applied to the composite
+  try { normalizeCompositeParams(Setup.Settings.canvas.composite); } catch(err) {}
   
   // Restore export settings
   if (Setup.Settings.export) {
@@ -179,6 +694,76 @@ function loadFullProjectFromJson(jsonData) {
   drawComposite();
 }
 
+// Normalize composite params to registry keys and defaults
+function normalizeCompositeParams(compositeObj) {
+  if (!compositeObj || typeof COMPOSITE_REGISTRY === 'undefined') return;
+  const def = COMPOSITE_REGISTRY[compositeObj.type] || {};
+  const existing = compositeObj.params || {};
+  const sanitized = {};
+  for (const p of def.params || []) {
+    sanitized[p.key] = existing[p.key] !== undefined ? existing[p.key] : p.default;
+  }
+  compositeObj.params = sanitized;
+}
+
+// Ensure composite uses defaults when missing/empty and merges params where appropriate
+function ensureCompositeDefaults() {
+  // Ensure canvas exists
+  if (!Setup.Settings) Setup.Settings = {};
+  if (!Setup.Settings.canvas) Setup.Settings.canvas = {};
+
+  const defaultComposite = (Setup.defaults && Setup.defaults.composite) ? JSON.parse(JSON.stringify(Setup.defaults.composite)) : null;
+  // If composite missing or explicitly an empty object (no own keys), set from defaults
+  const comp = Setup.Settings.canvas.composite;
+  const isEmptyObj = comp && typeof comp === 'object' && Object.keys(comp).length === 0;
+  if (!comp || isEmptyObj) {
+    if (defaultComposite) {
+      // Ensure type falls back to canvas type if missing
+      if (!defaultComposite.type) defaultComposite.type = Setup.Settings.canvas.type || (typeof typeSelectElement !== 'undefined' && typeSelectElement?.value) || 'line';
+      // Ensure enabled property exists (default to true)
+      if (defaultComposite.enabled === undefined) defaultComposite.enabled = true;
+      Setup.Settings.canvas.composite = defaultComposite;
+      return;
+    }
+    // Fallback minimal composite
+    Setup.Settings.canvas.composite = { enabled: true, type: Setup.Settings.canvas.type || (typeof typeSelectElement !== 'undefined' && typeSelectElement?.value) || 'line', params: {} };
+    return;
+  }
+
+  // If composite exists but has no type, prefer default composite type
+  if (!Setup.Settings.canvas.composite.type) {
+    if (defaultComposite && defaultComposite.type) Setup.Settings.canvas.composite.type = defaultComposite.type;
+    else Setup.Settings.canvas.composite.type = Setup.Settings.canvas.type || (typeof typeSelectElement !== 'undefined' && typeSelectElement?.value) || 'line';
+  }
+
+  // Ensure params map exists
+  if (!Setup.Settings.canvas.composite.params || typeof Setup.Settings.canvas.composite.params !== 'object') {
+    Setup.Settings.canvas.composite.params = {};
+  }
+
+  // Merge missing params from default (only if defaultComposite exists and type matches)
+  if (defaultComposite && defaultComposite.params && defaultComposite.type === Setup.Settings.canvas.composite.type) {
+    const existing = Setup.Settings.canvas.composite.params || {};
+    for (const k in defaultComposite.params) {
+      if (!Object.prototype.hasOwnProperty.call(existing, k)) {
+        Setup.Settings.canvas.composite.params[k] = defaultComposite.params[k];
+      }
+    }
+  }
+
+  // Ensure composite params also reflect COMPOSITE_REGISTRY defaults when registry is available.
+  // This covers the "clean page" scenario where `Setup.defaults.composite.params` is empty
+  // but we still need the composite params populated with the registry's defaults.
+  try {
+    if (typeof normalizeCompositeParams === 'function') {
+      normalizeCompositeParams(Setup.Settings.canvas.composite);
+    }
+  } catch (err) {
+    // Do not fail the whole flow if normalization fails — just log for debugging
+    console.warn('Error normalizing composite params inside ensureCompositeDefaults:', err);
+  }
+}
+
 function makeSaveAllJson() {
   const save = {};
   save.Setup = Setup;
@@ -205,6 +790,29 @@ function loadSetup() {
     const defaultSetup = window.defaultSetup || Setup;
     // Merge saved Setup with defaults to ensure all keys exist
     Setup = deepMerge(JSON.parse(savedSetup), defaultSetup);
+    // Normalize params for effects, converting old array format to object mapping
+    normalizeEffectParams(Setup.Settings.canvas.effects);
+    // Remove legacy params_enabled flags if present
+    try { (Setup.Settings.canvas.effects || []).forEach(e => delete e.params_enabled); } catch (err) {}
+    // Sanitize composite params to registry schema
+    try {
+      if (Setup.Settings.canvas?.composite) {
+        const def = COMPOSITE_REGISTRY[Setup.Settings.canvas.composite.type] || {};
+        const schemaKeys = new Set((def.params || []).map(p => p.key));
+        const sanitized = {};
+        const existing = Setup.Settings.canvas.composite.params || {};
+        for (const k of schemaKeys) {
+          sanitized[k] = existing[k] !== undefined ? existing[k] : (def.params.find(p => p.key === k)?.default);
+        }
+        Setup.Settings.canvas.composite.params = sanitized;
+      }
+    } catch (err) {
+      console.warn('Error normalizing composite params on loadSetup:', err);
+    }
+    // Ensure composite exists and merge defaults when missing/empty
+    try { ensureCompositeDefaults(); } catch(err) { console.warn('Error ensuring composite defaults:', err); }
+    // Ensure composite params reflect registry defaults
+    try { normalizeCompositeParams(Setup.Settings.canvas.composite); } catch(err) { console.warn('Error normalizing composite params after ensureCompositeDefaults:', err); }
   }
 }
 
@@ -224,6 +832,13 @@ function loadTextLayersFromStorage() {
 }
 
 function loadTextLayers(layersData) {
+  // Prevent re-entrant or duplicate loads
+  if (window._loadingTextLayers) {
+    console.warn('loadTextLayers: already loading, skipping duplicate call');
+    return;
+  }
+  window._loadingTextLayers = true;
+
   window.memoryLoaded = false;
   let idsToCheck = []
   if (layersData) {
@@ -256,34 +871,38 @@ function loadTextLayers(layersData) {
       newLayerEl.querySelector(".positionY-input").value = layerData.position.y;
       newLayerEl.querySelector(".rotation-input").value = layerData.position.rotation || 0;
 
-      // Populate strokes
-      for (let index2 = 0; index2 < layerData.strokes.length; index2++) {
-        const strokeData = layerData.strokes[index2];
-        const strokeEl = newLayerEl.querySelector(`#${addStroke({ target: newLayerEl.querySelector(".add-stroke-btn") })}`).parentElement.querySelector('.stroke-item');
-        strokeEl.querySelector(".strokeColor-input").value = strokeData.color;
-        strokeEl.querySelector(".strokeWidth-input").value = strokeData.width;
-        strokeEl.querySelector(".strokeOpacity-input").value = strokeData.opacity;
-        
-        // ⭐️ Restore enabled state for stroke
-        const strokeEnabledCheckbox = strokeEl.parentElement.parentElement.querySelector(".stroke-enabled-checkbox");
-        if (strokeEnabledCheckbox) {
-          strokeEnabledCheckbox.checked = strokeData.enabled !== false;
-        }
-      }
-
-      // Populate shadows
-      for (let index3 = 0; index3 < layerData.shadows.length; index3++) {
-        const shadowData = layerData.shadows[index3];
-        const shadowEl = newLayerEl.querySelector(`#${addShadow({ target: newLayerEl.querySelector(".add-shadow-btn") })}`).parentElement.querySelector('.shadow-item');
-        shadowEl.querySelector(".shadowColor-input").value = shadowData.color;
-        shadowEl.querySelector(".shadowBlur-input").value = shadowData.blur;
-        shadowEl.querySelector(".shadowOffsetX-input").value = shadowData.offsetX;
-        shadowEl.querySelector(".shadowOffsetY-input").value = shadowData.offsetY;
-        
-        // ⭐️ Restore enabled state for shadow
-        const shadowEnabledCheckbox = shadowEl.parentElement.parentElement.querySelector(".shadow-enabled-checkbox");
-        if (shadowEnabledCheckbox) {
-          shadowEnabledCheckbox.checked = shadowData.enabled !== false;
+      // Populate text effects (render UI directly so we don't depend on internal Setup.Settings)
+      if (Array.isArray(layerData.effects) && layerData.effects.length) {
+        const container = newLayerEl.querySelector('.text-effects-container');
+        const allLayers = Array.from(textLayersContainer.querySelectorAll('.text-layer-item'));
+        const currentLayerIndex = allLayers.indexOf(newLayerEl.querySelector('.text-layer-item'));
+        container.innerHTML = '';
+        for (let idxEf = 0; idxEf < layerData.effects.length; idxEf++) {
+          const effData = layerData.effects[idxEf];
+          const clone = textEffectLayerTemplate.content.cloneNode(true);
+          const field = clone.querySelector('.text-effect-layer-item');
+          field.id = `text_effect_${currentLayerIndex}_${idxEf}`;
+            const enabledCheckbox = field.querySelector('.text-effect-enabled-checkbox');
+            enabledCheckbox.checked = effData.enabled !== false;
+            // Ensure the enabled checkbox has a stable id so associated labels/logic target the correct control
+            enabledCheckbox.id = `text_effect_enabled_${currentLayerIndex}_${idxEf}`;
+            enabledCheckbox.addEventListener('change', () => updateTextSettings());
+          const paramsContainer = field.querySelector('.text-effect-params-container');
+          addTextEffectParamsOptions(paramsContainer, effData.type, effData.params || {}, currentLayerIndex, idxEf);
+          // Setup the expand checkbox id/label and readable name for the loaded effect
+          const expandCheck = field.querySelector('input.expand-checkbox');
+          const expandLabel = field.querySelector('label.expand-label');
+          const expandId = `text_effect_expand_${currentLayerIndex}_${idxEf}`;
+          if (expandCheck) expandCheck.id = expandId;
+          if (expandLabel) {
+            expandLabel.htmlFor = expandId;
+            const effectFriendlyName = (TEXT_EFFECTS && TEXT_EFFECTS[effData.type] && TEXT_EFFECTS[effData.type].name) ? TEXT_EFFECTS[effData.type].name : effData.type;
+            expandLabel.textContent = `${effectFriendlyName}`;
+          }
+          field.querySelector('.delete-text-effect-btn').addEventListener('click', deleteTextEffectLayer);
+          field.querySelector('.duplicate-text-effect-btn').addEventListener('click', duplicateTextEffectLayer);
+          field.querySelector('.default-text-effect-btn').addEventListener('click', setTextEffectLayerDefault);
+          container.appendChild(clone);
         }
       }
     }
@@ -293,6 +912,7 @@ function loadTextLayers(layersData) {
     window.memoryLoaded = true;
   
   updateTextSettings(); // Redraw canvas with loaded settings
+  window._loadingTextLayers = false;
 }
 
 function loadTextShadows(layerIndex, shadowsData) {
@@ -453,13 +1073,36 @@ async function updateTextSettings() {
       shadowIndex++;
     }
 
+      // 5. Read Text Effect Layers (per-layer)
+      newLayer.effects = [];
+      const textEffectElements = layerEl.querySelectorAll('.text-effect-layer-item');
+      let textEffIndex = 0;
+      for (const effEl of textEffectElements) {
+        const newEff = {};
+        const typeSelect = effEl.querySelector('.effectTypeSelect-input');
+        newEff.type = typeSelect ? typeSelect.value : (availableTextEffects?.[0]?.id || 'fade');
+        const enabledCheckbox = effEl.querySelector('.text-effect-enabled-checkbox');
+        newEff.enabled = enabledCheckbox ? enabledCheckbox.checked : true;
+        newEff.params = newEff.params || {};
+        const paramControls = effEl.querySelectorAll('.effect-param-slider');
+        for (const control of paramControls) {
+          const pKey = control.dataset.paramKey;
+          if (!pKey) continue;
+          newEff.params[pKey] = getControlValue(control);
+        }
+        effEl.setAttribute('layerIndex', layerIndex);
+        effEl.setAttribute('effectIndex', textEffIndex);
+        newLayer.effects.push(newEff);
+        textEffIndex++;
+      }
+
     // 5. Add the completed layer to settings
     Setup.Settings.textLayers.push(newLayer);
     layerIndex++;
   }
 
   // 6. Redraw the canvas
-  drawCompositeText();
+  drawComposite();
 }
 
 function updateCustomValues() {
@@ -467,7 +1110,7 @@ function updateCustomValues() {
   Setup.Sizes.custom.height = parseInt(customHeightElement.value) || 1;
 }
 
-function updateImageSettings() {
+function updateImageSettings(skipEffectsRerender = false) {
   Setup.Settings.canvas.format = RatioSelectElement.value;
   const _format = Setup.Sizes[Setup.Settings.canvas.format]
   const ratio = _format.width / _format.height;
@@ -482,23 +1125,10 @@ function updateImageSettings() {
   }
   
   Setup.Settings.canvas.type = typeSelectElement.value;
-  Setup.Settings.canvas.salt = parseInt(randomSaltElement.value) || 0;
   setCanvasSize(_format.width, _format.height);
-
-  Setup.Settings.canvas.overlayColorStart = overlayColorStartElement.value || '#000000';
-  Setup.Settings.canvas.overlayColorStartRGB = hexToRgb(Setup.Settings.canvas.overlayColorStart);
-  Setup.Settings.canvas.overlayColorEnd = overlayColorEndElement.value || '#ffffff';
-  Setup.Settings.canvas.overlayColorEndRGB = hexToRgb(Setup.Settings.canvas.overlayColorEnd);
-  Setup.Settings.canvas.overlayOpacityStart = parseFloat(overlayOpacityStartElement.value) || 0;
-  Setup.Settings.canvas.overlayOpacityEnd = parseFloat(overlayOpacityEndElement.value) || 0;
-  Setup.Settings.canvas.spacing = parseFloat(spacingElement.value) || 0;
-  Setup.Settings.canvas.blurAmount = parseInt(blurAmountElement.value) || 0;
-  Setup.Settings.canvas.reflectionDistance = parseFloat(reflectionScaleElement.value) || 0;
-  Setup.Settings.canvas.reflectionScale = parseFloat(reflectionScaleElement.value) || 0;
-
-  Setup.Settings.canvas.baseScale = parseFloat(baseScaleElement.value) || 1.5;
-  Setup.Settings.canvas.reflectionDistance = parseFloat(reflectionDistanceElement.value) || 0;
-  drawCompositeImage();
+  // Use unified drawComposite so pipeline is used when available
+  drawComposite();
+  if (!skipEffectsRerender) renderEffectLayers();
 }
 
 function updateExportSettings() {
@@ -536,6 +1166,8 @@ function ensureUniqueId(mask, currIndex, placeholder = '{n}') {
     }
     return { uniqueId: id, index };
 }
+
+// Text Layers Buttons & Functions
 
 function addTextLayer(layerIndex) {
   const clone = textLayerTemplate.content.cloneNode(true);
@@ -593,17 +1225,15 @@ function addTextLayer(layerIndex) {
   // --- End of new ID logic ---
 
   // Attach event listeners for this layer's buttons
-  clone.querySelector(".delete-layer-btn").addEventListener("click", deleteTextStrokeShadow);
   clone.querySelector(".default-layer-btn").addEventListener("click", setTextLayerDefault);
   clone.querySelector(".duplicate-layer-btn").addEventListener("click", duplicateTextLayer);
-  clone.querySelector(".add-stroke-btn").addEventListener("click", addStroke);
-  clone.querySelector(".add-shadow-btn").addEventListener("click", addShadow);
+  clone.querySelector(".delete-layer-btn").addEventListener("click", deleteTextLayer);
+  clone.querySelector('.add-text-effect-btn')?.addEventListener('click', addTextEffectLayer);
 
   // if done loading, set and all the default layers needed
   // it must use the addStroke and addShadow, because only they will add and run the necessary commands
   // Then this here will update their info with the default ones
-    if(window.memoryLoaded) {
-      
+  if(window.memoryLoaded) {
     if (Setup.defaults.TextLayer) {
       // Populate basic font settings
       clone.querySelector(".overlayText-input").value = Setup.defaults.TextLayer.overlayText;
@@ -620,25 +1250,6 @@ function addTextLayer(layerIndex) {
       clone.querySelector(".positionX-input").value = Setup.defaults.TextLayer.position.x;
       clone.querySelector(".positionY-input").value = Setup.defaults.TextLayer.position.y;
       clone.querySelector(".rotation-input").value = Setup.defaults.TextLayer.position.rotation || 0;
-
-      // Populate strokes
-      for (let index2 = 0; index2 < Setup.defaults.TextLayer.strokes.length; index2++) {
-        const strokeData = Setup.defaults.TextLayer.strokes[index2];
-        const strokeEl = clone.querySelector(`#${addStroke({ target: clone.querySelector(".add-stroke-btn") })}`).parentElement.querySelector('.stroke-item');
-        strokeEl.querySelector(".strokeColor-input").value = strokeData.color;
-        strokeEl.querySelector(".strokeWidth-input").value = strokeData.width;
-        strokeEl.querySelector(".strokeOpacity-input").value = strokeData.opacity;
-      }
-
-      // Populate shadows
-      for (let index3 = 0; index3 < Setup.defaults.TextLayer.shadows.length; index3++) {
-        const shadowData = Setup.defaults.TextLayer.shadows[index3];
-        const shadowEl = clone.querySelector(`#${addShadow({ target: clone.querySelector(".add-shadow-btn") })}`).parentElement.querySelector('.shadow-item');
-        shadowEl.querySelector(".shadowColor-input").value = shadowData.color;
-        shadowEl.querySelector(".shadowBlur-input").value = shadowData.blur;
-        shadowEl.querySelector(".shadowOffsetX-input").value = shadowData.offsetX;
-        shadowEl.querySelector(".shadowOffsetY-input").value = shadowData.offsetY;
-      }
     }
   }
 
@@ -659,127 +1270,59 @@ function setTextLayerDefault(e) {
   toastMessage('Text Layer default set', { position: 'bottomCenter', type: 'success' });
 }
 
-function addStroke(e) {
-  const clone = strokeTemplate.content.cloneNode(true);
-  clone.querySelector(".delete-stroke-btn").addEventListener("click", deleteTextStrokeShadow);
-  clone.querySelector(".default-stroke-btn").addEventListener("click", setStrokeDefault);
-  clone.querySelector(".duplicate-stroke-btn").addEventListener("click", duplicateStroke);
-  // Find the container *within* the layer that was clicked
-  const container = e.target.closest(".expand-content").querySelector(".strokes-container");
-
-  // --- NEW: ID Generation ---
-  // 1. Find the parent layer to get its index
-  const layerItem = e.target.closest(".text-layer-item");
-  const allLayers = Array.from(textLayersContainer.querySelectorAll('.text-layer-item'));
-  const layerIndex = allLayers.indexOf(layerItem);
-
-  // 3. Find the new elements in the clone
-  const input = clone.querySelector('input.expand-checkbox');
-  const label = clone.querySelector('label.expand-label');
-  
-  // 4. Create and set unique ID and Label text
-  if (input && label) {
-    const {uniqueId, index} = ensureUniqueId(`layer-${layerIndex}-stroke-{n}-check`, container.childElementCount);
-    input.id = uniqueId;
-    label.setAttribute('for', uniqueId);
-    label.innerText = `Frame ${index + 1}`;
-
-    if (Setup.defaults.stroke) {
-      const strokeColorInput = clone.querySelector(".strokeColor-input");
-      const strokeWidthInput = clone.querySelector(".strokeWidth-input");
-      const strokeOpacityInput = clone.querySelector(".strokeOpacity-input");
-
-      strokeColorInput.value = Setup.defaults.stroke.color;
-      strokeWidthInput.value = Setup.defaults.stroke.width;
-      strokeOpacityInput.value = Setup.defaults.stroke.opacity;
-    }
-
-    container.appendChild(clone);
-    updateTextSettings();
-    return uniqueId;
-  }
-}
-
-function duplicateStroke(e) {
-  const layerIndex = parseInt(e.target.parentElement.getAttribute('layerIndex'));
-  const strokeIndex = parseInt(e.target.parentElement.getAttribute('strokeIndex'));
-  loadTextStrokes(layerIndex, [Setup.Settings.textLayers[layerIndex].strokes[strokeIndex]]);
-}
-
-function setStrokeDefault(e) {
-  const layerIndex = parseInt(e.target.parentElement.getAttribute('layerIndex'));
-  const strokeIndex = parseInt(e.target.parentElement.getAttribute('strokeIndex'));
-  Setup.defaults.stroke = {...Setup.Settings.textLayers[layerIndex].strokes[strokeIndex]}
-  saveSetup();
-  toastMessage('Stroke default set', { position: 'bottomCenter', type: 'success' });
-}
-
-function addShadow(e) {
-  const clone = shadowTemplate.content.cloneNode(true);
-  clone.querySelector(".delete-shadow-btn").addEventListener("click", deleteTextStrokeShadow);
-  clone.querySelector(".default-shadow-btn").addEventListener("click", setShadowDefault);
-  clone.querySelector(".duplicate-shadow-btn").addEventListener("click", duplicateShadow);
-  
-  // Find the container *within* the layer that was clicked
-  const container = e.target.closest(".expand-content").querySelector(".shadows-container");
-
-  // --- NEW: ID Generation ---
-  // 1. Find the parent layer to get its index
-  const layerItem = e.target.closest(".text-layer-item");
-  const allLayers = Array.from(textLayersContainer.querySelectorAll('.text-layer-item'));
-  const layerIndex = allLayers.indexOf(layerItem);
-
-  // 3. Find the new elements in the clone
-  const input = clone.querySelector('input.expand-checkbox');
-  const label = clone.querySelector('label.expand-label');
-
-  // 4. Create and set unique ID and Label text
-  if (input && label) {
-    const {uniqueId, index} = ensureUniqueId(`layer-${layerIndex}-shadow-{n}-check`, container.childElementCount);
-    input.id = uniqueId;
-    label.setAttribute('for', uniqueId);
-    label.innerText = `Bloom ${index + 1}`; 
-
-    if (Setup.defaults.shadow) {
-      const shadowColorInput = clone.querySelector(".shadowColor-input");
-      const shadowBlurInput = clone.querySelector(".shadowBlur-input");
-      const shadowOffsetXInput = clone.querySelector(".shadowOffsetX-input");
-      const shadowOffsetYInput = clone.querySelector(".shadowOffsetY-input");
-
-      shadowColorInput.value = Setup.defaults.shadow.color;
-      shadowBlurInput.value = Setup.defaults.shadow.blur;
-      shadowOffsetXInput.value = Setup.defaults.shadow.offsetX;
-      shadowOffsetYInput.value = Setup.defaults.shadow.offsetY;
-    }
-
-    container.appendChild(clone);
-    updateTextSettings();
-    return uniqueId;
-  }
-}
-
-function duplicateShadow(e) {
-  const layerIndex = parseInt(e.target.parentElement.getAttribute('layerIndex'));
-  const shadowIndex = parseInt(e.target.parentElement.getAttribute('shadowIndex'));
-  loadTextShadows(layerIndex, [Setup.Settings.textLayers[layerIndex].shadows[shadowIndex]]);
-}
-
-function deleteTextStrokeShadow(e) {
+function deleteTextLayer(e) {
   e.target.parentElement.remove();
+  saveTextLayersToStorage();
   updateTextSettings();
-}
-
-function setShadowDefault(e) {
-  const layerIndex = parseInt(e.target.parentElement.getAttribute('layerIndex'));
-  const shadowIndex = parseInt(e.target.parentElement.getAttribute('shadowIndex'));
-  Setup.defaults.shadow = {...Setup.Settings.textLayers[layerIndex].shadows[shadowIndex]}
-  saveSetup();
-  toastMessage('Shadow default set', { position: 'bottomCenter', type: 'success' });
 }
 
 function initTextLayers() {
   textLayersContainer.innerHTML = '';
   updateTextSettings();
+}
+
+// Images Buttons & Functions
+function addImageEffectLayer() {
+  const userDefault = Setup?.defaults?.effects ?? {};
+  const effectType = userDefault.type ?? availableEffects?.[0]?.id ?? 'blur';
+
+  // Start with registry defaults
+  const registryDefaults = {};
+  for (const p of EFFECTS_REGISTRY[effectType]?.params ?? []) {
+    registryDefaults[p.key] = p.default;
+  }
+
+  // Merge: user params override registry defaults
+  const finalParams = { ...registryDefaults, ...(userDefault.params ?? {}) 
+  };
+
+  Setup.Settings.canvas.effects.push({
+    type: effectType,
+    params: finalParams,
+    enabled: true
+  });
+  // Only render the newly added effect
+  renderImageEffectLayer(Setup.Settings.canvas.effects.length - 1);
+}
+
+function deleteImageEffectLayer(e) {
+  const index = parseInt(e.target.parentElement.id.replace('effect_', ''));
+  Setup.Settings.canvas.effects.splice(index, 1);
+  renderEffectLayers();
+}
+
+function duplicateImageEffectLayer(e) {
+  const index = parseInt(e.target.parentElement.id.replace('effect_', ''));
+  const effectCopy = JSON.parse(JSON.stringify(Setup.Settings.canvas.effects[index]));
+  Setup.Settings.canvas.effects.splice(index + 1, 0, effectCopy);
+  renderEffectLayers();
+}
+
+function setImageEffectLayerDefault(e) {
+  const index = parseInt(e.target.parentElement.id.replace('effect_', ''));
+  Setup.defaults.effects = {...Setup.Settings.canvas.effects[index]};
+  saveSetup();
+  toastMessage('Effect Layer default set', { position: 'bottomCenter', type: 'success' });
 }
 
 // ======================
@@ -925,9 +1468,9 @@ function exportAsPNG() {
       // Generate data URL with correct format
       let dataURL;
       if (format === 'jpeg') {
-        dataURL = canvas.toDataURL("image/jpeg", quality);
+        dataURL = Composites.Merged.toDataURL("image/jpeg", quality);
       } else {
-        dataURL = canvas.toDataURL("image/png");
+        dataURL = Composites.Merged.toDataURL("image/png");
       }
       
       const fileName = getExportFileName();
@@ -1099,22 +1642,19 @@ async function importProjectFromZip(file) {
       const defaultSetup = window.defaultSetup || Setup;
       // Merge imported Setup with defaults to ensure all keys exist
       Setup = deepMerge(projectData.Setup, defaultSetup);
+      // Normalize params for effects so we don't end up with arrays in saved setups
+      normalizeEffectParams(Setup.Settings.canvas.effects);
+      // Remove legacy per-param toggles
+      try { (Setup.Settings.canvas.effects || []).forEach(e => delete e.params_enabled); } catch (err) {}
       loadTextLayers(Setup.Settings.textLayers);
     }
 
   // Restore UI fields
   RatioSelectElement.value = Setup.Settings.canvas.format;
   typeSelectElement.value = Setup.Settings.canvas.type;
-  randomSaltElement.value = Setup.Settings.canvas.salt;
-  overlayColorStartElement.value = Setup.Settings.canvas.overlayColorStart;
-  overlayColorEndElement.value = Setup.Settings.canvas.overlayColorEnd;
-  overlayOpacityStartElement.value = Setup.Settings.canvas.overlayOpacityStart;
-  overlayOpacityEndElement.value = Setup.Settings.canvas.overlayOpacityEnd;
-  spacingElement.value = Setup.Settings.canvas.spacing;
-  blurAmountElement.value = Setup.Settings.canvas.blurAmount;
-  reflectionScaleElement.value = Setup.Settings.canvas.reflectionScale;
-  reflectionDistanceElement.value = Setup.Settings.canvas.reflectionDistance;
-  baseScaleElement.value = Setup.Settings.canvas.baseScale;
+  // Ensure composite object exists and UI is in sync
+  ensureCompositeDefaults();
+  addTypeParamsOptions(typeSettingsContainer, Setup.Settings.canvas.composite.type, Setup.Settings.canvas.composite.params || {});
   
   // Restore export settings
   if (Setup.Settings.export) {
@@ -1222,7 +1762,11 @@ function _importProjectFromJsonCore(file) {
 function openInNewTab(source) {
   let dataURL = "";
   if (source?.target?.id == "openTabBtn" || source?.target?.parentElement?.id == "openTabBtn")
-    dataURL = canvas.toDataURL("image/png");
+    dataURL = Composites.Merged.toDataURL("image/png");
+  else if (source?.target?.id == "openTextComposite" || source?.target?.parentElement?.id == "openTextComposite")
+    dataURL = Composites.Text.canvas.toDataURL("image/png")
+  else if (source?.target?.id == "openImageComposite" || source?.target?.parentElement?.id == "openImageComposite")
+    dataURL = Composites.Image.canvas.toDataURL("image/png")
   else {
     const slotImage = getSlotPreviewByIndex(getIndexFromButtonClick(source))
     if (slotImage)
@@ -1399,10 +1943,17 @@ function  makeDetailList(inputTarget, list, sort = false) {
 // ======================
 searchOnLibrary = Controller.wrap(searchOnLibrary, true, 100, 1000);
 // drawComposite now uses unified render with debounce to prevent flicker during rapid parameter changes
-drawComposite = Controller.wrap(drawComposite, true, 100);
-updateTextSettings = Controller.wrap(updateTextSettings, true, 100);
-saveTextLayersToStorage = Controller.wrap(saveTextLayersToStorage, true, 100, 1000);
-saveSetup = Controller.wrap(saveSetup, true, 100, 1000);
+drawComposite = Controller.wrap(drawComposite, true, 500, 200);
+updateTextSettings = Controller.wrap(updateTextSettings, true, 500, 200);
+saveTextLayersToStorage = Controller.wrap(saveTextLayersToStorage, true, 50, 100);
+saveSetup = Controller.wrap(saveSetup, true, 500, 1000);
+onEffectParamChange = Controller.wrap(onEffectParamChange, true, 300, 500);
+onCompositeParamChange = Controller.wrap(onCompositeParamChange, true, 300, 500);
+// drawCompositeImage = Controller.wrap(drawCompositeImage, false, 300, 500);
+// drawCompositeText = Controller.wrap(drawCompositeText, false, 200, 100);
+setCanvasSize = Controller.wrap(setCanvasSize, true, 300, 200);
+// applyImageEffects = Controller.wrap(applyImageEffects, true, 200, 200);
+revokeAllBlobUrls = Controller.wrap(revokeAllBlobUrls, false, 200, 200);
 
 // ======================
 // Event Listeners
@@ -1475,17 +2026,7 @@ function addSettingListeners() {
     RatioSelectElement,
     customWidthElement,
     customHeightElement,
-    typeSelectElement,
-    randomSaltElement,
-    overlayOpacityStartElement,
-    overlayOpacityEndElement,
-    overlayColorStartElement,
-    overlayColorEndElement,
-    spacingElement,
-    blurAmountElement,
-    reflectionScaleElement,
-    reflectionDistanceElement,
-    baseScaleElement
+    typeSelectElement
   ].forEach((el) => {
     el.addEventListener("input", () => {
       updateImageSettings();
@@ -1504,6 +2045,8 @@ function addSettingListeners() {
 // Export buttons
 document.getElementById("exportBtn").addEventListener("click", exportAsPNG);
 document.getElementById("openTabBtn").addEventListener("click", openInNewTab);
+document.getElementById("openTextComposite").addEventListener("click", openInNewTab);
+document.getElementById("openImageComposite").addEventListener("click", openInNewTab);
 document.getElementById("exportProjectBtn").addEventListener("click", exportProjectFile);
 document.getElementById("importProjectInput").addEventListener("change", importProjectFile);
 document.getElementById("importProjectBtn").addEventListener("click", () => {
@@ -1587,14 +2130,17 @@ window.addEventListener('load', async () => {
   changeTab(window.Tabs["imageslots"].tab);
   
   // Initial draw and Jellyfin setup
+  // Load setup first so UI picks the saved composite type
+  loadSetup();
   addtypeSelectOptions();
   drawComposite();
   CreateJellyfin();
   await populateFontSelect();
-
-  loadSetup();
   initTextLayers();
   loadEssentials();
+  // Ensure UI lists for effect layers are rendered after setup/load
+  renderEffectLayers();
+  renderTextEffectLayers();
   
   // Load custom posters limits from localStorage
   loadCustomPostersLimits();
@@ -1624,19 +2170,129 @@ function loadEssentials() {
   addSettingListeners();
   
   window.addEventListener('beforeunload', () => {
-    cleanupAllBlobUrls();
+     cleanupAllBlobUrls();
   });
 }
 
 function addtypeSelectOptions() {
   typeSelectElement.innerHTML = '';
-  for (const type in drawCompositeImageFn) {
-    const option = document.createElement('option');
-    option.value = type;
-    option.textContent = type;
-    typeSelectElement.appendChild(option);
+  // Use Composite Registry to populate available composite types
+  let availableComposites = [];
+  try {
+    if (typeof getAvailableComposites === 'function') {
+      availableComposites = getAvailableComposites();
+    } else if (typeof COMPOSITE_REGISTRY !== 'undefined') {
+      // fallback: build list from registry keys
+      availableComposites = Object.entries(COMPOSITE_REGISTRY).map(([id, def]) => ({ id, name: def.name }));
+    }
+  } catch (err) {
+    console.warn('Error while getting available composites:', err);
   }
+
+  availableComposites.forEach((c) => {
+    const option = document.createElement('option');
+    option.value = c.id;
+    option.textContent = c.name || c.id;
+    typeSelectElement.appendChild(option);
+  });
+  // Ensure composite UI is initialized for the selected type
+  // Set the select value based on Setup (fall back to the first option)
+  if (Setup?.Settings?.canvas?.type) typeSelectElement.value = Setup.Settings.canvas.type;
+  else if (typeSelectElement.options.length) typeSelectElement.value = typeSelectElement.options[0].value;
+  // Ensure composite configuration exists and falls back to defaults if empty/missing
+  ensureCompositeDefaults();
+  // Load options for initial composite type
+  addTypeParamsOptions(typeSettingsContainer, Setup.Settings.canvas.composite.type, Setup.Settings.canvas.composite.params || {});
+  // Add change listener
+  // Replace change handler (avoid adding multiple listeners)
+  typeSelectElement.onchange = changeCompositeType;
 }
+
+// Adds sliders/inputs for composite params into a container
+function addTypeParamsOptions(paramsContainer, compositeType, paramsObj) {
+  paramsContainer.innerHTML = '';
+  if (!paramsContainer) return;
+  const compositeDef = COMPOSITE_REGISTRY[compositeType];
+  if (!compositeDef) return;
+
+  // Render composite params via shared renderer helper
+  ParamsRenderer.renderParamsOptions(paramsContainer, compositeDef.params || [], paramsObj || {}, {
+    paramTemplate: document.getElementById('effect-param-template'),
+    groupTemplate: document.getElementById('options-param-group-template'),
+    onChange: onCompositeParamChange
+    , skipUnknown: true
+  });
+}
+
+// Helper: Normalize reading a control's value across input types
+function getControlValue(el) {
+  if (!el) return null;
+  const tag = (el.tagName || '').toUpperCase();
+  const type = (el.type || '').toLowerCase();
+  if (type === 'checkbox') return !!el.checked;
+  if (type === 'radio') return el.checked ? el.value : null;
+  if (type === 'number' || type === 'range') {
+    const n = parseFloat(el.value);
+    return Number.isNaN(n) ? el.value : n;
+  }
+  if (tag === 'SELECT') return el.value;
+  if (tag === 'SPAN') return el.textContent;
+  return el.value;
+}
+
+// Handler for composite param changes (unique composite, not a layer)
+function onCompositeParamChange(event) {
+  const slider = event.target;
+  if (!slider) return;
+  const key = slider.dataset.paramKey;
+  if (!key) return;
+  const parsedValue = getControlValue(slider);
+  Setup.Settings.canvas.composite = Setup.Settings.canvas.composite || { params: {} };
+  Setup.Settings.canvas.composite.params = Setup.Settings.canvas.composite.params || {};
+  Setup.Settings.canvas.composite.params[key] = parsedValue;
+  slider.title = String(parsedValue);
+  drawComposite();
+  // Persist changes immediately to localStorage
+  saveSetup();
+}
+
+// Change composite type handler
+function changeCompositeType(event) {
+  const newType = (event && event.target)
+    ? event.target.value
+    : typeSelectElement.value;
+
+  if (!newType) return;
+
+  // Update global type
+  Setup.Settings.canvas.type = newType;
+
+  // Ensure structure exists
+  ensureCompositeDefaults();
+
+  // Assign composite type
+  Setup.Settings.canvas.composite.type = newType;
+
+  // Always use DEFAULTS only (no merging)
+  const def = COMPOSITE_REGISTRY[newType] || {};
+  const params = {};
+
+  for (const p of def.params ?? []) {
+    params[p.key] = p.default;
+  }
+
+  // Overwrite everything
+  Setup.Settings.canvas.composite.params = params;
+
+  // Rebuild UI with fresh defaults
+  addTypeParamsOptions(typeSettingsContainer, newType, params);
+
+  // Sync + redraw
+  updateImageSettings();
+  drawComposite();
+  saveSetup();
+}
+
 
 
 
@@ -1650,3 +2306,191 @@ function cleanMemory() {
   });
 }
 
+// ✅ Dev helper: validate the composite default fallback (call from console)
+window.validateCompositeFallback = function() {
+  const orig = JSON.parse(JSON.stringify(Setup.Settings.canvas.composite));
+  console.log('Before ensureCompositeDefaults:', orig);
+  Setup.Settings.canvas.composite = {};
+  ensureCompositeDefaults();
+  console.log('After ensureCompositeDefaults:', JSON.parse(JSON.stringify(Setup.Settings.canvas.composite)));
+  // Restore
+  Setup.Settings.canvas.composite = orig;
+}
+
+
+function allowDrop(event) {
+  event.preventDefault(); // Necessary to allow dropping
+  event.currentTarget.classList.add('drag-over');
+}
+
+function removeDragOver(event) {
+  event.currentTarget.classList.remove('drag-over');
+}
+
+/**
+ * Generic array move function
+ */
+function moveInArray(arr, fromIndex, toIndex) {
+  if (toIndex >= arr.length) {
+    let k = toIndex - arr.length + 1;
+    while (k--) {
+      arr.push(undefined);
+    }
+  }
+  arr.splice(toIndex, 0, arr.splice(fromIndex, 1)[0]);
+  return arr;
+}
+
+
+// ======================
+// Text Layer Drag & Drop
+// ======================
+
+function onTextLayerDragStart(event) {
+  // Store the index of the layer being dragged
+  const item = event.target.parentElement.closest('.text-layer-item-container');
+  const allLayers = Array.from(document.querySelectorAll('#text-layers-container > .text-layer-item-container'));
+  const index = allLayers.indexOf(item);
+  
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('application/json', JSON.stringify({
+    type: 'textLayer',
+    index: index
+  }));
+}
+
+function onTextLayerDrop(event) {
+  removeDragOver(event);
+  event.preventDefault();
+
+  try {
+    const data = JSON.parse(event.dataTransfer.getData('application/json'));
+    if (data.type !== 'textLayer') return;
+
+    const container = document.getElementById('text-layers-container');
+    const allLayers = Array.from(container.children);
+    
+    const fromIndex = data.index;
+    const targetItem = event.target.closest('.text-layer-item-container');
+    if (!targetItem) return;
+    
+    const toIndex = allLayers.indexOf(targetItem);
+
+    if (fromIndex === toIndex) return;
+
+    // Move DOM Element
+    const itemToMove = allLayers[fromIndex];
+    
+    if (fromIndex < toIndex) {
+      container.insertBefore(itemToMove, targetItem.nextSibling);
+    } else {
+      container.insertBefore(itemToMove, targetItem);
+    }
+
+    // Force update settings to match new DOM order
+    // This will rebuild Setup.Settings.textLayers in the correct order
+    updateTextSettings();
+    
+    // Optional: Re-number layers visually if you use "Layer 1, Layer 2" labels
+    // You might want to implement a refreshLayerLabels() function here
+    
+  } catch (e) {
+    console.warn("Drop error", e);
+  }
+}
+
+// ======================
+// Image Effect Drag & Drop
+// ======================
+
+function onEffectDragStart(event) {
+  const item = event.target.parentElement.closest('.effect-layer-item');
+  // Extract index from ID (format: effect_0, effect_1...)
+  const index = parseInt(item.id.replace('effect_', ''));
+  
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('application/json', JSON.stringify({
+    type: 'imageEffect',
+    index: index
+  }));
+}
+
+function onEffectDrop(event) {
+  removeDragOver(event);
+  event.preventDefault();
+
+  try {
+    const data = JSON.parse(event.dataTransfer.getData('application/json'));
+    if (data.type !== 'imageEffect') return;
+
+    const fromIndex = data.index;
+    const targetItem = event.target.closest('.effect-layer-item');
+    if (!targetItem) return;
+    
+    const toIndex = parseInt(targetItem.id.replace('effect_', ''));
+
+    if (fromIndex === toIndex) return;
+
+    // Move in Data Array
+    moveInArray(Setup.Settings.canvas.effects, fromIndex, toIndex);
+
+    // Re-render UI
+    renderEffectLayers();
+    
+    // Draw Canvas
+    drawComposite();
+
+  } catch (e) {
+    console.warn("Effect Drop error", e);
+  }
+}
+
+// ======================
+// Text Effect Drag & Drop
+// ======================
+
+function onTextEffectDragStart(event) {
+  const item = event.target.parentElement.closest('.text-effect-layer-item');
+  const layerIndex = parseInt(item.getAttribute('layerIndex'));
+  const effectIndex = parseInt(item.getAttribute('effectIndex'));
+  
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('application/json', JSON.stringify({
+    type: 'textEffect',
+    layerIndex: layerIndex,
+    effectIndex: effectIndex
+  }));
+}
+
+function onTextEffectDrop(event) {
+  removeDragOver(event);
+  event.preventDefault();
+
+  try {
+    const data = JSON.parse(event.dataTransfer.getData('application/json'));
+    if (data.type !== 'textEffect') return;
+
+    const targetItem = event.target.closest('.text-effect-layer-item');
+    if (!targetItem) return;
+
+    const targetLayerIndex = parseInt(targetItem.getAttribute('layerIndex'));
+    const targetEffectIndex = parseInt(targetItem.getAttribute('effectIndex'));
+
+    // Only allow moving within the SAME text layer
+    if (data.layerIndex !== targetLayerIndex) return;
+    if (data.effectIndex === targetEffectIndex) return;
+
+    // Move in Data Array
+    const effectsArray = Setup.Settings.textLayers[data.layerIndex].effects;
+    moveInArray(effectsArray, data.effectIndex, targetEffectIndex);
+
+    // Re-render UI for this specific layer
+    renderTextEffectLayersFor(data.layerIndex);
+    
+    // Draw Canvas
+    updateTextSettings();
+
+  } catch (e) {
+    console.warn("Text Effect Drop error", e);
+  }
+}

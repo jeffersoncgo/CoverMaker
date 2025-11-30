@@ -14,14 +14,12 @@ const webSafeFonts = [
 
 window.Tabs = {}; // Will store tab elements
 
-const composite = {
-  canvas: new OffscreenCanvas(1920, 1080),
+window.composite = {
   size: {
     width: 1920,
     height: 1080
   }
-}; //Default to FullHD Canvas
-composite.ctx = composite.canvas.getContext("2d");
+};
 
 var doneLoading = false;
 
@@ -63,21 +61,9 @@ var Setup = {
   Settings: {
     textLayers: [],
     canvas: {
-      type: "line",
+      composite: {},
       format: "cover",
-      salt: 1,
-      opacity: 0,
-      overlayColorStart: "#000000",
-      overlayColorStartRGB: {r: 0, g: 0, b: 0},
-      overlayColorEnd: "#000000",
-      overlayColorEndRGB: {r: 0, g: 0, b: 0},
-      overlayOpacityStart: 0,
-      overlayOpacityEnd: 0,
-      reflectionDistance: 0,
-      reflectionScale: 0,
-      baseScale: 1.5,
-      blurAmount: 0,
-      spacing: 0,
+      effects: []
     },
     export: {
       format: "png",
@@ -85,6 +71,10 @@ var Setup = {
     }
   },
   defaults: {
+    composite: {
+      "type": "line",
+      "params": {}
+    },
     shadow: {
       color: "#000000",
       blur: 5,
@@ -99,6 +89,7 @@ var Setup = {
       style: "rgba(0, 0, 0, 1)", // Will be built by updateTextSettings
       enabled: true // ⭐️ ADDED enabled property
     },
+    effects: {}, 
     TextLayer: {
       overlayText: "Movies",
       font: {
@@ -118,6 +109,7 @@ var Setup = {
       },
       strokes: [], // ⭐️ CHANGED to an array
       shadows: [], // ⭐️ CHANGED to an array
+      effects: [],
       enabled: true // ⭐️ ADDED enabled property
     }
   }

@@ -5,13 +5,8 @@ function drawCompositeImageLine() {
   const realHeight = slotTotalHeight * Setup.Settings.canvas.baseScale;
   const reflectionHeight = slotTotalHeight * Setup.Settings.canvas.reflectionDistance;
   const targetRatio = slotWidth / realHeight;
-  const _cS = Setup.Settings.canvas.overlayColorStartRGB;
-  const _cSo = Setup.Settings.canvas.overlayOpacityStart;
-
-  const _cE = Setup.Settings.canvas.overlayColorEndRGB;
-  const _cEo = Setup.Settings.canvas.overlayOpacityEnd;
-  const startColor = `rgba(${_cS.r}, ${_cS.g}, ${_cS.b}, ${_cSo})`;
-  const endColor = `rgba(${_cE.r}, ${_cE.g}, ${_cE.b}, ${_cEo})`;
+  const startColor = `rgba(0, 0, 0, 0.4)`;
+  const endColor = `rgba(0, 0, 0, 0.9)`;
 
   slotsImages.forEach((img, i) => {
     if (img) {

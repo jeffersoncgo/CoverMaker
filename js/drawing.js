@@ -1,3 +1,88 @@
+const stepsCache = [];
+let lastStepIndex = 0;
+const stepExamplee = {
+  canvas: null,
+  ctx: null,
+  index: 0,
+  params: {},
+  previousStepHash: 0
+}
+
+function tagFn(fn) {
+  if(!fn || typeof fn !== 'function')
+    return '';
+  if (!fn.__uid) {
+    Object.defineProperty(fn, "__uid", {
+      value: Math.random().toString(36).substring(2) + Date.now().toString(36),
+      writable: false,
+    });
+  }
+  return fn.__uid;
+}
+
+function stepHash(params, previousStepHash = 0) {
+  const paramString = JSON.stringify(params);
+  let hash = 0;
+  for (let i = 0; i < paramString.length; i++) {
+    const char = paramString.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0; // Convert to 32bit integer
+  }
+  if (previousStepHash) {
+    hash ^= previousStepHash;
+  }
+  return hash;
+}
+
+async function runStep(prevHash = 0, fn, ...params) {
+  const index = lastStepIndex;
+  lastStepIndex++;
+  const newHash = stepHash({params, fnId: `${tagFn(fn)}_${index}`}, prevHash);
+  const cached = stepsCache[index];
+
+  if (cached && cached.hash === newHash) {
+    // console.log(`Reusing cached step ${index}`);
+    return cached; // reuse canvas + ctx
+  }
+
+  if (typeof params != 'object' || params === null)
+    params = [];
+  
+  // console.log({fn, index, newHash, prevHash, ...params });
+  const result = typeof fn == 'function' ? await fn(...params) : {...params[0]};
+  // console.log(`Caching step ${index}`, fn, result, params);
+  stepsCache[index] = { hash: newHash, ...result, index };
+  return stepsCache[index];
+}
+
+function markStepDirty(index) {
+  if (stepsCache[index]) {
+    stepsCache[index] = null;
+  }
+}
+
+function clearStepsCache() {
+  stepsCache = [];
+}
+
+function createCanvas(w, h) {
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  return canvas;
+}
+
+function cloneCanvas(sourceCanvas) {
+  const newCanvas = createCanvas(sourceCanvas.width, sourceCanvas.height);
+  const newCtx = newCanvas.getContext('2d');
+  newCtx.drawImage(sourceCanvas, 0, 0);
+  return {canvas: newCanvas, ctx: newCtx};
+}
+
+// ======================
+// Image Handling Utilities
+// ======================
+
 function hexToRgb(hex) {
   // Remove the hash if it exists
   hex = hex.replace(/^#/, '');
@@ -18,9 +103,6 @@ function hexToRgb(hex) {
   return { r, g, b }; // Returns an object: { r: 255, g: 255, b: 255 }
 }
 
-// ======================
-// Image Handling Utilities
-// ======================
 /**
  * Load an image from various sources (URL, File, Blob, or Image element)
  * Converts external URLs to Blob URLs to avoid CORS issues and improve performance
@@ -100,6 +182,7 @@ function loadImage(file) {
  * @param {HTMLImageElement|string} imgOrSrc - Image element or URL string
  */
 function revokeBlobUrl(imgOrSrc) {
+  if(!imgOrSrc) return;
   try {
     const url = typeof imgOrSrc === 'string' ? imgOrSrc : imgOrSrc?.src;
     if (url && isBlobUrl(url)) {
@@ -117,13 +200,13 @@ function revokeBlobUrl(imgOrSrc) {
  */
 function revokeAllBlobUrls(images) {
   if (!Array.isArray(images)) return;
-  
-  images.forEach(img => {
-    if (img) {
-      revokeBlobUrl(img);
-    }
-  });
+  images.forEach(revokeBlobUrl);
 }
+
+// ======================
+// Canvas Drawing Functions (Core)
+// ======================
+
 
 function blurImage(img, size) {
   const canvas = document.createElement("canvas");
@@ -136,151 +219,299 @@ function blurImage(img, size) {
   return canvas;
 }
 
-// ======================
-// Canvas Drawing Functions (Core)
-// ======================
-
 function setCanvasSize(width, height) {
   composite.size.width = width;
   composite.size.height = height;
-  composite.canvas.width = width;
-  composite.canvas.height = height;
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.aspectRatio = width / height;
+  mainCanvas.width = width;
+  mainCanvas.height = height;
+  mainCanvas.style.aspectRatio = width / height;
   drawComposite();
 }
 
-function drawComposite() {
-  drawCompositeImage();
-  drawCompositeText();
+async function drawComposite() {
+  lastStepIndex = 0; // reset step index for caching
+  const canvasSize = await runStep(null, null, window.composite.size);//This will create the initial canvas, only so we have something to draw on, and have a initial hash
+  if(!canvasSize || !canvasSize.width || !canvasSize.height) return;
+  
+  window.Composites ??= {}; // Ensure global Composites object exists
+
+  window.Composites.Image = await drawCompositeImage(canvasSize); //canvasSize is passed, so if changed, it will force all steps to redraw
+  if(!window.Composites.Image || !window.Composites.Image.ctx || !window.Composites.Image.canvas) return;
+  
+  window.Composites.Text = await drawCompositeText(canvasSize); //canvasSize is passed, so if changed, it will force all steps to redraw
+
+  const newHash = stepHash({ imageHash: window.Composites.Image.hash, textHash: window.Composites.Text?.hash || 0 });
+  if(composite.lastHash === newHash) {
+    console.log('No changes detected, skipping redraw');
+    return; // No changes, skip redraw
+  }
+  composite.lastHash = newHash;
+
+  if(window.Composites.Text && window.Composites.Text.ctx && window.Composites.Text.canvas) {
+    window.Composites.Merged = mergeCanvases(window.Composites.Image.canvas, window.Composites.Text.canvas, 0, 0, 1.0);
+    await copyCompositeToMainCanvas({canvas: window.Composites.Merged});//ctx not needed here
+  } else {
+    await copyCompositeToMainCanvas(window.Composites.Image);
+  }
 }
 
+function mergeCanvases(baseCanvas, overlayCanvas, x = 0, y = 0, alpha = 1.0) {
+  const mergedCanvas = createCanvas(baseCanvas.width, baseCanvas.height);
+  const mergedCtx = mergedCanvas.getContext('2d');
+  mergedCtx.drawImage(baseCanvas, 0, 0);
+  mergedCtx.globalAlpha = alpha;
+  mergedCtx.drawImage(overlayCanvas, x, y);
+  mergedCtx.globalAlpha = 1.0;
+  return mergedCanvas;
+}
+
+
+async function copyCompositeToMainCanvas(composite) {
+  mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+  mainCtx.drawImage(composite.canvas, 0, 0);
+}
+
+async function applyImageEffects(..._params) {
+  try {
+    console.log('Applying image effects...');
+    // 1. Initialize with the starting canvas
+    let { canvas, ctx, hash } = _params[0] || {};
+    
+    const effects = Setup.Settings.canvas.effects || [];
+
+    if(!canvas || !ctx || effects.length === 0) {
+      return { canvas, ctx, hash };
+    }
+
+    // 2. Loop sequentially (one by one)
+    for (const eff of effects) {
+      if (!eff.enabled) continue; 
+
+      const effectDef = EFFECTS_REGISTRY[eff.type];
+      if (!effectDef) continue;
+
+      // 3. Clone the CURRENT state
+      // On the first loop, this clones the Original.
+      // On the second loop, this clones the Result of the first loop (e.g., the blurred image).
+      const cloned = cloneCanvas(canvas);
+      
+      // Update local references to point to the new clone
+      canvas = cloned.canvas;
+      ctx = cloned.ctx;
+      
+      // 4. Apply the effect to the clone
+      // The 'await' ensures we don't start the next loop until this is totally finished
+      const result = await runStep(hash, effectDef.apply, ctx, canvas, eff.params || {});
+      // 5. Update the accumulators
+      // The output of this step becomes the input for the next step
+      canvas = result.canvas;
+      ctx = result.ctx;
+      hash = result.hash;
+    }
+
+    // Return the final result after all layers are applied
+    return { canvas, ctx, hash };
+  } catch (err) {
+    console.error('Error applying effect layers:', err);
+  }
+}
+
+/**
+ * Apply a composite drawing from the registry onto a provided context and canvas.
+ * If no target context/canvas are provided, defaults to the visible `ctx`/`canvas`.
+ * Returns true if the composite was applied, false otherwise.
+ *
+ * @param {CanvasRenderingContext2D} [targetCtx] - Context to draw into (defaults to `ctx`).
+ * @param {HTMLCanvasElement} [targetCanvas] - Canvas associated with the context (defaults to `canvas`).
+ * @param {Object} [options] - Optional overrides for type and params. Example: { type: 'line', params: {} }
+ * @returns {boolean} True if a composite was applied, false if not.
+ */
+async function applyComposite(..._params) {
+  let {canvas, ctx, options = {}, slotsImages = [], hash} = _params[0] || {};
+  const cloned = cloneCanvas(canvas);
+  canvas = cloned.canvas;
+  ctx = cloned.ctx;
+  try {
+    if (typeof ensureCompositeDefaults === 'function') try { ensureCompositeDefaults(); } catch(e) {}
+    const eff = Setup.Settings.canvas.composite || {};
+
+    if (eff.enabled === false) return false;
+
+    const type = options.type || eff.type || Setup.Settings.canvas.type;
+    const params = options.params || eff.params || {};
+
+    const effectDef = (typeof COMPOSITE_REGISTRY !== 'undefined') ? COMPOSITE_REGISTRY[type] : undefined;
+    if (!effectDef) return false;
+
+    return await runStep(hash, effectDef.apply, ctx, canvas, slotsImages, params, { srcOnly: slotsImages.map(img => img?.src || null) });
+  } catch (err) {
+    console.error('Error applying composite effect:', err);
+    return {};
+  }
+}
 
 // ======================
 // Canvas Drawing Functions (Text)
 // ======================
 
-function drawCompositeText() {
-  // Draw the composite image from the offscreen canvas directly.
-  // Avoid clearing the visible canvas first — `drawImage` overwrites
-  // the pixel area and clearing beforehand can produce a brief blank
-  // frame if the offscreen buffer is being re-rendered.
-  ctx.drawImage(composite.canvas, 0, 0);
+async function creteTransparentCanvas(width, height) {
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = "rgba(0,0,0,0)"; // No overlay
+  ctx.clearRect(0, 0, width, height);
+  // ctx.fillRect(0, 0, canvas.width, canvas.height);
+  return { canvas, ctx };
+}
+
+async function createBaseTextLayer(width, height, text, position, fontStyle, fillStyle) {
+  // Create a transparent canvas for this specific text layer
+  const { canvas, ctx } = await creteTransparentCanvas(width, height);
   
-  // 3. Draw the dark overlay
-  // Let's change this, to make a gradient overlay instead of solid color
-  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, `rgba(${Setup.Settings.canvas.overlayColorStartRGB.r}, ${Setup.Settings.canvas.overlayColorStartRGB.g}, ${Setup.Settings.canvas.overlayColorStartRGB.b}, ${Setup.Settings.canvas.overlayOpacityStart})`);
-  gradient.addColorStop(1, `rgba(${Setup.Settings.canvas.overlayColorEndRGB.r}, ${Setup.Settings.canvas.overlayColorEndRGB.g}, ${Setup.Settings.canvas.overlayColorEndRGB.b}, ${Setup.Settings.canvas.overlayOpacityEnd})`);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // --- Calculate Position ---
+  let anchorX = 0;
+  if (position.textAlign === 'center') anchorX = width / 2;
+  else if (position.textAlign === 'right') anchorX = width;
 
-  // 4. ⭐️ NEW: Loop over each text layer and draw it ⭐️
-  Setup.Settings.textLayers.forEach(layer => {
-    // ⭐️ Skip disabled layers
-    if (layer.enabled === false) return;
+  let anchorY = 0;
+  if (position.textBaseline === 'middle') anchorY = height / 2;
+  else if (position.textBaseline === 'bottom') anchorY = height;
+
+  const finalX = anchorX + position.x;
+  const finalY = anchorY + position.y;
+
+  // --- Setup Context ---
+  ctx.font = fontStyle;
+  ctx.textAlign = position.textAlign;
+  ctx.textBaseline = position.textBaseline;
+
+  // --- Apply Rotation ---
+  if (position.rotation && position.rotation !== 0) {
+    ctx.translate(finalX, finalY);
+    ctx.rotate((position.rotation * Math.PI) / 180);
+    ctx.translate(-finalX, -finalY);
+  }
+
+  // --- Draw Main Fill ---
+  ctx.fillStyle = fillStyle;
+  ctx.fillText(text, finalX, finalY);
+
+  // Return canvas + metadata needed for effects (x, y, text)
+  return { canvas, ctx, meta: { text, x: finalX, y: finalY } };
+}
+
+async function mergeImageLayers(canvasList) {
+  // This wil initially crete an empty canvas
+  // It will then loop over each canvas in the list and draw it onto the main canvas
+  if (!Array.isArray(canvasList) || canvasList.length === 0) {
+    return null;
+  }
+  const baseCanvas = canvasList[0];
+  const mergedCanvas = createCanvas(baseCanvas.width, baseCanvas.height);
+  const mergedCtx = mergedCanvas.getContext('2d');
+  for (const layerCanvas of canvasList) {
+    mergedCtx.drawImage(layerCanvas, 0, 0);
+  }
+  return { canvas: mergedCanvas, ctx: mergedCtx };
+}
+
+async function drawCompositeText(..._params) {
+  try {
+    // 1. Initialize Background
+    // We expect _params[0] to be canvasSize or an object containing width/height/hash
+    let canvasSize = _params[0] || {};
+
+    let { width, height, hash } = canvasSize;
+    const initialHash = hash;
+
+    // 2. Loop over each text layer
+    const layers = Setup.Settings.textLayers || [];
+
+    canvas = null;
+    ctx = null;
+
+    const imgLayers = [];
     
-    const text = layer.overlayText;
+    for (const layer of layers) {
+      if (layer.enabled === false) continue;
 
-    // --- Calculate Position ---
-    let anchorX = 0;
-    if (layer.position.textAlign === 'center') {
-      anchorX = canvas.width / 2;
-    } else if (layer.position.textAlign === 'right') {
-      anchorX = canvas.width;
-    }
-
-    let anchorY = 0;
-    if (layer.position.textBaseline === 'middle') {
-      anchorY = canvas.height / 2;
-    } else if (layer.position.textBaseline === 'bottom') {
-      anchorY = canvas.height;
-    }
-    
-    const finalX = anchorX + layer.position.x;
-    const finalY = anchorY + layer.position.y;
-
-    // --- Start Drawing Layer ---
-    ctx.save(); // Save context for the whole layer (includes rotation)
-
-    // --- Apply Rotation ---
-    // Rotation is applied around the text position
-    if (layer.position.rotation && layer.position.rotation !== 0) {
-      ctx.translate(finalX, finalY);
-      ctx.rotate((layer.position.rotation * Math.PI) / 180);
-      ctx.translate(-finalX, -finalY);
-    }
-
-    // Set common text properties
-    ctx.font = layer.fontStyle;
-    ctx.textAlign = layer.position.textAlign;
-    ctx.textBaseline = layer.position.textBaseline;
-
-    // --- Draw Shadows ---
-    // We draw shadows FIRST, from bottom to top
-    // This implementation draws shadows as offset, blurred text
-    layer.shadows.forEach(shadow => {
-      // ⭐️ Skip disabled shadows
-      if (shadow.enabled === false) return;
+      // ---------------------------------------------------
+      // PHASE A: Generate the Isolated Text Layer
+      // ---------------------------------------------------
       
-      ctx.save();
-      ctx.fillStyle = shadow.color;
-      ctx.shadowColor = shadow.color;
-      ctx.shadowBlur = shadow.blur;
-      ctx.shadowOffsetX = shadow.offsetX;
-      ctx.shadowOffsetY = shadow.offsetY;
-      ctx.fillText(text, finalX, finalY);
-      ctx.restore();
-    });
-
-    // --- Draw Strokes ---
-    // We draw strokes SECOND, from bottom to top
-    layer.strokes.forEach(stroke => {
-      // ⭐️ Skip disabled strokes
-      if (stroke.enabled === false) return;
+      // Step A1: Create the base text graphic (Raw text on transparent)
+      // We pass 'layer' to runStep so if layer settings change, hash changes
+      let textComp = await runStep(initialHash, createBaseTextLayer, width, height, layer.overlayText, layer.position, layer.fontStyle, layer.fillStyle);
+      const {text, x, y} = textComp.meta;
+      hash = textComp.hash;
+      // initialHash = hash;
+      canvas = textComp.canvas;
+      ctx = textComp.ctx;
+      // Step A2: Apply Text Effects to this Isolated Layer
+      // (Using the Accumulator Pattern: Clone -> Apply -> Update)
+      const textEffects = layer.effects || [];
       
-      ctx.save();
-      ctx.strokeStyle = stroke.style;
-      ctx.lineWidth = stroke.width;
-      ctx.strokeText(text, finalX, finalY);
-      ctx.restore();
-    });
+      for (const eff of textEffects) {
+        if (!eff.enabled) continue;
+        
+        const effectDef = TEXT_EFFECTS[eff.type];
+        if (!effectDef) continue;
 
-    // --- Draw Main Fill ---
-    // We draw the main text fill LAST, on top of everything
-    ctx.fillStyle = layer.fillStyle;
-    ctx.fillText(text, finalX, finalY);
+        // Clone the TEXT canvas (not the main background)
+        const clonedText = cloneCanvas(canvas);
+        canvas = clonedText.canvas;
+        ctx = clonedText.ctx;
 
-    ctx.restore(); // Restore context for the whole layer (resets rotation)
-  });
+        const res = await runStep(hash, effectDef.apply, ctx, canvas, text, x, y, eff.params || {});
+        
+        canvas = res.canvas;
+        ctx = res.ctx;
+        hash = res.hash;
+      }
+      // Step A3: Store the finished text layer for merging later
+      imgLayers.push(canvas);
+    }
+
+    const merged = await runStep(hash, mergeImageLayers, imgLayers);
+
+    return { canvas: merged.canvas, ctx: merged.ctx, hash };
+
+  } catch (err) {
+    console.error('Error in drawCompositeText:', err);
+    return _params[0]; // Return original state on error
+  }
 }
 
 // ======================
 // Canvas Drawing Functions (Background)
 // ======================
 
-function drawCompositeImage() {
-  // Only resize the offscreen canvas when dimensions actually change.
-  // Resizing clears the canvas and resets context state in many browsers,
-  // which causes visible flicker if done every frame.
-  if (composite.canvas.width !== canvas.width || composite.canvas.height !== canvas.height) {
-    composite.canvas.width = canvas.width;
-    composite.canvas.height = canvas.height;
-    composite.ctx = composite.canvas.getContext('2d');
-  }
-  // Clear and fill the offscreen canvas before drawing images.
-  composite.ctx.clearRect(0, 0, composite.canvas.width, composite.canvas.height);
-  composite.ctx.fillStyle = "black";
-  composite.ctx.fillRect(0, 0, composite.canvas.width, composite.canvas.height);
-  
-  // Call the appropriate drawing function based on current type
-  const drawFn = drawCompositeImageFn[Setup.Settings.canvas.type];
-  if (drawFn) {
-    drawFn();
-  } else {
-    console.warn(`Unknown canvas type: ${Setup.Settings.canvas.type}. Falling back to Line.`);
-    drawCompositeImageLine();
+async function createBackgroundCanvas() {
+  const canvas = createCanvas(composite.size.width, composite.size.height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = Setup.Settings.canvas.backgroundColor || '#000000';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  window.temp1 = canvas;
+  window.temp1Ctx = ctx;
+  return { canvas, ctx };
+}
+
+async function drawCompositeImage(...canvasSize) {
+  try {
+    // Let's fisrt use the run Step and the canvasSize hash to create a cached background canvas
+    const canvas = await runStep(canvasSize.hash, createBackgroundCanvas, canvasSize);
+
+    const imageCanvas = await applyComposite({ ...canvas, slotsImages });
+
+    return await applyImageEffects({ ...imageCanvas });
+  } catch (err) {
+    const type = Setup?.Settings?.canvas?.composite?.type || Setup?.Settings?.canvas?.type;
+    const msg = `Error applying composite "${type}" via COMPOSITE_REGISTRY: ${err?.message || err}`;
+    console.error(msg, err);
+    if (typeof toastMessage === 'function') {
+      try { toastMessage(msg, { type: 'danger', duration: 6000 }); } catch (tErr) { console.error('Toast error:', tErr) }
+    }
+    return {...canvasSize}; // Stop execution
   }
 }
 

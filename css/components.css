@@ -400,13 +400,13 @@ i.delete:hover { background: var(--c-danger); }
   position: relative;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s cubic-bezier(0, 1, 0, 1);
+  transition: max-height 0.1s cubic-bezier(0, 1, 0, 1);
   padding: 0 0.5rem;
 }
 
 .expand-checkbox:checked ~ .expand-content {
   max-height: 2000px; /* Large enough number */
-  transition: max-height 0.5s ease-in-out;
+  transition: max-height 0.1s ease-in-out;
   padding-bottom: .1rem;
 }
 
@@ -416,6 +416,20 @@ i.delete:hover { background: var(--c-danger); }
   position: relative;
   min-width: 100%
 }
+
+.optioncheckbox .effect-param-item .field.text {
+  display: flex;
+  flex-direction: row-reverse;
+  min-width: 100%;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.effect-param-item, .effect-layers-container, #typeSettingsContainer {
+  /* disable text selection */
+  user-select: none;
+}
+
 
 .expand-btn.expandCenterW, 
 .expand-btn.expandCenterH {
@@ -428,7 +442,7 @@ i.delete:hover { background: var(--c-danger); }
   font-size: 0.7rem;
   box-shadow: var(--shadow-md);
 }
-.expand-btn:hover, .add-button:hover, .delete-button:hover, .default-button:hover, .duplicate-button:hover, .toggle-button:hover {
+.expand-btn:hover, .add-button:hover, .delete-button:hover, .default-button:hover, .duplicate-button:hover, .toggle-button:hover, .opencomposite-button:hover {
   background: var(--c-primary);
   color: white;
   border-color: var(--c-primary);
@@ -448,14 +462,6 @@ i.delete:hover { background: var(--c-danger); }
   background: var(--c-surface);
 }
 
-.toggle-checkbox:checked ~ .toggle-button {
-  background: transparent;
-}
-
-.toggle-checkbox:not(:checked) ~ .toggle-button {
-  background: var(--c-surface);
-}
-
 .toggle-checkbox:checked ~ .toggle-button::before {
   content: "\f06e"; /* fa-eye */
 }
@@ -464,7 +470,7 @@ i.delete:hover { background: var(--c-danger); }
   content: "\f070"; /* fa-eye-slash */
 }
 
-.add-button, .delete-button, .default-button, .duplicate-button, .toggle-button {
+.add-button, .delete-button, .default-button, .duplicate-button, .toggle-button, .opencomposite-button {
   position: absolute;
   right: 0;
   top: 0;
@@ -489,6 +495,11 @@ i.delete:hover { background: var(--c-danger); }
 
 .toggle-button {
   right: 5.1rem;
+  border-radius: 0;  
+}
+
+#openTextComposite {
+  right: 1.8rem;
   border-radius: 0;  
 }
 
@@ -530,8 +541,8 @@ i.delete:hover { background: var(--c-danger); }
   display: flex;
   z-index: 20;
   width: 100%;
-  min-height: 62.1875px;
-  max-height: 62.1875px;
+  min-height: var(--canvasBarsH);
+  max-height: var(--canvasBarsH);
   overflow: hidden;
   justify-content: center;
   gap: .5rem;
@@ -552,7 +563,6 @@ i.delete:hover { background: var(--c-danger); }
   z-index: 9999;
   pointer-events: none;
 }
-
 
 /* Animations */
 @keyframes fadeIn {

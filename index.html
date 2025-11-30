@@ -83,12 +83,12 @@
   </template>
 
   <template id="text-layer-template">
-    <div class="field checkbox">
+    <div class="field checkbox text-layer-item-container">
       <input type="checkbox" class="expand-checkbox" save>
       <input type="checkbox" class="layer-enabled-checkbox toggle-checkbox" checked>
-      <label class="expand-label expand-btn relative">Layer</label>
+      <label class="expand-label expand-btn relative" draggable="true" ondragstart="onTextLayerDragStart(event)" ondrop="onTextLayerDrop(event)" ondragover="allowDrop(event)" ondragleave="removeDragOver(event)">Layer</label>
       <i class="fa-solid fa-eye toggle-button" title="Enable/Disable Layer"></i>
-      <i class="fa-solid fa-trash delete delete-layer-btn delete-button" title="Delete Layer"></i>
+      <i class="fa-solid fa-trash delete delete-layer-btn delete-button" title="Delete Text Layer"></i>
       <i class="fa-solid fa-bookmark default-layer-btn default-button" title="Set as Default Layer Style"></i>
       <i class="fa-solid fa-clone duplicate-layer-btn duplicate-button" title="Duplicate Layer"></i>
       <div class="expand-content">
@@ -183,27 +183,14 @@
                 </div>
               </div>
             </div>
-
             <div class="field checkbox">
-              <input type="checkbox" class="expand-checkbox">
-              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Frame</label>
-              <i class="fa-solid fa-plus add-stroke-btn add-button" title="Add Frame"></i>
+              <input type="checkbox" class="expand-checkbox" save>
+              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Effects</label>
+              <i class="fa-solid fa-plus add-text-effect-btn add-button" title="Add Effect"></i>
               <div class="expand-content">
-                <div class="strokes-container">
-                </div>
+                <div class="text-effects-container"></div>
               </div>
             </div>
-
-            <div class="field checkbox">
-              <input type="checkbox" class="expand-checkbox">
-              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Bloom</label>
-              <i class="fa-solid fa-plus add-shadow-btn add-button" title="Add Bloom"></i>
-              <div class="expand-content">
-                <div class="shadows-container">
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       </div>
@@ -282,6 +269,65 @@
     </div>
   </template>
 
+  <!-- Text Effect Layer Template (per text layer) -->
+  <template id="text-effect-layer-template">
+    <div class="field checkbox text-effect-layer-item">
+      <input type="checkbox" class="expand-checkbox" save>
+      <input type="checkbox" class="text-effect-enabled-checkbox toggle-checkbox" checked>
+      <label class="expand-label expand-btn relative" draggable="true" ondragstart="onTextEffectDragStart(event)" ondrop="onTextEffectDrop(event)" ondragover="allowDrop(event)" ondragleave="removeDragOver(event)">Effect</label>
+      <i class="fa-solid fa-eye toggle-button" title="Enable/Disable Text Effect"></i>
+      <i class="fa-solid fa-trash delete delete-text-effect-btn delete-button" title="Delete Text Effect"></i>
+      <i class="fa-solid fa-bookmark default-text-effect-btn default-button" title="Set as Default Text Effect"></i>
+      <i class="fa-solid fa-clone duplicate-text-effect-btn duplicate-button" title="Duplicate Text Effect"></i>
+      <div class="expand-content">
+        <div class="field text-effect">
+          <div class="text-effect-params-container"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+    <template id="effect-layer-template">
+      <div class="field checkbox effect-layer-item">
+        <input type="checkbox" class="expand-checkbox" save>
+        <input type="checkbox" class="effect-enabled-checkbox toggle-checkbox" checked>
+        <label class="expand-label expand-btn relative" draggable="true" ondragstart="onEffectDragStart(event)" ondrop="onEffectDrop(event)" ondragover="allowDrop(event)" ondragleave="removeDragOver(event)">Effect</label>
+        <i class="fa-solid fa-eye toggle-button" title="Enable/Disable Effect"></i>
+        <i class="fa-solid fa-trash delete delete-effect-btn delete-button" title="Delete Effect"></i>
+        <i class="fa-solid fa-bookmark default-effect-btn default-button" title="Set as Default Effect"></i>
+        <i class="fa-solid fa-clone duplicate-effect-btn duplicate-button" title="Duplicate Effect"></i>
+        <div class="expand-content">
+          <div class="field effect">
+            <div class="effect-params-container"></div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+      <template id="effect-param-template">
+        <div class="effect-param-field">
+          <div class="effect-param-item">
+            <div class="field text">
+              <div class="flex row equalW full100W space-between field">
+                <label class="effect-param-label"></label>
+                <div class="flex row right gapSm">
+                </div>
+              </div>
+              <div style="align-items: center; gap: .5rem;">
+                <input class="effect-param-slider" type="range">
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+  <template id="options-param-group-template">
+    <div class="flex column equalW full100W space-between container">
+      <span class="param-group-label full100W">Category</span>
+      <div class="flex row equalW full100W space-between content"></div>
+    </div>
+  </template>
+
   <div class="header">
     <div>
       <h1>Collection Poster Maker</h1>
@@ -324,7 +370,9 @@
               <label for="expandTextSettings" class="expand-label expand-btn relative">Text</label>
               <select id="fontSelect" style="display: none;"></select>
 
+              <i class="fa-solid fa-up-right-from-square opencomposite-button" id="openTextComposite" title="Open Text Composite"></i>
               <i class="fa-solid fa-plus add-button" id="addTextLayerBtn" title="Add Text Layer"></i>
+              
               <div class="expand-content"> 
                 <div id="text-layers-container"></div>
               </div>
@@ -333,6 +381,7 @@
             <div class="field checkbox">
               <input type="checkbox" id="expandImageSettings" class="expand-checkbox" save>
               <label for="expandImageSettings" class="expand-label expand-btn relative">Image</label>
+              <i class="fa-solid fa-up-right-from-square opencomposite-button" id="openImageComposite" title="Open Image Composite"></i>
               <div class="expand-content">
                 <div class="field image">
                   <div class="flex row wrap equalW full100W space-between">
@@ -356,76 +405,26 @@
                       </div>
                     </div>
                     <div>
-                      <label for="typeSelect">Type:</label>
-                      <select id="typeSelect" save>
-                        <option value="Line">Line</option>
-                        <option value="Grid">Grid</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label for="spaceSize">Margin Size:</label>
-                    <input type="number" id="spaceSize" value="3" save>
-                  </div>
-                  <div>
-                    <label for="randomSalt">Random Salt:</label>
-                    <input type="number" id="randomSalt" value="1" min="1" save>
-                  </div>
-                  <div>
-                    <label for="posterScale">Poster Scale:</label>
-                    <input type="range" id="posterScale" value="1.4" step="0.1" min="0.1" max="10" save>
-                  </div>
-                  <div class="field checkbox">
-                    <div>
-                      <input type="checkbox" id="expandReflexSettings" class="expand-checkbox" save>
-                      <label for="expandReflexSettings" class="expand-label expand-btn relative">Reflex</label>
-                      <div class="expand-content">
-                        <div class="field reflex">
-                          <div>
-                            <label for="blurSize">Blur Strength:</label>
-                            <input type="range" id="blurSize" value="5" save>
-                          </div>
-                          <div>
-                            <label for="reflexDistance">Reflex Distance:</label>
-                            <input type="range" id="reflexDistance" value="0.8" step="0.1" min="0" max="1" save>
-                          </div>
-                          <div>
-                            <label for="reflexScale">Reflex Scale:</label>
-                            <input type="range" id="reflexScale" value="0.7" step="0.1" min="0" max="1" save>
-                          </div>
+                      <label for="typeSelect">Composite Type:</label>
+                      <select id="typeSelect" save onchange="changeCompositeType(this)"></select>
+                    <div class="field checkbox">
+                      <div class="field checkbox">
+                        <input type="checkbox" id="expandTypeSettings" class="expand-checkbox" save>
+                        <label for="expandTypeSettings" class="expand-label expand-btn relative" style="font-size: 0.9rem;">Type Settings</label>
+                        <div class="expand-content">
+                          <div id="typeSettingsContainer"></div>
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <input type="checkbox" id="expandOverlaySettings" class="expand-checkbox" save>
-                      <label for="expandOverlaySettings" class="expand-label expand-btn relative">Overlay</label>
+                    </div>
+                  </div>
+                  <div class="field checkbox">
+                    <div class="field checkbox">
+                      <input type="checkbox" id="expandEffectsSettings" class="expand-checkbox" save>
+                      <label for="expandEffectsSettings" class="expand-label expand-btn relative" style="font-size: 0.9rem;">Effects</label>
+                      <i class="fa-solid fa-plus add-effect-btn add-button" id="addEffectLayerBtn" title="Add Effect Layer"></i>
                       <div class="expand-content">
-                        <div class="field Overlay">
-                          <div>
-                            <span>Start</span>
-                            <div class="flex row equalW full100W space-between">
-                              <div class="full100W">
-                                <label for="overlayColorStart">Color</label>
-                                <input type="color" id="overlayColorStart" value="#000000" style="flex: 0 0 2rem; padding: 0;">
-                              </div>
-                              <div class="full100W">
-                                <label for="overlayOpacityStart">Opacity</label>
-                                <input type="range" id="overlayOpacityStart" value="0.5" step="0.1" min="0" max="1" save>
-                              </div>
-                            </div>
-                            <span>End</span>
-                            <div class="flex row equalW full100W space-between">
-                              <div class="full100W">
-                                <label for="overlayColorEnd">Color</label>
-                                <input type="color" id="overlayColorEnd" value="#000000" style="flex: 0 0 2rem; padding: 0;" save>
-                              </div>
-                              <div class="full100W">
-                                <label for="overlayOpacityEnd">Opacity</label>
-                                <input type="range" id="overlayOpacityEnd" value="0.9" step="0.1" min="0" max="1" save>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <div class="effect-layers-container" id="effect-layers-container"></div>
                       </div>
                     </div>
                   </div>
@@ -481,7 +480,7 @@
       <canvas id="myCanvas" width="1920" height="1080"></canvas>
       <div class="canvasBars field">
         <div id="importProjectBtn" class="button" title="Open Project File">
-          <i class="fa-solid fa-file-pen" title="Open Project File"></i>
+          <i class="fa-solid fa-file-import" title="Open Project File"></i>
           <input type="file" id="importProjectInput" accept=".json,.zip,.covermaker.zip" style="display:none">
         </div>
         <div id="exportProjectBtn" class="button" title="Save Project File">
@@ -542,11 +541,16 @@
     <script src="js/windowsHandle.js"></script>
 
     <script src="js/config.js"></script>
+    <script src="js/factory.js"></script>
     <script src="js/toast.js"></script>
-    <script src="js/drawCompositeImage.js"></script>
+    <script src="js/compositeRegistry.js"></script>
+    <!-- <script src="js/drawCompositeImage.js"></script> -->
     <script src="js/drawing.js"></script>
     <script src="js/slots.js"></script>
     <script src="js/jellyfin_ui.js"></script>
+    <script src="js/effectsRegistry.js"></script>
+    <script src="js/paramsRenderer.js"></script>
+    <script src="js/textEffects.js"></script>
     <script src="js/app.js"></script>
 </body>
 

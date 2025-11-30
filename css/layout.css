@@ -111,15 +111,15 @@
 }
 
 #myCanvas {
-  position: absolute;
-  max-height: 100%;
+  /* position: absolute; */
+  max-height: calc(100% - (var(--canvasBarsH) * 2)); /* Account for top/bottom bars */
   max-width: 100%;
   object-fit: contain;
   box-shadow: var(--shadow-lg);
   background: #000; /* Canvas actual bg */
-  left: 50%;
+  /* left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%); */
 }
 
 /* Scroll Utilities within Layout */

@@ -65,4 +65,6 @@
   /* Sidebars (Initial widths) */
   --leftSideW: 280px;
   --rightSideW: 320px;
+
+  --canvasBarsH: 62.1875px;
 }

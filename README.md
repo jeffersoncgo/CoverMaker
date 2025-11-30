@@ -53,6 +53,8 @@ The application runs entirely in the browser with **zero build tools** required.
 5. **Add Text**: Create text layers with advanced effects
 6. **Export**: Download as PNG/JPEG or save project for later editing
 
+> 💡 Dica: em controles numéricos (slider/number) na interface de parâmetros, você pode dar **duplo clique** para alternar entre o controle por slider (`range`) e o campo numérico (`number`).
+
 ### Jellyfin Integration
 
 The app seamlessly connects to your Jellyfin server:
@@ -338,7 +340,8 @@ Create unlimited text layers with professional typography:
 
 **Image Management:**
 - ✅ Unlimited image slots with drag-and-drop reordering
-- ✅ Per-image filters (brightness, contrast, saturation, hue, blur, grayscale, sepia, invert)
+- ✅ Per-image filters (brightness, contrast, saturation, hue, blur, grayscale, sepia, invert, vignette, pixelate, sharpen, drop shadow, opacity, overlay)
+   - Overlay: per-effect linear gradient overlay with Start/End colors + opacities
 - ✅ Per-image transforms (rotation, scale X/Y, flip, position offset)
 - ✅ Image cropping and masking
 - ✅ Border controls (width, color, style)
@@ -490,6 +493,15 @@ The following features have backend implementation ready but are pending UI inte
 - [ ] **Invert Filter**: Backend supports invert (0-100) - UI slider needed to complete filter set
 
 **Text Effects:**
+ - ✅ **Seed Parameter**: Many text effects now support an optional `Seed` parameter for deterministic randomness — use the same seed to reproduce the same effect across renders. Set seed to `0` (default) to use non-deterministic randomness (Math.random) like before.
+
+Example usage:
+```js
+// Apply grunge effect with deterministic randomness (seed > 0)
+applyTextEffect(ctx, canvas, 'grunge', 'Hello', 0, 0, { strength: 0.6, seed: 12345 });
+// Use seed=0 (default) to fall back to Math.random behavior for non-deterministic randomness
+applyTextEffect(ctx, canvas, 'grunge', 'Hello', 0, 0, { strength: 0.6, seed: 0 });
+```
 - [ ] **3D Effect**: Backend fully implemented with depth and angle controls - UI integration pending
 - [ ] **Glow Effect**: Backend supports glow with blur and intensity - UI controls pending
 - [ ] **Gradient Fills**: Backend supports linear/radial gradients - UI controls pending

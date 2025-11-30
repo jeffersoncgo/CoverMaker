@@ -145,18 +145,38 @@ function setSlotImage(index, imgOrSrc) {
   }).catch(err => {
     console.error('Failed to load image:', err);
   })
+  // Update pipeline image_base params if running
+  updateImageBaseAndDirty();
 }
 
 // ======================
 // Slot Actions
 // ======================
 
+// Helper to update `image_base` step params and mark it dirty (or fallback)
+function updateImageBaseAndDirty() {
+  try {
+    if (typeof pipelineManager !== 'undefined' && pipelineManager) {
+      const ib = pipelineManager.getStep('image_base');
+      if (ib) ib.updateParams({ imageCount: slotsImages.filter(Boolean).length, images: slotsImages.map(i => i ? i.src : null) });
+      markImageBaseDirty();
+    } else {
+      // No pipeline available — fallback to legacy redraw
+      try { drawComposite(); } catch (e) { /* ignore */ }
+    }
+  } catch (err) {
+    console.error('updateImageBaseAndDirty error', err);
+    try { drawComposite(); } catch (e) { /* ignore */ }
+  }
+}
+
+
 function addImageSlot() {
   slotsImages.push(null);
   const clone = template.content.cloneNode(true);
   imageSlots.appendChild(clone);
   imageSlots.setAttribute('slotsCount', slotsImages.length)
-  drawComposite();
+  updateImageBaseAndDirty();
 }
 
 function deleteImageSlot(index = -1) {
@@ -173,7 +193,7 @@ function deleteImageSlot(index = -1) {
     const slot = getSlotByIndex(index);
     slot.remove();
     imageSlots.setAttribute('slotsCount', slotsImages.length)
-    drawComposite();
+    updateImageBaseAndDirty();
   } catch (error) {
     console.error(error);
   }
@@ -206,7 +226,7 @@ function moveImageSlot(indexSource, indexTarget) {
   
   const img = slotsImages.splice(indexSource, 1)[0];
   slotsImages.splice(indexTarget, 0, img);
-  drawComposite();
+  updateImageBaseAndDirty();
 }
 
 function swapImageSlots(indexA, indexB) {
@@ -241,7 +261,7 @@ function swapImageSlots(indexA, indexB) {
   console.log(`After swap: [${indexA}] = ${slotsImages[indexA]?.src?.substring(0, 60)}, [${indexB}] = ${slotsImages[indexB]?.src?.substring(0, 60)}`);
   
   // Redraw canvas with new order
-  drawComposite();
+  updateImageBaseAndDirty();
 }
 
 function clearImageSlot(index) {
@@ -251,6 +271,7 @@ function clearImageSlot(index) {
   }
   slotsImages[index] = null;
   setSlotImage(index, null)
+  updateImageBaseAndDirty();
 }
 
 function clearAllSlots() {

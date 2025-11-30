@@ -4,3 +4,6 @@ images/Thumbs.db
 .github/copilot/
 .env
 .backup/
+# dev container files
+.devcontainer/
+.devcontainer.json
