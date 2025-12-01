@@ -174,6 +174,8 @@ function updateImageBaseAndDirty() {
 function addImageSlot() {
   slotsImages.push(null);
   const clone = template.content.cloneNode(true);
+  // set a id for the slot
+  clone.querySelector('.slot').setAttribute('id', `slot-${slotsImages.length - 1}`);
   imageSlots.appendChild(clone);
   imageSlots.setAttribute('slotsCount', slotsImages.length)
   updateImageBaseAndDirty();

@@ -1760,73 +1760,86 @@ function _importProjectFromJsonCore(file) {
 }
 
 function openInNewTab(source) {
-  let dataURL = "";
-  if (source?.target?.id == "openTabBtn" || source?.target?.parentElement?.id == "openTabBtn")
-    dataURL = Composites.Merged.toDataURL("image/png");
-  else if (source?.target?.id == "openTextComposite" || source?.target?.parentElement?.id == "openTextComposite")
-    dataURL = Composites.Text.canvas.toDataURL("image/png")
-  else if (source?.target?.id == "openImageComposite" || source?.target?.parentElement?.id == "openImageComposite")
-    dataURL = Composites.Image.canvas.toDataURL("image/png")
-  else {
-    const slotImage = getSlotPreviewByIndex(getIndexFromButtonClick(source))
-    if (slotImage)
-      dataURL = slotImage.getAttribute('src'); 
-    else
-      return;
+
+  const openBlob = (blob) => {
+    if (!blob) return;
+
+    // Always ensure it's treated as an image
+    const fixedBlob = blob.type.startsWith("image/")
+      ? blob
+      : new Blob([blob], { type: "image/png" });
+
+    const url = URL.createObjectURL(fixedBlob);
+    const tab = window.open(url, "_blank");
+
+    if (tab) {
+      tab.onload = () => URL.revokeObjectURL(url);
+    }
+  };
+
+  const base64ToBlob = async (base64) => {
+    const res = await fetch(base64);
+    const blob = await res.blob();
+
+    // Enforce image MIME if dataURL was malformed
+    if (!blob.type.startsWith("image/")) {
+      return new Blob([await blob.arrayBuffer()], { type: "image/png" });
+    }
+
+    return blob;
+  };
+
+  let targetObj = null;
+  let isCanvas = false;
+  let isImage = false;
+
+  if (source?.target?.id === "openTabBtn" ||
+      source?.target?.parentElement?.id === "openTabBtn") {
+    targetObj = Composites.Merged;
+    isCanvas = true;
   }
-  const fileName = getExportFileName();
-  const tab = window.open();
+  else if (source?.target?.id === "openTextComposite" ||
+           source?.target?.parentElement?.id === "openTextComposite") {
+    targetObj = Composites.Text.canvas;
+    isCanvas = true;
+  }
+  else if (source?.target?.id === "openImageComposite" ||
+           source?.target?.parentElement?.id === "openImageComposite") {
+    targetObj = Composites.Image.canvas;
+    isCanvas = true;
+  }
+  else {
+    targetObj = getSlotPreviewByIndex(getIndexFromButtonClick(source));
+    isImage = true;
+  }
 
-  const previewHTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-      body {
-        display: flex;
-        margin:0; 
-        background-color:#121212;
-        align-items:center; 
-        justify-content:center;
-      }
-      img {
-        object-fit: scale-down;
-        max-width: calc(100vw - 20px);
-        max-height: 100vh;
-        min-height: 100vh;
-        cursor: zoom-in;
-        overflow-x: hidden;
-      }
-      img[zoomed] {
-        cursor: zoom-out;
-      }
-    </style>
-</head>
-<body>
-    <img id="preview" onload="window.stop()" src="${dataURL}">
-</body>
-<script>
-      const img = document.getElementById("preview");
-      img.addEventListener("click", () => {
-        if (img.getAttribute('zoomed')) {
-          img.removeAttribute('zoomed');
-          img.style.maxHeight = '100vh'; 
-          img.style.minWidth =  'unset';
-          img.style.objectFit =  'scale-down';
-        } else {
-          img.setAttribute('zoomed', 'true');
-          img.style.maxHeight = 'unset';
-          img.style.minWidth =  'calc(100vw - 20px)';
-          img.style.objectFit =  'contain';
-        }
-      });
-    </script>
-</html>`
+  if (!targetObj) return;
 
-  tab.document.write(previewHTML);
-  tab.document.title = fileName;
+  if (isCanvas) {
+    if (targetObj.toBlob) {
+      targetObj.toBlob(openBlob, "image/png");
+    } else if (targetObj.toDataURL) {
+      const dataURL = targetObj.toDataURL("image/png");
+      base64ToBlob(dataURL).then(openBlob);
+    }
+  }
+  else if (isImage) {
+    const src = targetObj.src;
+    if (!src) return;
+
+    if (src.startsWith("data:")) {
+      base64ToBlob(src).then(openBlob);
+    } else if (src.startsWith("blob:")) {
+      fetch(src)
+        .then(res => res.blob())
+        .then(openBlob);
+    } else {
+      window.open(src, "_blank");
+    }
+  }
 }
+
+
 
 // =====================================================
 // Font Loading
