@@ -72,6 +72,7 @@ function makeGalleryCard(item) {
   setupBtn.textContent = 'Use Setup';
   setupBtn.addEventListener('click', async () => {
     try {
+      hideWindow('galleryBox');
       setupBtn.disabled = true;
       await useSetup(item.setup || item.project);
     } finally {
@@ -86,6 +87,7 @@ function makeGalleryCard(item) {
   projectBtn.textContent = 'Use Full Project';
   projectBtn.addEventListener('click', async () => {
     try {
+      hideWindow('galleryBox');
       projectBtn.disabled = true;
       await useFullProject(item.project);
     } finally {
