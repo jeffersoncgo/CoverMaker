@@ -12,7 +12,7 @@ function safeLink(href, title) {
 
 function formatItem(item) {
   const parts = [];
-  if (item.image) parts.push(`![${item.title || ''}](${item.image})`);
+  if (item.image) parts.push(`![${item.title || ''}](${item.image.replace('gallery/', '')})`);
   parts.push(`**${item.title || 'Untitled'}**`);
   if (item.shortDescription) parts.push(`*${item.shortDescription}*`);
   const metaParts = [];
