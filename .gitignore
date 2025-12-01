@@ -7,3 +7,4 @@ images/Thumbs.db
 # dev container files
 .devcontainer/
 .devcontainer.json
+.readme/

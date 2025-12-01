@@ -9,151 +9,126 @@
 ![Tech](https://img.shields.io/badge/tech-Canvas_API-orange.svg)
 ![Cache](https://img.shields.io/badge/cache-IndexedDB-green.svg)
 ![State](https://img.shields.io/badge/state-localStorage-blue.svg)
-
----
-
-## 🌐 Try It Online
-
-**[Launch CoverMaker →](https://jeffersoncgo.github.io/CoverMaker/)**
-
-No installation required! Open the link and start creating stunning collection posters immediately in your browser.
-
----
-
-## 🧩 Overview
-
-**CoverMaker** is a sophisticated web-based canvas tool designed for creating custom collection posters for Jellyfin media servers. Built with pure vanilla JavaScript and modern browser APIs, it provides real-time poster composition with advanced text effects (3D, gradients, strokes, shadows, glow), multiple layout engines (18 modes), per-image filters and transforms, custom backgrounds (solid, gradient, patterns), and seamless Jellyfin integration.
-
-The application runs entirely in the browser with **zero build tools** required. Features OffscreenCanvas rendering for performance, IndexedDB for persistent caching, and optional Meilisearch integration for fast library searches.
-
-### ✨ Key Features
-
-- **🎨 Advanced Canvas Rendering**: Real-time poster generation with OffscreenCanvas
-- **📚 Jellyfin Integration**: Direct server authentication and library browsing
-- **🔍 Intelligent Search**: Dual-mode search with Meilisearch auto-detection
-- **✏️ Multi-Layer Text System**: Unlimited text layers with 3D effects, gradients, strokes, and shadows
-- **🖼️ Per-Image Filters**: Individual transform, rotation, and scale for each image
-- **🎭 18 Layout Modes**: Line, Grid, Mosaic, Circle, Collage, Italic Line, Carousel, Fan Spread, Scattered Stack, Spiral, Waves, Book Stack, Polaroid Wall, Shrink, Scattered Photos, Card Fan, Mondrian's Grid, and Framed Grid
-- **🎨 Custom Backgrounds**: Solid colors, gradient overlays, and patterns (checkerboard, stripes, dots)
-- **💾 Project Management**: Save/load complete projects as JSON files
-- **🎯 Drag & Drop**: Intuitive slot management with reordering and pin protection
-- **🌐 No Backend Required**: Fully client-side with localStorage and IndexedDB persistence
-
+[![Contributing](https://img.shields.io/badge/contribute-Guide-brightgreen.svg)](CONTRIBUTING.md)
 ---
 
 ## 🚀 Quick Start
 
-1. **[Open CoverMaker](https://jeffersoncgo.github.io/CoverMaker/)** in your browser
-2. **Add Image Slots**: Click the `+` button to add poster positions
-3. **Load Images**:
-   - **From Jellyfin**: Login and browse your media library
-   - **From Local Files**: Click the folder icon on any slot to upload
-   - **Via Drag & Drop**: Drop images directly onto slots
-4. **Choose Layout**: Select from 18 different layout modes (Settings tab)
-5. **Add Text**: Create text layers with advanced effects
-6. **Export**: Download as PNG/JPEG or save project for later editing
+1. Open the app: `https://jeffersoncgo.github.io/CoverMaker/`
+2. Add image slots using the `+` button.
+3. Load images from Jellyfin, local files, or drag & drop onto slots, or simply paste from clipboard.
+4. Select a layout type and tweak composite parameters (Format, Salt, Base Scale, Spacing).
+5. Adjust visual settings and apply image effects as desired.
+6. Add text layers and apply as many text effects you wanna to then (previously Stroke and Bloom where their own section, now they are effects).
+7. Export the final image as PNG/JPEG or save the project as a ZIP for later reuse.
 
-> 💡 Dica: em controles numéricos (slider/number) na interface de parâmetros, você pode dar **duplo clique** para alternar entre o controle por slider (`range`) e o campo numérico (`number`).
-
-### Jellyfin Integration
-
-The app seamlessly connects to your Jellyfin server:
-- Automatic server authentication with credential persistence
-- Meilisearch plugin auto-detection for fast library search
-- IndexedDB caching for instant offline access
-- Smart incremental updates when your library changes
-- Advanced filtering by tags, genres, studios, ratings, and years
+Tip: Numeric controls (range/number) support double‑click to switch input mode for precise values.
 
 ---
 
-## 🎨 Gallery & Examples
+## 🎨 Demos
 
-See what you can create with CoverMaker! Each example includes a downloadable project file.
+All demo assets are available via GitHub Pages. Use the app preview (`.app.png`) for a live screenshot, view the final composite (`.result.png`) in the spoiler, and download the project (`.project.zip`).
 
-### Example 1: Line Layout - Film Collection
-![Line Layout Example](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_line_movies_app.png)
+Base URL: `https://jeffersoncgo.github.io/CoverMaker/images/demo/`
 
-**Features Used:** 
-- Line layout mode with reflection effects (distance: 0.7, scale: 0.8)
-- Single text layer ("MOVIES") with Francois One font (382px)
-- Multiple strokes: white outline (35px), yellow border (28px), black inner stroke (14px)
-- 4 directional shadows in red (#ff7a7a) for glow effect
-- Cover format (1920x1080)
+---
 
-📦 **[Download Project](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_line_movies_project.zip)**
+### Text Layer Effects
+
+Create unlimited text layers with professional typography and many built-in text effects. Available text effect types (as used by the app) include:
+
+- `opacity` (Opacity)
+- `fade` (Fade)
+- `gradient` (Gradient)
+- `neon` (Neon)
+- `glowEdge` / Projection (Glow Edge / Projection)
+- `longShadow` (Long Shadow / Shadow)
+- `outline` (Outline)
+- `glitch` (Glitch)
+- `chromatic` (Chromatic Aberration)
+- `ripple` (Ripple)
+- `waves` (Waves)
+- `pixelMatrix` (Pixelate)
+- `skew` (Skew)
+- `flip` (Flip)
+- `distress` (Texture / Distress)
+- `melt` (Melt / Drip)
+- `paintBrush` (Smudge / Paint Brush)
+- `lightning` (Lightning)
+- `scanLines` (Scanlines)
+
+In addition to these named effects, text layers support common typography controls:
+
+- 800+ Google Fonts available
+- Custom font size, weight, and style
+- Gradient fills (linear/radial with multiple color stops)
+- Opacity control and blend modes
+- Multiple strokes and shadows per layer
+- Rotation, scale and skew transforms
+- Layer visibility and reordering
+
+---
+
+### Demo: animes.manga (Collage / Textured Headline)
+![animes.manga app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/animes.manga.app.png)
+
+**Quick summary:** Collage composite with layered headline text (long shadow + distressed overlay) for a stylized anime cover.
+
+- Canvas / Composite: `collage`, format `cover` (1920×1080), composite salt `3`.
+- Visual settings: subtle overlay (0.1→0.4), reflections, base scale 1.4, blur 5.
+- Active image effects: `saturate`, `scanLines`, `vignette`, `blur` (grayscale present but disabled).
+- Text layers: two stacked layers using `East Sea Dokdo` (large italic headline `ANIMES`), top layer with `longShadow` + small outline, bottom with `distress` for texture.
+- Export: PNG. Image slots: 20.
+
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/animes.manga.project.zip
 
 <details>
-<summary>🖼️ <b>View Final Result</b> (Click to expand)</summary>
+<summary>🖼️ <b>Final result image</b></summary>
 
-![Final Result](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_line_movies_reulst.png)
+![animes.manga result](https://jeffersoncgo.github.io/CoverMaker/images/demo/animes.manga.result.png)
 
 </details>
 
 ---
 
-### Example 2: Scattered Photos Layout - Scary Movie Collection
-![Scattered Photos Layout Example](https://jeffersoncgo.github.io/CoverMaker/images/demo/poster_scatared-photos_collecion-scary-movie_app.png)
+### Demo: movies.metal (Metallic Headline)
+![movies.metal app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.metal.app.png)
 
-**Features Used:**
-- Scattered Photos layout mode with 26 image slots
-- 3 independent text layers with Paytone One font (168px title, 120px subtitle)
-- Layer 1: "SCARY" - rotated -17°, left-aligned
-- Layer 2: "MOVIE" - rotated 24°, right-aligned
-- Layer 3: "COLLECTION" - bottom positioned
-- Each layer with white stroke (2px) and white offset shadow
-- Poster format (1080x1920)
-- Salt value: 20 for controlled randomization
+**Quick summary:** Line composite with stacked outlines and long shadows to create a metallic, embossed headline.
 
-📦 **[Download Project](https://jeffersoncgo.github.io/CoverMaker/images/demo/poster_scatared-photos_collecion-scary-movie_project.zip)**
+- Canvas / Composite: `line`, format `cover` (1920×1080), reflections enabled, baseScale ~1.35, spacing `3`, blurAmount ~3.5.
+- Visual settings & effects: vignette, overlay (dark), sharpen (0.28), saturate (1.4), blur (1), light grayscale — all used to achieve heavy contrast.
+- Text layers: single large `MOVIES` headline with multiple stacked `outline` and `longShadow` effects and a `distress` pass.
+- Export: PNG. Image slots: 4.
+
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.metal.project.zip
 
 <details>
-<summary>🖼️ <b>View Final Result</b> (Click to expand)</summary>
+<summary>🖼️ <b>Final result image</b></summary>
 
-![Final Result](https://jeffersoncgo.github.io/CoverMaker/images/demo/poster_scatared-photos_collecion-scary-movie_reulst.png)
+![movies.metal result](https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.metal.result.png)
 
 </details>
 
 ---
 
-### Example 3: Collage Layout - Anime Collection
-![Anime Collection Example](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_animes_app.png)
+### Demo: war.metal (Dramatic / High-Contrast Cover)
+![war.metal app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/war.metal.app.png)
 
-**Features Used:**
-- Collage layout mode with 20 image slots
-- Single text layer ("ANIMES") with Akaya Kanadaka font (462px, italic)
-- Thick black stroke (18px) for high contrast
-- Dual shadows: white glow (45px blur) + black depth (8px blur, 20px offset)
-- Gradient overlay (opacity 0.1-0.4) for subtle darkening
-- Cover format (1920x1080)
-- Salt value: 3
+**Quick summary:** Collage composite tuned with brightness/contrast adjustments and scanlines; heavy stroked headline for a metallic look.
 
-📦 **[Download Project](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_animes_project.zip)**
+- Canvas / Composite: `collage`, format `cover` (1920×1080), composite salt `3`.
+- Visual & image effects: multiple brightness passes, overlay darkening, saturate ~1.15, contrast ~1.05, scanLines (density 30).
+- Text layers: single `WAR` headline (Cal Sans bold) with stacked outlines, `longShadow`, and `distress` effects to reinforce metallic emboss.
+- Export: PNG. Image slots: 20.
+
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/war.metal.project.zip
 
 <details>
-<summary>🖼️ <b>View Final Result</b> (Click to expand)</summary>
+<summary>🖼️ <b>Final result image</b></summary>
 
-![Final Result](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_animes_reulst.png)
-
-</details>
-
----
-
-### Example 4: Collage Layout - War Collection
-![War Collection Example](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_war_project_app.png)
-
-**Features Used:**
-- Collage layout mode with multiple image slots
-- Custom text layers with professional styling
-- Strategic use of frames (strokes) and blooms (shadows)
-- Cover format (1920x1080)
-- Optimized salt value for balanced composition
-
-📦 **[Download Project](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_war_project.covermaker.zip)**
-
-<details>
-<summary>🖼️ <b>View Final Result</b> (Click to expand)</summary>
-
-![Final Result](https://jeffersoncgo.github.io/CoverMaker/images/demo/cover_collage_war_project_reulst.png)
+![war.metal result](https://jeffersoncgo.github.io/CoverMaker/images/demo/war.metal.result.png)
 
 </details>
 
@@ -175,99 +150,17 @@ Your examples will be featured here and help inspire other users!
 
 ---
 
-## 🎭 Layout Modes
-
-CoverMaker offers 18 distinct layout algorithms to arrange your images:
-
-### **Line**
-Arranges images in a horizontal or vertical line with optional reflection effects. Perfect for classic collection banners with professional reflections. Images are evenly spaced with customizable reflection distance (0-1) and scale (0-1).
-
-### **Grid**
-Intelligently distributes images in an optimal grid pattern. Automatically calculates the best row/column arrangement based on canvas aspect ratio and number of images. Ideal for large collections.
-
-### **Mosaic**
-Creates professional mosaic arrangements using Binary Space Partitioning for 100% canvas coverage. Images are arranged in varied sizes with deterministic randomization based on salt value. Features polaroid-style white borders and subtle rotations.
-
-### **Circle**
-Arranges images in a circular "pizza slice" pattern. Single images appear as circles; multiple images create pie chart style compositions. Each slice fills its wedge section perfectly.
-
-### **Collage**
-Scatters images with varied sizes and positions. First image serves as full background, remaining images arranged in grid-based positions with random scatter. Features polaroid-style frames with shadows and rotations for scrapbook aesthetic.
-
-### **Italic Line**
-Line layout with adjustable skew angle (controlled by salt 0-720). Creates dynamic slanted arrangements with properly aligned reflections. Maintains all line layout features (reflections, spacing, blur) while adding perspective tilt.
-
-### **Carousel**
-3D carousel effect with first image as background. Remaining images rotate in elliptical pattern with perspective scaling (closer = larger). Features depth-based shadows and opacity. Salt value controls rotation offset.
-
-### **Fan Spread**
-Cards spread in fan pattern from center. First image as background, remaining cards arranged in arc with increasing opacity toward front. Lateral offset and vertical wave pattern controlled by salt. Maximum spread angle: 20-50 degrees based on count.
-
-### **Scattered Stack**
-Book-like stack with controlled scatter. First image fills canvas as background, remaining cards stack with size reduction per layer (3% per card). Position and rotation influenced by salt for deterministic randomization.
-
-### **Spiral**
-Images arranged in logarithmic spiral from center outward. First image as background, remaining images follow spiral path with decreasing size. Spiral tightness (0.15-0.30) and rotation speed (2.5-4.5 rotations) controlled by salt.
-
-### **Waves**
-Wave pattern arrangement with first image as background. Remaining images alternate left-right positions while following sinusoidal wave path. Wave frequency (1.5-3 waves) and amplitude (8-20% of width) controlled by salt.
-
-### **Book Stack**
-Physical stacking grid with 30% overlap. Calculates optimal rows/columns based on canvas ratio. Portrait aspect (0.70) with rounded corners and shadows. Subtle rotations per poster influenced by salt. Maximizes canvas coverage.
-
-### **Polaroid Wall**
-Scattered polaroid-style photos on textured background. First image as darkened background, remaining images in grid-based positions with organic scatter. Features tape pieces (top or corner, chosen by salt), realistic shadows, and varied rotations.
-
-### **Shrink**
-Concentric layers shrinking toward center. Each layer 85% of previous (15% reduction ensures 20%+ of previous layer visible). No salt influence—pure geometric progression. Front layers have scaled shadows and optional white borders.
-
-### **Scattered Photos**
-First image fills canvas as background, remaining images scattered as polaroid-style photos. Deterministic randomization based on salt controls position, rotation, and scale. Features white borders, realistic shadows, and varied aspect ratios (portrait, square, landscape).
-
-### **Shrink**
-Concentric layers shrinking toward center. Each layer 85% of previous (15% reduction ensures 20%+ of previous layer visible). No salt influence—pure geometric progression. Front layers have scaled shadows and optional white borders.
-
-### **Card Fan**
-Playing card fan spread effect. First image as background, remaining cards arranged in arc from bottom-center. Features depth-based opacity, progressive shadows, and smooth rotation spread. Maximum angle controlled by card count.
-
-### **Mondrian's Grid**
-Inspired by Piet Mondrian's compositions. Creates artistic grid with varied rectangle sizes using Binary Space Partitioning. Each region filled with solid color or image. Salt controls split ratios and color selection for geometric variety.
-
-### **Framed Grid**
-Professional gallery-style grid with thick white frames. Portrait orientation (2:3 aspect) with consistent spacing. Calculates optimal rows/columns based on canvas ratio. Features subtle shadows and clean borders for museum-quality presentation.
-
----
-
 ## ⚙️ Configuration Options
 
-### Canvas Settings
 
-**Aspect Ratio Options:**
+### Aspect Ratio Options
+
 - **Cover** (16:9): Wide horizontal format, perfect for collection banners
-- **Poster** (9:16): Vertical format, ideal for movie/series posters  
+- **Poster** (9:16): Vertical format, ideal for movie/series posters
 - **Square** (1:1): Balanced format for social media
 - **Custom**: Define any dimensions (width/height in pixels)
 
-**Salt Value:**
-- Controls deterministic randomization in applicable layouts
-- Range: 1+ (affects positioning, rotation, scatter patterns)
-
-**Base Scale:**
-- Controls overall image sizing within layout
-- Range: 0.1-10 (default 1.4)
-
-**Effects (Line/Italic Line layouts only):**
-- **Blur Amount**: 0-100 (default 5)
-- **Reflection Distance**: 0-1 (default 0.8)
-- **Reflection Scale**: 0-1 (default 0.7)
-
-**Overlay:**
-- Start Color & Opacity (0-1, default 0.5)
-- End Color & Opacity (0-1, default 0.9)
-
-**Export:**
-- Format: PNG or JPEG
-- JPEG Quality: 0-1 (default 1.0)
+(*Other canvas and layout-specific settings — salt, base scale, reflections, spacing, effects — are configurable inside the app UI. See the in‑app controls for exact ranges.*)
 
 ---
 
@@ -314,7 +207,6 @@ Create unlimited text layers with professional typography:
 - Blend modes (normal, multiply, screen, overlay, etc.)
 - Layer visibility toggle
 - Layer reordering (drag or up/down buttons)
-- 8 text presets: Classic, Neon, Gold 3D, Chrome, Fire, Ice, Retro, Comic
 
 ---
 
@@ -322,9 +214,10 @@ Create unlimited text layers with professional typography:
 
 **Core Rendering:**
 - ✅ OffscreenCanvas rendering for non-blocking UI
-- ✅ 18 unique layout algorithms
+- ✅ Several layout algorithms
 - ✅ Custom canvas dimensions and aspect ratios
 - ✅ PNG and JPEG export with quality control
+- ✅ Memoization cache for rendering steps (faster redraws)
 
 **Text System:**
 - ✅ Unlimited independent text layers
@@ -336,26 +229,16 @@ Create unlimited text layers with professional typography:
 - ✅ Transform controls (rotation, scale, skew)
 - ✅ Blend modes and opacity control
 - ✅ Layer visibility toggle and reordering
-- ✅ 8 professional text presets
 
 **Image Management:**
 - ✅ Unlimited image slots with drag-and-drop reordering
-- ✅ Per-image filters (brightness, contrast, saturation, hue, blur, grayscale, sepia, invert, vignette, pixelate, sharpen, drop shadow, opacity, overlay)
-   - Overlay: per-effect linear gradient overlay with Start/End colors + opacities
-- ✅ Per-image transforms (rotation, scale X/Y, flip, position offset)
-- ✅ Image cropping and masking
-- ✅ Border controls (width, color, style)
 - ✅ Pin protection to lock specific images
 - ✅ Random image selection from library
-- ✅ 8 image filter presets (Normal, Vivid, B&W, Sepia, Cool, Warm, Dreamy, Dramatic)
-- ✅ Loading placeholders and error handling
+- ✅ Local file upload and clipboard paste support
+- ✅ Image caching for faster reloads
+- ✅ Several image effects (blur, grayscale, invert, brightness, contrast, saturate, sepia, hue rotate, vignette, overlay gradient, scale/transform, sharpen, reflection, flip, pixelate, scanlines)
+- ✅ Image cropping and masking using effects (scale, flip, pixelate, scale/transform)
 
-**Background System:**
-- ✅ Solid colors with color picker
-- ✅ Gradient backgrounds (linear/radial) with angle control
-- ✅ Pattern backgrounds (checkerboard, stripes, dots)
-- ✅ 8 canvas background presets
-- ✅ Gradient overlay with adjustable opacity
 
 **Jellyfin Integration:**
 - ✅ Server authentication with fastest-address auto-detection
@@ -363,7 +246,7 @@ Create unlimited text layers with professional typography:
 - ✅ IndexedDB persistent cache for offline access
 - ✅ Incremental cache updates (delta sync)
 - ✅ Meilisearch plugin auto-detection
-- ✅ Advanced search filters (tags, genres, studios, ratings, years)
+- ✅ Advanced search filters (tags, genres, studios) (some filters may be activated/deactivated in-app for faster searches) 
 - ✅ Pagination with configurable page size
 
 **Project Management:**
@@ -379,6 +262,47 @@ Create unlimited text layers with professional typography:
 - ✅ Collapsible sections
 
 ---
+
+**Available Text Effects (in-app names):**
+
+- `opacity` (Opacity)
+- `fade` (Fade)
+- `gradient` (Gradient)
+- `neon` (Neon)
+- `glowEdge` / Projection (Glow Edge / Projection)
+- `longShadow` (Long Shadow / Shadow)
+- `outline` (Outline)
+- `glitch` (Glitch)
+- `chromatic` (Chromatic Aberration)
+- `ripple` (Ripple)
+- `waves` (Waves)
+- `pixelMatrix` (Pixelate)
+- `skew` (Skew)
+- `flip` (Flip)
+- `distress` (Texture / Distress)
+- `melt` (Melt / Drip)
+- `paintBrush` (Smudge / Paint Brush)
+- `lightning` (Lightning)
+- `scanLines` (Scanlines)
+
+**Available Image Effects (in-app names):**
+
+- `blur` (Blur)
+- `grayscale` (Grayscale)
+- `invert` (Invert)
+- `brightness` (Brightness)
+- `contrast` (Contrast)
+- `saturate` (Saturate)
+- `sepia` (Sepia)
+- `hueRotate` (Hue Rotate)
+- `vignette` (Vignette)
+- `overlay` (Overlay gradient)
+- `scale` (Scale / Transform)
+- `sharpen` (Sharpen)
+- `reflection` (Reflection)
+- `flip` (Flip horizontal/vertical)
+- `pixelate` (Pixelate)
+- `scanLines` (Scanlines)
 
 ## 🧱 Technical Architecture
 
@@ -482,33 +406,8 @@ MIT License - See [LICENSE](LICENSE) for details
 
 ---
 
-## 🚧 Features In Development
+***Removed "Features In Development" — all features are merged or accessible in-app.***
 
-The following features have backend implementation ready but are pending UI integration:
-
-**Image Effects - Advanced Controls:**
-- [ ] **Image Cropping**: Backend supports crop with X, Y, Width, Height controls (0-1 range) - UI controls needed
-- [ ] **Image Masking**: Backend supports mask types (none, circle, rounded) with borderRadius (0-50) - UI controls needed
-- [ ] **Border Controls**: Backend supports borders with width (0-20), color, and style (solid, dashed, dotted) - UI controls needed
-- [ ] **Invert Filter**: Backend supports invert (0-100) - UI slider needed to complete filter set
-
-**Text Effects:**
- - ✅ **Seed Parameter**: Many text effects now support an optional `Seed` parameter for deterministic randomness — use the same seed to reproduce the same effect across renders. Set seed to `0` (default) to use non-deterministic randomness (Math.random) like before.
-
-Example usage:
-```js
-// Apply grunge effect with deterministic randomness (seed > 0)
-applyTextEffect(ctx, canvas, 'grunge', 'Hello', 0, 0, { strength: 0.6, seed: 12345 });
-// Use seed=0 (default) to fall back to Math.random behavior for non-deterministic randomness
-applyTextEffect(ctx, canvas, 'grunge', 'Hello', 0, 0, { strength: 0.6, seed: 0 });
-```
-- [ ] **3D Effect**: Backend fully implemented with depth and angle controls - UI integration pending
-- [ ] **Glow Effect**: Backend supports glow with blur and intensity - UI controls pending
-- [ ] **Gradient Fills**: Backend supports linear/radial gradients - UI controls pending
-- [ ] **Blend Modes**: Backend supports multiple blend modes - UI dropdown pending
-- [ ] **Transform Controls**: Backend supports scale, skew, advanced positioning - UI controls pending
-
----
 
 ## 🙏 Contributing
 
