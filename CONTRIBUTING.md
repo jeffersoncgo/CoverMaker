@@ -36,7 +36,7 @@ To add or update an item in the gallery (guide):
 
 Notes:
 - When `project` exists in the JSON item, it will be treated as a "Project" in the app; otherwise it will be treated as a "Preset".
-- Our automation will regenerate `gallery/GALLERY.md` automatically when gallery files are updated (PR or push to gallery files), so there's no need to edit that manually.
+- Our automation will regenerate `GALLERY.md` automatically when gallery files are updated (PR or push to gallery files), so there's no need to edit that manually.
 
 ### 💻 3. Submitting Code
 If you want to get your hands dirty with the source code:
