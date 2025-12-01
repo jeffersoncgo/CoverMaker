@@ -441,9 +441,6 @@ MIT License - See [LICENSE](LICENSE) for details
 
 ---
 
-***Removed "Features In Development" — all features are merged or accessible in-app.***
-
-
 ## 🙏 Contributing
 
 Contributions welcome! Areas of interest:

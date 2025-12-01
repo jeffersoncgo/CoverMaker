@@ -1,29 +1,68 @@
-# Contributing to CoverMaker
+# 📘 Contributing to CoverMaker
 
-Thanks for your interest in contributing! Contributions help improve the project and grow the community. This document explains how to submit issues, share exported projects, and propose code changes.
+Thanks for your interest in helping improve **CoverMaker**!
+Contributions of all types—bug reports, ideas, code, or shared project files—are welcome.
 
-1. Reporting issues
-   - Before opening an issue, search existing issues to avoid duplicates.
-   - Provide a clear title and a concise description of the problem.
-   - Include steps to reproduce, expected vs actual behavior, browser and version, and any relevant logs or screenshots.
+Below is a lightweight guide to how you can participate.
+Everything is optional; follow whichever path fits your contribution.
 
-2. Sharing your project files (community gallery)
-   - To share a sample composite for the gallery, export your project from the app as a `.project.zip` (Export project).
-   - Attach the `.project.zip` to a new issue or include a link to a downloadable location.
-   - Optionally include the final exported image and an app screenshot to help reviewers.
+---
 
-3. Submitting code changes (PRs)
-   - Fork the repository and create a topic branch for your change.
-   - Keep changes focused and include tests or a short demo where possible.
-   - Update documentation when you add features or change behavior.
-   - Open a Pull Request describing the change, why it is needed, and any migration steps.
+## 1. Reporting Issues
 
-4. Style and guidelines
-   - JavaScript: modern ES6+ syntax is preferred. Keep modules small and focused.
-   - Avoid reintroducing deprecated legacy code; prefer modular patterns and registries.
-   - Ensure accessibility where applicable (alt text, keyboard navigation for UI controls).
+If you’ve found a problem or unexpected behavior:
 
-5. License and attribution
-   - By contributing, you agree to license your contributions under the repository MIT license.
+* Check existing issues first to avoid duplicates.
+* Use a clear, descriptive title.
+* Include:
 
-Thank you — we look forward to your contributions! If you want help preparing your `.project.zip` for submission, open an issue and we'll guide you.
+  * Steps to reproduce
+  * What you expected vs. what happened
+  * Browser + version
+  * Any screenshots, logs, or exported results that help illustrate the issue
+
+Concise, reproducible reports help tremendously.
+
+---
+
+## 2. Sharing Your Project Files
+
+*(Community Gallery & Future Presets)*
+
+If you want to showcase a design or help expand the upcoming preset library:
+
+* Export your project from the app as a **`.zip`**.
+* Attach the file directly to an issue or include a download link.
+* (Optional) Add:
+
+  * The final rendered image
+  * A screenshot of the editor layout
+  * A short description of the idea or technique used
+
+> Note:
+> The **`.zip`** is **not** a development or source file—it's just the app’s export format.
+
+You only need to provide it when contributing to the **gallery** or **future preset collections**.
+
+---
+
+## 3. Submitting Code Contributions (Pull Requests)
+
+If you’d like to propose a fix, feature, or improvement:
+
+1. Fork the repository and create a feature/topic branch.
+2. Keep changes focused; avoid large, unrelated bundles.
+3. Include small demos or tests if relevant.
+4. Update documentation when behaviors or parameters change.
+5. Open a Pull Request describing:
+
+   * What the change does
+   * Why it’s useful
+   * Any migration or compatibility considerations
+
+Clear, incremental PRs are easier to review and merge.
+
+---
+## 4. License & Attribution
+
+By contributing to this repository, you agree that your submissions are released under the project’s **MIT License**.
