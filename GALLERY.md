@@ -2,14 +2,11 @@
 
 This file is auto-generated from the `gallery/gallery.json` file.
 
-Generated: 2025-12-01T20:47:33.391Z
+Generated: 2025-12-01T20:24:06.610Z
 
 ## Projects
 
-<details open>
-<summary>Projects (5)</summary>
-
-<img src="gallery/projects/war-metal/war.metal.result.png" alt="War — Metal" loading="lazy" style="max-width:300px; height:auto;" />
+![War — Metal](gallery/projects/war-metal/war.metal.result.png)
 
 **War — Metal**
 
@@ -18,7 +15,7 @@ Generated: 2025-12-01T20:47:33.391Z
 Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [project.json](gallery/projects/war-metal/project.json) • Project: [war.metal.project.zip](gallery/projects/war-metal/war.metal.project.zip)
 
 ---
-<img src="gallery/projects/movies-metal/movies.metal.result.png" alt="Movies — Metal" loading="lazy" style="max-width:300px; height:auto;" />
+![Movies — Metal](gallery/projects/movies-metal/movies.metal.result.png)
 
 **Movies — Metal**
 
@@ -27,7 +24,7 @@ Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [p
 Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [project.json](gallery/projects/movies-metal/project.json) • Project: [movies.metal.project.zip](gallery/projects/movies-metal/movies.metal.project.zip)
 
 ---
-<img src="gallery/projects/movies-lego/movies.lego.result.png" alt="Lego — Movies" loading="lazy" style="max-width:300px; height:auto;" />
+![Lego — Movies](gallery/projects/movies-lego/movies.lego.result.png)
 
 **Lego — Movies**
 
@@ -36,7 +33,7 @@ Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [p
 Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [project.json](gallery/projects/movies-lego/project.json) • Project: [movies.lego.project.zip](gallery/projects/movies-lego/movies.lego.project.zip)
 
 ---
-<img src="gallery/projects/animes-manga/animes.manga.result.png" alt="Animes — Manga" loading="lazy" style="max-width:300px; height:auto;" />
+![Animes — Manga](gallery/projects/animes-manga/animes.manga.result.png)
 
 **Animes — Manga**
 
@@ -45,7 +42,7 @@ Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [p
 Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [project.json](gallery/projects/animes-manga/project.json) • Project: [animes.manga.project.zip](gallery/projects/animes-manga/animes.manga.project.zip)
 
 ---
-<img src="gallery/projects/scary-collection/scary-movie-collection.deepshadow.result.png" alt="Scary Movie Collection — Deep Shadow" loading="lazy" style="max-width:300px; height:auto;" />
+![Scary Movie Collection — Deep Shadow](gallery/projects/scary-collection/scary-movie-collection.deepshadow.result.png)
 
 **Scary Movie Collection — Deep Shadow**
 
