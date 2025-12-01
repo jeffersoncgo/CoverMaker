@@ -2,11 +2,11 @@
 
 This file is auto-generated from the `gallery/gallery.json` file.
 
-Generated: 2025-12-01T20:24:06.610Z
+Generated: 2025-12-01T20:29:36.728Z
 
 ## Projects
 
-![War — Metal](gallery/projects/war-metal/war.metal.result.png)
+![War — Metal](projects/war-metal/war.metal.result.png)
 
 **War — Metal**
 
@@ -15,7 +15,7 @@ Generated: 2025-12-01T20:24:06.610Z
 Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [project.json](gallery/projects/war-metal/project.json) • Project: [war.metal.project.zip](gallery/projects/war-metal/war.metal.project.zip)
 
 ---
-![Movies — Metal](gallery/projects/movies-metal/movies.metal.result.png)
+![Movies — Metal](projects/movies-metal/movies.metal.result.png)
 
 **Movies — Metal**
 
@@ -24,7 +24,7 @@ Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [p
 Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [project.json](gallery/projects/movies-metal/project.json) • Project: [movies.metal.project.zip](gallery/projects/movies-metal/movies.metal.project.zip)
 
 ---
-![Lego — Movies](gallery/projects/movies-lego/movies.lego.result.png)
+![Lego — Movies](projects/movies-lego/movies.lego.result.png)
 
 **Lego — Movies**
 
@@ -33,7 +33,7 @@ Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [p
 Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [project.json](gallery/projects/movies-lego/project.json) • Project: [movies.lego.project.zip](gallery/projects/movies-lego/movies.lego.project.zip)
 
 ---
-![Animes — Manga](gallery/projects/animes-manga/animes.manga.result.png)
+![Animes — Manga](projects/animes-manga/animes.manga.result.png)
 
 **Animes — Manga**
 
@@ -42,7 +42,7 @@ Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [p
 Author: [jeffersoncgo](https://github.com/jeffersoncgo/CoverMaker) • Setup: [project.json](gallery/projects/animes-manga/project.json) • Project: [animes.manga.project.zip](gallery/projects/animes-manga/animes.manga.project.zip)
 
 ---
-![Scary Movie Collection — Deep Shadow](gallery/projects/scary-collection/scary-movie-collection.deepshadow.result.png)
+![Scary Movie Collection — Deep Shadow](projects/scary-collection/scary-movie-collection.deepshadow.result.png)
 
 **Scary Movie Collection — Deep Shadow**
 
