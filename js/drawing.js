@@ -20,6 +20,15 @@ function tagFn(fn) {
   return fn.__uid;
 }
 
+function fnv1a(str) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return hash;
+}
+
 function stepHash(params, previousStepHash = 0) {
   const paramString = JSON.stringify(params);
   let hash = 0;
@@ -343,7 +352,7 @@ async function applyComposite(..._params) {
     const effectDef = (typeof COMPOSITE_REGISTRY !== 'undefined') ? COMPOSITE_REGISTRY[type] : undefined;
     if (!effectDef) return false;
 
-    return await runStep(hash, effectDef.apply, ctx, canvas, slotsImages, params, { srcOnly: slotsImages.map(img => img?.src || null) });
+    return await runStep(hash, effectDef.apply, ctx, canvas, slotsImages, params, { srcOnly: slotsImages.map(img => fnv1a(img?.src  || '')) });
   } catch (err) {
     console.error('Error applying composite effect:', err);
     return {};

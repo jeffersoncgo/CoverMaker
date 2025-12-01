@@ -53,10 +53,26 @@ function makeDraggable(windowEl) {
 function showWindow(windowId) {
   const windowEl = document.getElementById(windowId);
   if (!windowEl) return;
-  windowEl.style.display = 'block';
+  // Ensure maximum size fits into viewport before showing
+  const margin = 32; // pixels
+  const maxWidth = Math.max(200, window.innerWidth - margin);
+  const maxHeight = Math.max(200, window.innerHeight - margin);
+
+  // If the element's defined width is larger than our viewport, clamp it
+  const currentWidth = windowEl.offsetWidth;
+  const currentHeight = windowEl.offsetHeight;
+  if (currentWidth > maxWidth) {
+    windowEl.style.width = `${maxWidth}px`;
+  }
+  if (currentHeight > maxHeight) {
+    windowEl.style.height = `${maxHeight}px`;
+    windowEl.style.overflow = 'auto';
+  }
   windowEl.style.left = '50%';
   windowEl.style.top = '50%';
+  windowEl.style.transform = 'translate(-50%, -50%)';
   windowEl.style.zIndex = Date.now();
+  windowEl.style.display = 'block';
 }
 
 function hideWindow(windowId) {
@@ -68,6 +84,16 @@ function hideWindow(windowId) {
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.floatWindow').forEach(window => {
     makeDraggable(window);
+    // Ensure fit to viewport
+    const margin = 32; // pixels
+    const maxW = Math.max(200, window.innerWidth - margin);
+    const maxH = Math.max(200, window.innerHeight - margin);
+    window.style.maxWidth = `calc(100vw - 2rem)`;
+    window.style.maxHeight = `calc(100vh - 2rem)`;
+    const cw = window.offsetWidth;
+    const ch = window.offsetHeight;
+    if (cw > maxW) window.style.width = `${maxW}px`;
+    if (ch > maxH) window.style.height = `${maxH}px`;
     window.style.left = '50%';
     window.style.top = '50%';
     window.style.transform = 'translate(-50%, -50%)';

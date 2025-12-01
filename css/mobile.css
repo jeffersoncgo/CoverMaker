@@ -325,6 +325,7 @@
   .toast {
     font-size: 0.85rem;
     padding: var(--space-xs) var(--space-sm);
+    z-index: 10001;
   }
 
   /* ============================

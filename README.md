@@ -27,7 +27,7 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 ---
 
 ### Demo: movies.lego (Scattered Photos / Distressed Headline)
-![movies.lego app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.lego.app.png)
+![movies.lego app screenshot](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/movies-lego/movies.lego.app.png)
 
 **Quick summary:** Scattered photos composite with a large distressed headline using multiple text effects (waves, gradient, pixelation, long shadow and outline).
 
@@ -36,19 +36,19 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 - Text layers: single large `MOVIES` headline using `Francois One`, with `waves`, `gradient`, `pixelMatrix`, `distress`, `longShadow` and `outline` effects to create a gritty, playful poster look.
 - Export: PNG. Image slots: 12.
 
-📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.lego.project.zip
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/gallery/projects/movies-lego/movies.lego.project.zip
 
 <details>
 <summary>🖼️ <b>Final result image</b></summary>
 
-![movies.lego result](https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.lego.result.png)
+![movies.lego result](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/movies-lego/movies.lego.result.png)
 
 </details>
 
 ---
 
 ### Demo: scary-movie-collection.deepshadow (Poster / Long Shadow Headlines)
-![scary-movie-collection.deepshadow app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/scary-movie-collection.deepshadow.app.png)
+![scary-movie-collection.deepshadow app screenshot](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/scary-collection/scary-movie-collection.deepshadow.app.png)
 
 **Quick summary:** Poster-format scattered photos with heavy long-shadowed and outlined headline layers to create a bold horror-collection cover.
 
@@ -57,19 +57,19 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 - Text layers: three headline layers (`SCARY`, `MOVIE`, `COLLECTION`) using `Paytone One` with stacked `longShadow` and dual `outline` passes (black then white) to produce sharp, dramatic lettering.
 - Export: PNG. Image slots: 26.
 
-📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/scary-movie-collection.deepshadow.project.zip
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/gallery/projects/scary-collection/scary-movie-collection.deepshadow.project.zip
 
 <details>
 <summary>🖼️ <b>Final result image</b></summary>
 
-![scary-movie-collection.deepshadow result](https://jeffersoncgo.github.io/CoverMaker/images/demo/scary-movie-collection.deepshadow.result.png)
+![scary-movie-collection.deepshadow result](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/scary-collection/scary-movie-collection.deepshadow.result.png)
 
 </details>
 
 ---
 
 ### Demo: animes.manga (Collage / Textured Headline)
-![animes.manga app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/animes.manga.app.png)
+![animes.manga app screenshot](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/animes-manga/animes.manga.app.png)
 
 **Quick summary:** Collage composite with layered headline text (long shadow + distressed overlay) for a stylized anime cover.
 
@@ -79,19 +79,24 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 - Text layers: two stacked layers using `East Sea Dokdo` (large italic headline `ANIMES`), top layer with `longShadow` + small outline, bottom with `distress` for texture.
 - Export: PNG. Image slots: 20.
 
-📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/animes.manga.project.zip
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/gallery/projects/animes-manga/animes.manga.project.zip
 
 <details>
 <summary>🖼️ <b>Final result image</b></summary>
 
-![animes.manga result](https://jeffersoncgo.github.io/CoverMaker/images/demo/animes.manga.result.png)
+![animes.manga result](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/animes-manga/animes.manga.result.png)
 
 </details>
 
 ---
 
+## 🖼️ Gallery Directory
+
+This project includes a `gallery` folder with a structure intended to host gallery content for the web app. To populate it, you can manually copy ZIP files and their `project.json` into `gallery/projects/<id>/`. See `gallery/GALLERY.md` for manual extraction and contribution instructions.
+
+
 ### Demo: movies.metal (Metallic Headline)
-![movies.metal app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.metal.app.png)
+![movies.metal app screenshot](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/movies-metal/movies.metal.app.png)
 
 **Quick summary:** Line composite with stacked outlines and long shadows to create a metallic, embossed headline.
 
@@ -100,19 +105,19 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 - Text layers: single large `MOVIES` headline with multiple stacked `outline` and `longShadow` effects and a `distress` pass.
 - Export: PNG. Image slots: 4.
 
-📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.metal.project.zip
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/gallery/projects/movies-metal/movies.metal.project.zip
 
 <details>
 <summary>🖼️ <b>Final result image</b></summary>
 
-![movies.metal result](https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.metal.result.png)
+![movies.metal result](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/movies-metal/movies.metal.result.png)
 
 </details>
 
 ---
 
 ### Demo: war.metal (Dramatic / High-Contrast Cover)
-![war.metal app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/war.metal.app.png)
+![war.metal app screenshot](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/war-metal/war.metal.app.png)
 
 **Quick summary:** Collage composite tuned with brightness/contrast adjustments and scanlines; heavy stroked headline for a metallic look.
 
@@ -121,12 +126,12 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 - Text layers: single `WAR` headline (Cal Sans bold) with stacked outlines, `longShadow`, and `distress` effects to reinforce metallic emboss.
 - Export: PNG. Image slots: 20.
 
-📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/war.metal.project.zip
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/gallery/projects/war-metal/war.metal.project.zip
 
 <details>
 <summary>🖼️ <b>Final result image</b></summary>
 
-![war.metal result](https://jeffersoncgo.github.io/CoverMaker/images/demo/war.metal.result.png)
+![war.metal result](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/war-metal/war.metal.result.png)
 
 </details>
 

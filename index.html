@@ -45,6 +45,44 @@
     </div>
   </div>
 
+  <div class="floatWindow" id="galleryBox" style="display: none; width: 720px; max-width: calc(100vw - 2rem);">
+    <div class="windowBar">
+      <h2>Gallery</h2>
+      <button class="closeBtn">×</button>
+    </div>
+    <div class="content">
+      <div class="gallery-contribute">
+        <a href="https://github.com/jeffersoncgo/CoverMaker?tab=contributing-ov-file" target="_blank" rel="noopener noreferrer">
+          <i class="fa-brands fa-github"></i>
+          <span class="contribute-text">Contribute with our gallery</span>
+          <span class="contribute-sub">Help us grow – add your setups and projects</span>
+        </a>
+      </div>
+      <div class="gallery-controls">
+        <div class="gallery-search">
+          <input id="gallerySearch" type="search" placeholder="Search by title, author or description" aria-label="Search gallery" autocomplete="off" />
+          <button id="gallerySearchClear" class="icon-button" title="Clear search"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="field checkbox gallery-groups">
+        <div>
+          <input type="checkbox" id="expandGalleryPresets" class="expand-checkbox" save>
+          <label for="expandGalleryPresets" class="expand-label expand-btn relative gallery-group-title" data-for="presets">Presets (0)</label>
+          <div class="gallery-group expand-content gallery-list scroll-container" id="galleryPresetsList"></div>
+        </div>
+
+        <div>
+          <input type="checkbox" id="expandGalleryProjects" class="expand-checkbox" save>
+          <label for="expandGalleryProjects" class="gallery-group-title expand-label expand-btn relative" data-for="projects">Projects (0)</label>
+          <div class="gallery-group expand-content gallery-list scroll-container" id="galleryProjectsList"></div>
+        </div>
+
+
+          <div id="galleryNoResults" class="no-results" style="display:none;">No results found</div>
+        </div>
+      </div>
+    </div>
+
 
   <template id="slot-template">
     <div class="slot" ondragstart="onSlotDragToMove(event)" ondrop="slotOnDropImage(event, this)"
@@ -336,6 +374,7 @@
     <div class="buttons">
       <a href="https://github.com/jeffersoncgo/CoverMaker" target="_blank"><i class="fa-brands fa-github" title="Open Project Github Page"></i></a>
       <button id="loginBtn" logged-in="false" onClick="showWindow('loginBox');" title="Login to Jellyfin">Login to Jellyfin</button>
+      <button id="openGalleryBtn" onClick="showWindow('galleryBox');" title="Open Gallery">Gallery</button>
       <button onclick="cleanMemory()" title="Clean Saved Memory">Clean Saved Memory</button>
     </div>
   </div>
@@ -551,6 +590,7 @@
     <script src="js/paramsRenderer.js"></script>
     <script src="js/textEffects.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/gallery.js"></script>
 </body>
 
 </html>

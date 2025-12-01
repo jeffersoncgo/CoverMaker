@@ -45,6 +45,7 @@ function toastMessage(message, options = {}) {
   let icon = '';
   if (config.type === 'success') icon = '<svg width="20" height="20" fill="none" stroke="var(--c-success)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
   else if (config.type === 'danger') icon = '<svg width="20" height="20" fill="none" stroke="var(--c-danger)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>';
+  else if (config.type === 'loading') icon = '<span class="spinner" aria-hidden="true"></span>';
   else icon = '<svg width="20" height="20" fill="none" stroke="var(--c-primary)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>';
 
   toast.innerHTML = `${icon} <span>${message}</span>`;
@@ -66,18 +67,38 @@ function toastMessage(message, options = {}) {
     toast.classList.add('show');
   });
 
-  // 6. Remove after duration
-  setTimeout(() => {
+  // 6. Remove after duration (if > 0). If duration is 0 or negative, the toast is persistent
+  let removeTimer = null;
+  if (config.duration > 0) {
+    removeTimer = setTimeout(() => closeToast(toast, container), config.duration);
+  }
+
+  // Return the toast node so callers can remove it manually if needed
+  return toast;
+}
+
+// Public helper to close a toast created by toastMessage
+function closeToast(toast, container) {
+  try {
+    if (!toast || !(toast instanceof HTMLElement)) return;
+    // Stop any automatic timer if present (best-effort: clear if stored)
+    // If container not passed, try to infer it
+    if (!container) container = toast.parentNode;
+    // Remove visible class to start hide animation
     toast.classList.remove('show');
-    // Wait for CSS transition to finish before removing from DOM
     setTimeout(() => {
-      toast.remove();
+      // Remove from DOM
+      if (toast.parentNode) toast.remove();
       // Cleanup empty containers
       if (container && container.childNodes.length === 0) {
         container.remove();
       }
     }, 300);
-  }, config.duration);
+  } catch (err) {
+    console.error('Error closing toast:', err);
+    // Fallback: remove directly
+    try { toast.remove(); } catch (ignore) {}
+  }
 }
 
 // Helper for the demo to get cursor position

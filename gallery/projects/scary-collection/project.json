@@ -1,0 +1,17 @@
+{
+  "Setup": {
+    "Settings": {
+      "canvas": {
+        "format": "cover",
+        "type": "poster",
+        "composite": {}
+      },
+      "textLayers": [],
+      "export": {
+        "format": "png",
+        "jpegQuality": 0.95
+      }
+    }
+  },
+  "imageSlots": []
+}

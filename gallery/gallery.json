@@ -1,0 +1,52 @@
+[
+  {
+    "id": "war-metal",
+    "title": "War — Metal",
+    "shortDescription": "A high-contrast metallic poster featuring stacked text, long shadow, and distress effects.",
+    "image": "gallery/projects/war-metal/war.metal.result.png",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/war-metal/project.json",
+    "project": "gallery/projects/war-metal/war.metal.project.zip"
+  },
+  {
+    "id": "movies-metal",
+    "title": "Movies — Metal",
+    "shortDescription": "Rustic metallic style perfect for action and drama collections, with subtle distress and strong typography.",
+    "image": "gallery/projects/movies-metal/movies.metal.result.png",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/movies-metal/project.json",
+    "project": "gallery/projects/movies-metal/movies.metal.project.zip"
+  },
+  {
+    "id": "movies-lego",
+    "title": "Lego — Movies",
+    "shortDescription": "A playful, colorful collage inspired by Lego aesthetics, great for family-friendly collections.",
+    "image": "gallery/projects/movies-lego/movies.lego.result.png",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/movies-lego/project.json",
+    "project": "gallery/projects/movies-lego/movies.lego.project.zip"
+  },
+  {
+    "id": "animes-manga",
+    "title": "Animes — Manga",
+    "shortDescription": "Manga-style imagery and high-contrast text, tuned for animated and illustrated collections.",
+    "image": "gallery/projects/animes-manga/animes.manga.result.png",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/animes-manga/project.json",
+    "project": "gallery/projects/animes-manga/animes.manga.project.zip"
+  },
+  {
+    "id": "scary-collection",
+    "title": "Scary Movie Collection — Deep Shadow",
+    "shortDescription": "Moody, cinematic horror collection with deep shadows and dramatic tones.",
+    "image": "gallery/projects/scary-collection/scary-movie-collection.deepshadow.result.png",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/scary-collection/project.json",
+    "project": "gallery/projects/scary-collection/scary-movie-collection.deepshadow.project.zip"
+  }
+]

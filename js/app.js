@@ -621,13 +621,14 @@ function deepMerge(target, defaults) {
   return result;
 }
 
-function loadFullProjectFromJson(jsonData) {
+function loadFullProjectFromJson(jsonData, isSetupOnly = false) {
   // set the memory as not loaded
   window.memoryLoaded = false;
   // first, we need to clear all the text layers
   clearTextLayersMemory();
   // then clear the images using the existing function
-  deleteAllSlots();
+  if (!isSetupOnly)
+    deleteAllSlots();
   if (jsonData.Setup) {
     // Get the default Setup from config.js
     const defaultSetup = window.defaultSetup || Setup;
@@ -658,31 +659,33 @@ function loadFullProjectFromJson(jsonData) {
   // Note: Images are no longer loaded from JSON for performance reasons.
   // Images should be exported/imported using ZIP files.
   // If loading from legacy JSON with image URLs, try to load them
-  if (jsonData.imageSlots && Array.isArray(jsonData.imageSlots)) {
-    const hasImageUrls = jsonData.imageSlots.some(slot => slot && typeof slot === 'string' && slot !== 'placeholder');
-    
-    if (hasImageUrls) {
-      // Legacy format with URLs
-      setSlots(jsonData.imageSlots.length);
-      jsonData.imageSlots.forEach((src, i) => {
-        if (i >= slotsImages.length || !src || src === 'placeholder')
-          return;
-        
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          slotsImages[i] = img;
-          setSlotImage(i, img);
-          updateImageSettings();
-        };
-        img.onerror = () => {
-          console.warn(`Failed to load image from URL: ${src}`);
-        };
-        img.src = src;
-      });
-    } else {
-      // New format without images (just placeholders)
-      setSlots(jsonData.imageSlots.length);
+  if(!isSetupOnly) {
+    if (jsonData.imageSlots && Array.isArray(jsonData.imageSlots)) {
+      const hasImageUrls = jsonData.imageSlots.some(slot => slot && typeof slot === 'string' && slot !== 'placeholder');
+      
+      if (hasImageUrls) {
+        // Legacy format with URLs
+        setSlots(jsonData.imageSlots.length);
+        jsonData.imageSlots.forEach((src, i) => {
+          if (i >= slotsImages.length || !src || src === 'placeholder')
+            return;
+          
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            slotsImages[i] = img;
+            setSlotImage(i, img);
+            updateImageSettings();
+          };
+          img.onerror = () => {
+            console.warn(`Failed to load image from URL: ${src}`);
+          };
+          img.src = src;
+        });
+      } else {
+        // New format without images (just placeholders)
+        setSlots(jsonData.imageSlots.length);
+      }
     }
   }
   window.memoryLoaded = true;
@@ -1718,7 +1721,7 @@ async function importProjectFromZip(file) {
 /**
  * Import project from legacy JSON file (without images)
  */
-async function importProjectFromJson(file) {
+async function importProjectFromJson(file, isSetupOnly = false) {
   const btn = document.getElementById('importProjectBtn');
   btn.classList.add('disabled');
   btn.style.pointerEvents = 'none';
@@ -1731,7 +1734,7 @@ async function importProjectFromJson(file) {
     const fileName = file.name.replace(/\.json$/i, '');
     window.projectFileName = utils.safeWindowsFileName(fileName);
     
-    await _importProjectFromJsonCore(file);
+    await _importProjectFromJsonCore(file, isSetupOnly);
     toastMessage('Project imported successfully!', { position: 'bottomCenter', type: 'success' });
   } catch (error) {
     console.error('Import failed:', error);
@@ -1743,13 +1746,13 @@ async function importProjectFromJson(file) {
   }
 }
 
-function _importProjectFromJsonCore(file) {
+function _importProjectFromJsonCore(file, isSetupOnly = false) {
   const reader = new FileReader();
   reader.onload = function(e) {
     const contents = e.target.result;
     try {
       const importedSetup = JSON.parse(contents);
-      loadFullProjectFromJson(importedSetup);
+      loadFullProjectFromJson(importedSetup, isSetupOnly);
       toastMessage('Project imported (without images)', { position: 'bottomCenter', type: 'warning' });
     } catch (err) {
       alert('Error reading project file: ' + err.message);

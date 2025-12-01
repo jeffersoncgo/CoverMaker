@@ -1,0 +1,260 @@
+{
+  "Setup": {
+    "Sizes": {
+      "cover": {
+        "width": 1920,
+        "height": 1080,
+        "quality": 80
+      },
+      "poster": {
+        "width": 1080,
+        "height": 1920,
+        "quality": 60
+      },
+      "square": {
+        "width": 1,
+        "height": 1,
+        "quality": 100
+      },
+      "custom": {
+        "width": 1,
+        "height": 1,
+        "quality": 100
+      }
+    },
+    "Library": {
+      "loadedLibrary": ""
+    },
+    "Images": {
+      "loading": "images/loading.gif",
+      "error": "images/error.png"
+    },
+    "loadingType": "eager",
+    "Settings": {
+      "textLayers": [
+        {
+          "font": {
+            "family": "East Sea Dokdo",
+            "weight": "normal",
+            "style": "italic",
+            "size": 591,
+            "color": "#ffffff",
+            "opacity": 1
+          },
+          "position": {
+            "textAlign": "center",
+            "textBaseline": "middle",
+            "x": 0,
+            "y": -32,
+            "rotation": 0
+          },
+          "strokes": [],
+          "shadows": [],
+          "id": "layer_0",
+          "overlayText": "ANIMES",
+          "enabled": true,
+          "fontStyle": "italic normal 591px \"East Sea Dokdo\"",
+          "fillStyle": "rgba(255, 255, 255, 1)",
+          "effects": [
+            {
+              "type": "longShadow",
+              "enabled": true,
+              "params": {
+                "color": "#000000",
+                "blur": 0,
+                "length": 26,
+                "angle": 45,
+                "opacity": 0.94
+              }
+            },
+            {
+              "type": "outline",
+              "enabled": true,
+              "params": {
+                "color": "#000000",
+                "thickness": 3
+              }
+            }
+          ]
+        },
+        {
+          "font": {
+            "family": "East Sea Dokdo",
+            "weight": "normal",
+            "style": "italic",
+            "size": 591,
+            "color": "#b3b3b3",
+            "opacity": 0.7
+          },
+          "position": {
+            "textAlign": "center",
+            "textBaseline": "middle",
+            "x": 0,
+            "y": -32,
+            "rotation": 0
+          },
+          "strokes": [],
+          "shadows": [],
+          "id": "layer_1",
+          "overlayText": "ANIMES",
+          "enabled": true,
+          "fontStyle": "italic normal 591px \"East Sea Dokdo\"",
+          "fillStyle": "rgba(179, 179, 179, 0.7)",
+          "effects": [
+            {
+              "type": "distress",
+              "enabled": true,
+              "params": {
+                "mode": "fabric",
+                "amount": 1,
+                "seed": 0
+              }
+            }
+          ]
+        }
+      ],
+      "canvas": {
+        "type": "collage",
+        "format": "cover",
+        "opacity": 0,
+        "overlayColorStart": "#000000",
+        "overlayColorStartRGB": {
+          "r": 0,
+          "g": 0,
+          "b": 0
+        },
+        "overlayColorEnd": "#000000",
+        "overlayColorEndRGB": {
+          "r": 0,
+          "g": 0,
+          "b": 0
+        },
+        "overlayOpacityStart": 0.1,
+        "overlayOpacityEnd": 0.4,
+        "reflectionDistance": 0.7,
+        "reflectionScale": 0.8,
+        "baseScale": 1.4,
+        "blurAmount": 5,
+        "spacing": 1,
+        "salt": 3,
+        "composite": {
+          "type": "collage",
+          "params": {
+            "salt": 3
+          },
+          "enabled": true
+        },
+        "effects": [
+          {
+            "type": "saturate",
+            "params": {
+              "amount": 1.05
+            },
+            "enabled": true
+          },
+          {
+            "type": "scanLines",
+            "params": {
+              "opacity": 1,
+              "density": 10
+            },
+            "enabled": true
+          },
+          {
+            "type": "vignette",
+            "params": {
+              "intensity": 0.37
+            },
+            "enabled": true
+          },
+          {
+            "type": "blur",
+            "params": {
+              "amount": 5
+            },
+            "enabled": true
+          },
+          {
+            "type": "grayscale",
+            "params": {
+              "amount": 0.65
+            },
+            "enabled": false
+          }
+        ]
+      },
+      "export": {
+        "format": "png",
+        "jpegQuality": 1
+      }
+    },
+    "defaults": {
+      "shadow": {
+        "color": "#fafafa",
+        "blur": 8,
+        "offsetX": 5,
+        "offsetY": 5,
+        "enabled": true
+      },
+      "stroke": {
+        "color": "#ffd500",
+        "width": 34,
+        "opacity": 1,
+        "style": "rgba(255, 213, 0, 1)",
+        "enabled": true
+      },
+      "TextLayer": {
+        "font": {
+          "family": "Frank Ruhl Libre",
+          "weight": "normal",
+          "style": "italic",
+          "size": 652,
+          "color": "#ffffff",
+          "opacity": 1
+        },
+        "position": {
+          "textAlign": "center",
+          "textBaseline": "middle",
+          "x": -78,
+          "y": 0,
+          "rotation": 0
+        },
+        "strokes": [],
+        "shadows": [],
+        "id": "layer_0",
+        "overlayText": "STAR WARS",
+        "fontStyle": "italic normal 652px \"Frank Ruhl Libre\"",
+        "fillStyle": "rgba(255, 255, 255, 1)",
+        "effects": [],
+        "enabled": true
+      },
+      "composite": {
+        "type": "line",
+        "params": {}
+      },
+      "effects": {}
+    }
+  },
+  "imageSlots": [
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder",
+    "placeholder"
+  ]
+}
