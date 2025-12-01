@@ -26,6 +26,48 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 
 ---
 
+### Demo: movies.lego (Scattered Photos / Distressed Headline)
+![movies.lego app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.lego.app.png)
+
+**Quick summary:** Scattered photos composite with a large distressed headline using multiple text effects (waves, gradient, pixelation, long shadow and outline).
+
+- Canvas / Composite: `scatteredPhotos`, format `cover` (1920×1080), composite salt `36`, baseScale `1.4`, blur `5`, spacing `1`.
+- Visual settings & effects: `saturate` enabled (amount 1.4), additional subtle effects present but mostly focused on textured headline and pixel matrix.
+- Text layers: single large `MOVIES` headline using `Francois One`, with `waves`, `gradient`, `pixelMatrix`, `distress`, `longShadow` and `outline` effects to create a gritty, playful poster look.
+- Export: PNG. Image slots: 12.
+
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.lego.project.zip
+
+<details>
+<summary>🖼️ <b>Final result image</b></summary>
+
+![movies.lego result](https://jeffersoncgo.github.io/CoverMaker/images/demo/movies.lego.result.png)
+
+</details>
+
+---
+
+### Demo: scary-movie-collection.deepshadow (Poster / Long Shadow Headlines)
+![scary-movie-collection.deepshadow app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/scary-movie-collection.deepshadow.app.png)
+
+**Quick summary:** Poster-format scattered photos with heavy long-shadowed and outlined headline layers to create a bold horror-collection cover.
+
+- Canvas / Composite: `scatteredPhotos`, format `poster` (1080×1920), composite salt `20`, baseScale `1.4`, blur `5`, spacing `1`.
+- Visual settings & effects: `scanLines` enabled (density 9) to add texture; overlay darkening for moody contrast.
+- Text layers: three headline layers (`SCARY`, `MOVIE`, `COLLECTION`) using `Paytone One` with stacked `longShadow` and dual `outline` passes (black then white) to produce sharp, dramatic lettering.
+- Export: PNG. Image slots: 26.
+
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/images/demo/scary-movie-collection.deepshadow.project.zip
+
+<details>
+<summary>🖼️ <b>Final result image</b></summary>
+
+![scary-movie-collection.deepshadow result](https://jeffersoncgo.github.io/CoverMaker/images/demo/scary-movie-collection.deepshadow.result.png)
+
+</details>
+
+---
+
 ### Demo: animes.manga (Collage / Textured Headline)
 ![animes.manga app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/animes.manga.app.png)
 
