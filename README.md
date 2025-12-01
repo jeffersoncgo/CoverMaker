@@ -26,50 +26,6 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 
 ---
 
-## 🎨 Demos
-
-All demo assets are available via GitHub Pages. Use the app preview (`.app.png`) for a live screenshot, view the final composite (`.result.png`) in the spoiler, and download the project (`.project.zip`).
-
-Base URL: `https://jeffersoncgo.github.io/CoverMaker/images/demo/`
-
----
-
-### Text Layer Effects
-
-Create unlimited text layers with professional typography and many built-in text effects. Available text effect types (as used by the app) include:
-
-- `opacity` (Opacity)
-- `fade` (Fade)
-- `gradient` (Gradient)
-- `neon` (Neon)
-- `glowEdge` / Projection (Glow Edge / Projection)
-- `longShadow` (Long Shadow / Shadow)
-- `outline` (Outline)
-- `glitch` (Glitch)
-- `chromatic` (Chromatic Aberration)
-- `ripple` (Ripple)
-- `waves` (Waves)
-- `pixelMatrix` (Pixelate)
-- `skew` (Skew)
-- `flip` (Flip)
-- `distress` (Texture / Distress)
-- `melt` (Melt / Drip)
-- `paintBrush` (Smudge / Paint Brush)
-- `lightning` (Lightning)
-- `scanLines` (Scanlines)
-
-In addition to these named effects, text layers support common typography controls:
-
-- 800+ Google Fonts available
-- Custom font size, weight, and style
-- Gradient fills (linear/radial with multiple color stops)
-- Opacity control and blend modes
-- Multiple strokes and shadows per layer
-- Rotation, scale and skew transforms
-- Layer visibility and reordering
-
----
-
 ### Demo: animes.manga (Collage / Textured Headline)
 ![animes.manga app screenshot](https://jeffersoncgo.github.io/CoverMaker/images/demo/animes.manga.app.png)
 
@@ -147,6 +103,43 @@ We'd love to see what you create with CoverMaker! If you design posters or cover
    - Brief description of your collection (optional)
 
 Your examples will be featured here and help inspire other users!
+
+
+---
+
+### Text Layer Effects
+
+Create unlimited text layers with professional typography and many built-in text effects. Available text effect types (as used by the app) include:
+
+- `opacity` (Opacity)
+- `fade` (Fade)
+- `gradient` (Gradient)
+- `neon` (Neon)
+- `glowEdge` / Projection (Glow Edge / Projection)
+- `longShadow` (Long Shadow / Shadow)
+- `outline` (Outline)
+- `glitch` (Glitch)
+- `chromatic` (Chromatic Aberration)
+- `ripple` (Ripple)
+- `waves` (Waves)
+- `pixelMatrix` (Pixelate)
+- `skew` (Skew)
+- `flip` (Flip)
+- `distress` (Texture / Distress)
+- `melt` (Melt / Drip)
+- `paintBrush` (Smudge / Paint Brush)
+- `lightning` (Lightning)
+- `scanLines` (Scanlines)
+
+In addition to these named effects, text layers support common typography controls:
+
+- 800+ Google Fonts available
+- Custom font size, weight, and style
+- Gradient fills (linear/radial with multiple color stops)
+- Opacity control and blend modes
+- Multiple strokes and shadows per layer
+- Rotation, scale and skew transforms
+- Layer visibility and reordering
 
 ---
 
