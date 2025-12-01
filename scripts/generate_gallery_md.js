@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const galleryJsonPath = path.join(__dirname, '..', 'gallery', 'gallery.json');
-const outPath = path.join(__dirname, '..', 'gallery', 'GALLERY.md');
+const outPath = path.join(__dirname, '..', 'GALLERY.md');
 
 function safeLink(href, title) {
   if (!href) return '';
@@ -12,7 +12,8 @@ function safeLink(href, title) {
 
 function formatItem(item) {
   const parts = [];
-  if (item.image) parts.push(`![${item.title || ''}](${item.image.replace('gallery/', '')})`);
+  // Use HTML <img> tag so we can set loading="lazy" and keep fine-grained control
+  if (item.image) parts.push(`<img src="${item.image}" alt="${(item.title || '')}" loading="lazy" style="max-width:300px; height:auto;" />`);
   parts.push(`**${item.title || 'Untitled'}**`);
   if (item.shortDescription) parts.push(`*${item.shortDescription}*`);
   const metaParts = [];
@@ -47,19 +48,29 @@ function main() {
   if (presets.length) {
     md.push('## Presets');
     md.push('');
+    md.push(`<details open>`);
+    md.push(`<summary>Presets (${presets.length})</summary>`);
+    md.push('');
     presets.forEach(item => {
       md.push(formatItem(item));
       md.push('---');
     });
     md.push('');
+    md.push('</details>');
+    md.push('');
   }
   if (projects.length) {
     md.push('## Projects');
+    md.push('');
+    md.push(`<details open>`);
+    md.push(`<summary>Projects (${projects.length})</summary>`);
     md.push('');
     projects.forEach(item => {
       md.push(formatItem(item));
       md.push('---');
     });
+    md.push('');
+    md.push('</details>');
     md.push('');
   }
   md.push('## Contributing');

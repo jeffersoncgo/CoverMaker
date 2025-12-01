@@ -36,7 +36,7 @@ jobs:
         with:
           author_name: 'github-actions[bot]'
           author_email: '41898282+github-actions[bot]@users.noreply.github.com'
-          message: 'chore(gallery): update gallery/GALLERY.md [skip ci]'
-          add: 'gallery/GALLERY.md'
+          message: 'chore(gallery): update GALLERY.md [skip ci]'
+          add: 'GALLERY.md'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
