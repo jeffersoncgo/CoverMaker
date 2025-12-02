@@ -44,6 +44,17 @@
     "project": "gallery/projects/animes-manga/animes.manga.project.zip"
   },
   {
+    "id": "lego-collection",
+    "title": "Lego — Collection",
+    "shortDescription": "A vibrant, playful poster with pixel matrix effects and stacked text, perfect for Lego-themed collections.",
+    "image": "gallery/projects/lego-collection/lego.collection.result.png",
+    "type": "poster",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/lego-collection/project.json",
+    "project": "gallery/projects/lego-collection/lego.collection.project.zip"
+  },
+  {
     "id": "scary-collection",
     "title": "Scary Movie Collection — Deep Shadow",
     "shortDescription": "Moody, cinematic horror collection with deep shadows and dramatic tones.",

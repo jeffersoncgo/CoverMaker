@@ -47,22 +47,22 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 
 ---
 
-### Demo: scary-movie-collection.deepshadow (Poster / Long Shadow Headlines)
-![scary-movie-collection.deepshadow app screenshot](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/scary-collection/scary-movie-collection.deepshadow.app.png)
+### Demo: lego.collection (Poster / Pixel Matrix & Stacked Text)
+![lego.collection app screenshot](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/lego-collection/lego.collection.app.png)
 
-**Quick summary:** Poster-format scattered photos with heavy long-shadowed and outlined headline layers to create a bold horror-collection cover.
+**Quick summary:** Poster-format scattered photos with vibrant pixel matrix text effects and stacked layers creating a playful Lego-themed collection cover.
 
-- Canvas / Composite: `scatteredPhotos`, format `poster` (1080×1920), composite salt `20`, baseScale `1.4`, blur `5`, spacing `1`.
-- Visual settings & effects: `scanLines` enabled (density 9) to add texture; overlay darkening for moody contrast.
-- Text layers: three headline layers (`SCARY`, `MOVIE`, `COLLECTION`) using `Paytone One` with stacked `longShadow` and dual `outline` passes (black then white) to produce sharp, dramatic lettering.
-- Export: PNG. Image slots: 26.
+- Canvas / Composite: `scatteredPhotos`, format `poster` (1080×1920), composite salt `36`, baseScale `1.4`, blur `5`, spacing `1`.
+- Visual settings & effects: `saturate` enabled (amount 1.4) for vibrant colors.
+- Text layers: two headline layers (`LEGO` and `COLLECTION`) using `Francois One` with `gradient`, `pixelMatrix`, `distress`, `longShadow` and `outline` effects to produce bold, textured lettering with a distinctive blocky aesthetic.
+- Export: PNG. Image slots: 12.
 
-📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/gallery/projects/scary-collection/scary-movie-collection.deepshadow.project.zip
+📦 **Download project:** https://jeffersoncgo.github.io/CoverMaker/gallery/projects/lego-collection/lego.collection.project.zip
 
 <details>
 <summary>🖼️ <b>Final result image</b></summary>
 
-![scary-movie-collection.deepshadow result](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/scary-collection/scary-movie-collection.deepshadow.result.png)
+![lego.collection result](https://jeffersoncgo.github.io/CoverMaker/gallery/projects/lego-collection/lego.collection.result.png)
 
 </details>
 
