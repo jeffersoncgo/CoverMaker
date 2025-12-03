@@ -2,14 +2,82 @@
 
 This file is auto-generated from the `gallery/gallery.json` file.
 
-Generated: 2025-12-02T23:12:43.437Z
+Generated: 2025-12-03T23:49:34.554Z
 
-## Projects (6)
+## Projects (8)
 
 <details>
-<summary>Cover (4)</summary>
+<summary>Cover (6)</summary>
 
 <div style="display:flex; flex-wrap:wrap; gap:16px;">
+<div style="
+  width:260px;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:12px;
+  margin:6px;
+  box-shadow:0 2px 4px rgba(0,0,0,0.08);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+">
+
+  <img src="gallery/projects/rec-collection/rec.collection.result.png" alt="Rec — Collection" loading="lazy"
+       style="width:100%; height:auto; border-radius:6px;" />
+
+  <div style="font-weight:600; font-size:16px;">
+    Rec — Collection
+  </div>
+
+  <div style="font-size:13px; opacity:0.8;">
+    A dark and gritty style inspired by the [REC] horror franchise.
+  </div>
+
+  <div style="font-size:12px;">
+    Author:
+    <a href="https://github.com/jeffersoncgo/CoverMaker" target="_blank">jeffersoncgo</a>
+  </div>
+
+  <div style="display:flex; gap:8px; font-size:12px;">
+    <a href="gallery/projects/rec-collection/project.json">Setup</a>
+    <a href="gallery/projects/rec-collection/rec.collection.project.zip">Project</a>
+  </div>
+
+</div>
+<div style="
+  width:260px;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:12px;
+  margin:6px;
+  box-shadow:0 2px 4px rgba(0,0,0,0.08);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+">
+
+  <img src="gallery/projects/marvel-collection/marvel.collection.result.png" alt="Marvel — Collection" loading="lazy"
+       style="width:100%; height:auto; border-radius:6px;" />
+
+  <div style="font-weight:600; font-size:16px;">
+    Marvel — Collection
+  </div>
+
+  <div style="font-size:13px; opacity:0.8;">
+    A cinematic and bold style designed for Marvel movie collections.
+  </div>
+
+  <div style="font-size:12px;">
+    Author:
+    <a href="https://github.com/jeffersoncgo/CoverMaker" target="_blank">jeffersoncgo</a>
+  </div>
+
+  <div style="display:flex; gap:8px; font-size:12px;">
+    <a href="gallery/projects/marvel-collection/project.json">Setup</a>
+    <a href="gallery/projects/marvel-collection/marvel.collection.project.zip">Project</a>
+  </div>
+
+</div>
 <div style="
   width:260px;
   border:1px solid #ddd;
