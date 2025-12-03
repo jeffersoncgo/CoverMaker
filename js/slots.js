@@ -175,7 +175,10 @@ function addImageSlot() {
   slotsImages.push(null);
   const clone = template.content.cloneNode(true);
   // set a id for the slot
-  clone.querySelector('.slot').setAttribute('id', `slot-${slotsImages.length - 1}`);
+  const slotId = `slot-${slotsImages.length - 1}`;
+  clone.querySelector('.slot').setAttribute('id', slotId);
+  // add that id to the img element with img prefix
+  clone.querySelector('.preview').setAttribute('id', `img-${slotId}`);
   imageSlots.appendChild(clone);
   imageSlots.setAttribute('slotsCount', slotsImages.length)
   updateImageBaseAndDirty();

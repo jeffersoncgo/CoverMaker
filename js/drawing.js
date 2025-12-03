@@ -50,9 +50,11 @@ async function runStep(prevHash = 0, fn, ...params) {
   const cached = stepsCache[index];
 
   if (cached && cached.hash === newHash) {
-    // console.log(`Reusing cached step ${index}`);
+    // console.log(`Reusing cached step ${index}`, params);
     return cached; // reuse canvas + ctx
-  }
+  }// else {
+  //   console.log(`Running step ${index}`, fn, params);
+  // }
 
   if (typeof params != 'object' || params === null)
     params = [];
@@ -310,7 +312,7 @@ async function applyImageEffects(..._params) {
       
       // 4. Apply the effect to the clone
       // The 'await' ensures we don't start the next loop until this is totally finished
-      const result = await runStep(hash, effectDef.apply, ctx, canvas, eff.params || {});
+      const result = await runStep(hash, effectDef.apply, ctx, canvas, eff.params || {}, eff);
       // 5. Update the accumulators
       // The output of this step becomes the input for the next step
       canvas = result.canvas;
@@ -352,7 +354,7 @@ async function applyComposite(..._params) {
     const effectDef = (typeof COMPOSITE_REGISTRY !== 'undefined') ? COMPOSITE_REGISTRY[type] : undefined;
     if (!effectDef) return false;
 
-    return await runStep(hash, effectDef.apply, ctx, canvas, slotsImages, params, { srcOnly: slotsImages.map(img => fnv1a(img?.src  || '')) });
+    return await runStep(hash, effectDef.apply, ctx, canvas, slotsImages, params, { srcOnly: slotsImages.map(img => fnv1a(img?.src  || '')) }, eff);
   } catch (err) {
     console.error('Error applying composite effect:', err);
     return {};
@@ -425,43 +427,48 @@ async function mergeImageLayers(canvasList) {
 
 async function drawCompositeText(..._params) {
   try {
-    // 1. Initialize Background
-    // We expect _params[0] to be canvasSize or an object containing width/height/hash
-    let canvasSize = _params[0] || {};
+    // 1. Initialize Background / base info
+    const canvasSize = _params[0] || {};
+    const { width, height, hash: initialHash } = canvasSize;
 
-    let { width, height, hash } = canvasSize;
-    const initialHash = hash;
-
-    // 2. Loop over each text layer
     const layers = Setup.Settings.textLayers || [];
 
-    canvas = null;
-    ctx = null;
-
+    // Collection of per-layer canvases (isolated text layers)
     const imgLayers = [];
-    
+    // Optional: track hashes per layer if you want a composite hash
+    const layerHashes = [];
+
+    // 2. Process each text layer independently
     for (const layer of layers) {
       if (layer.enabled === false) continue;
 
-      // ---------------------------------------------------
-      // PHASE A: Generate the Isolated Text Layer
-      // ---------------------------------------------------
-      
-      // Step A1: Create the base text graphic (Raw text on transparent)
-      // We pass 'layer' to runStep so if layer settings change, hash changes
-      let textComp = await runStep(initialHash, createBaseTextLayer, width, height, layer.overlayText, layer.position, layer.fontStyle, layer.fillStyle);
-      const {text, x, y} = textComp.meta;
-      hash = textComp.hash;
-      // initialHash = hash;
-      canvas = textComp.canvas;
-      ctx = textComp.ctx;
-      // Step A2: Apply Text Effects to this Isolated Layer
-      // (Using the Accumulator Pattern: Clone -> Apply -> Update)
+      // ----- PHASE A: Generate the Isolated Text Layer -----
+
+      // A1: Start hash for this layer from the initialHash
+      let layerHash = initialHash;
+
+      // A2: Create the base text graphic (raw text on transparent)
+      const baseResult = await runStep(
+        layerHash,
+        createBaseTextLayer,
+        width,
+        height,
+        layer.overlayText,
+        layer.position,
+        layer.fontStyle,
+        layer.fillStyle
+      );
+
+      let { canvas, ctx, hash, meta } = baseResult;
+      const { text, x, y } = meta;
+      layerHash = hash;
+
+      // A3: Apply Text Effects to this Isolated Layer
       const textEffects = layer.effects || [];
-      
+
       for (const eff of textEffects) {
         if (!eff.enabled) continue;
-        
+
         const effectDef = TEXT_EFFECTS[eff.type];
         if (!effectDef) continue;
 
@@ -470,20 +477,45 @@ async function drawCompositeText(..._params) {
         canvas = clonedText.canvas;
         ctx = clonedText.ctx;
 
-        const res = await runStep(hash, effectDef.apply, ctx, canvas, text, x, y, eff.params || {});
-        
+        const res = await runStep(
+          layerHash,
+          effectDef.apply,
+          ctx,
+          canvas,
+          text,
+          x,
+          y,
+          eff.params || {},
+          eff
+        );
+
         canvas = res.canvas;
         ctx = res.ctx;
-        hash = res.hash;
+        layerHash = res.hash;
       }
-      // Step A3: Store the finished text layer for merging later
+
+      // A4: Store finished text layer canvas for merging later
       imgLayers.push(canvas);
+      layerHashes.push(layerHash);
     }
 
-    const merged = await runStep(hash, mergeImageLayers, imgLayers);
+    // 3. Merge all isolated text layers onto a final composite
+    // Decide how to compute the final hash.
+    // Option 1: let mergeImageLayers derive a new hash from initialHash + layerHashes
+    const merged = await runStep(
+      initialHash,
+      mergeImageLayers,
+      imgLayers,
+      layerHashes // optional extra param if mergeImageLayers accepts it
+    );
 
-    return { canvas: merged.canvas, ctx: merged.ctx, hash };
+    const finalHash = merged.hash ?? initialHash; // fallback to initialHash if merge doesn't return one
 
+    return {
+      canvas: merged.canvas,
+      ctx: merged.ctx,
+      hash: finalHash,
+    };
   } catch (err) {
     console.error('Error in drawCompositeText:', err);
     return _params[0]; // Return original state on error

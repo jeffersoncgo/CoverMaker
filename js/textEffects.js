@@ -1119,7 +1119,1604 @@ const TEXT_EFFECTS = {
       ctx.restore();
       return { canvas, ctx };
     }
-  }
+  },
+
+  glassRefraction: {
+    name: 'Glass Refraction',
+    params: [
+      { key: 'intensity', label: 'Intensity', type: 'range', min: 0, max: 20, step: 1, default: 6 },
+      { key: 'scale', label: 'Distortion Scale', type: 'range', min: 1, max: 10, step: 0.1, default: 3 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, step: 1, default: 42 }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}) => {
+      const w = canvas.width, h = canvas.height;
+      const intensity = params.intensity ?? 6;
+      const scale = params.scale ?? 3;
+      const seeded = createSeededRandom(params.seed);
+      const rnd = seeded ?? Math.random;
+
+      const t = createCanvas(w, h);
+      const c = t.getContext('2d');
+      c.drawImage(canvas, 0, 0);
+
+      const data = c.getImageData(0, 0, w, h);
+      const src = data.data;
+      const out = new Uint8ClampedArray(src.length);
+
+      const turbulence = (x, y) =>
+        Math.sin(x * 0.02 * scale + rnd() * 10) +
+        Math.cos(y * 0.02 * scale + rnd() * 10);
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const dx = Math.round(turbulence(px, py) * intensity);
+          const dy = Math.round(turbulence(py, px) * intensity);
+          const sx = clamp(px + dx, 0, w - 1);
+          const sy = clamp(py + dy, 0, h - 1);
+          const si = (sy * w + sx) * 4;
+          const di = (py * w + px) * 4;
+          out[di] = src[si]; out[di + 1] = src[si + 1]; out[di + 2] = src[si + 2]; out[di + 3] = src[si + 3];
+        }
+      }
+
+      c.putImageData(new ImageData(out, w, h), 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(t, 0, 0);
+      return { canvas, ctx };
+    }
+  },
+
+  vectorWarp: {
+    name: 'Vector Warp',
+    params: [
+      { key: 'amount', label: 'Amount', type: 'range', min: 0, max: 50, step: 1, default: 12 },
+      { key: 'direction', label: 'Direction', type: 'select', options: ['left', 'right', 'up', 'down'], default: 'right' },
+      { key: 'frequency', label: 'Frequency', type: 'range', min: 0.1, max: 10, step: 0.1, default: 3 }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}) => {
+      const w = canvas.width, h = canvas.height;
+      const amt = params.amount ?? 12;
+      const freq = params.frequency ?? 3;
+      const dir = params.direction ?? 'right';
+
+      const t = createCanvas(w, h);
+      const tc = t.getContext('2d');
+      tc.drawImage(canvas, 0, 0);
+
+      const src = tc.getImageData(0, 0, w, h);
+      const s = src.data;
+      const out = new Uint8ClampedArray(s.length);
+
+      const warp = (v) => Math.sin(v * freq * 0.03) * amt;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let sx = x, sy = y;
+
+          const val = warp(dir === 'left' || dir === 'right' ? y : x);
+
+          if (dir === 'right') sx += val;
+          if (dir === 'left') sx -= val;
+          if (dir === 'down') sy += val;
+          if (dir === 'up') sy -= val;
+
+          sx = clamp(sx | 0, 0, w - 1);
+          sy = clamp(sy | 0, 0, h - 1);
+
+          const si = (sy * w + sx) * 4;
+          const di = (y * w + x) * 4;
+
+          out[di] = s[si];
+          out[di + 1] = s[si + 1];
+          out[di + 2] = s[si + 2];
+          out[di + 3] = s[si + 3];
+        }
+      }
+
+      tc.putImageData(new ImageData(out, w, h), 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(t, 0, 0);
+      return { canvas, ctx };
+    }
+  },
+
+  reflection: {
+    name: 'Reflection',
+    params: [
+      { key: 'offset', label: 'Distance', type: 'range', min: -1500, max: 1500, step: 1, default: 0 },
+      { key: 'opacity', label: 'Start Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.5 },
+      { key: 'scale', label: 'Height Scale', type: 'range', min: 0.1, max: 1, step: 0.1, default: 0.8 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const offset = params.offset ?? 0;
+      const opacity = clamp(params.opacity ?? 0.5, 0, 1);
+      const scaleY = params.scale ?? 0.8;
+      const w = canvas.width, h = canvas.height;
+
+      const refCanvas = createCanvas(w, h);
+      const rCtx = refCanvas.getContext('2d');
+
+      rCtx.save();
+      rCtx.translate(0, h);
+      rCtx.scale(1, -scaleY);
+      rCtx.drawImage(canvas, 0, 0); // Draw original inverted
+      rCtx.restore();
+
+      rCtx.globalCompositeOperation = 'destination-in';
+      const grad = rCtx.createLinearGradient(0, h - (h * scaleY), 0, h);
+      grad.addColorStop(0, `rgba(0,0,0,${opacity})`); // Top of reflection (near text)
+      grad.addColorStop(1, 'rgba(0,0,0,0)');         // Bottom of reflection (faded)
+      rCtx.fillStyle = grad;
+      rCtx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-over'; // Draw behind existing text
+
+      ctx.drawImage(refCanvas, 0, offset);
+      ctx.restore();
+
+      return { canvas, ctx };
+    }
+  },
+
+  stereo: {
+    name: '3D Anaglyph',
+    params: [
+      { key: 'offset', label: 'Separation', type: 'range', min: 0, max: 30, step: 1, default: 6 },
+      { key: 'mode', label: 'Mode', type: 'select', options: ['Red/Cyan', 'Green/Magenta'], default: 'Red/Cyan' }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const offset = params.offset ?? 6;
+      const mode = params.mode ?? 'Red/Cyan';
+      const w = canvas.width, h = canvas.height;
+
+      const tR = createCanvas(w, h); // Left Eye
+      const tL = createCanvas(w, h); // Right Eye
+
+      const ctxR = tR.getContext('2d');
+      const ctxL = tL.getContext('2d');
+
+      ctxR.drawImage(canvas, 0, 0);
+      ctxL.drawImage(canvas, 0, 0);
+
+      // Channel Filtering function
+      const isolateChannel = (targetCtx, keepR, keepG, keepB) => {
+        targetCtx.globalCompositeOperation = 'source-in';
+        targetCtx.fillStyle = `rgb(${keepR ? 255 : 0}, ${keepG ? 255 : 0}, ${keepB ? 255 : 0})`;
+        targetCtx.fillRect(0, 0, w, h);
+      };
+
+      if (mode === 'Red/Cyan') {
+        isolateChannel(ctxR, true, false, false); // Keep Red
+        isolateChannel(ctxL, false, true, true);  // Keep Cyan (G+B)
+      } else {
+        isolateChannel(ctxR, false, true, false); // Keep Green
+        isolateChannel(ctxL, true, false, true);  // Keep Magenta (R+B)
+      }
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Compose with screen blend mode for additive light
+      ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(tL, -offset, 0); // Shift Left Channel
+      ctx.drawImage(tR, offset, 0);  // Shift Right Channel
+
+      // Restore standard composite
+      ctx.globalCompositeOperation = 'source-over';
+
+      return { canvas, ctx };
+    }
+  },
+
+  stitch: {
+    name: 'Embroidery',
+    params: [
+      { key: 'size', label: 'Stitch Size', type: 'range', min: 3, max: 12, step: 0.5, default: 4 }, // Min 3 to be safe
+      { key: 'density', label: 'Density', type: 'range', min: 1, max: 4, step: 1, default: 2 },
+      { key: 'color', label: 'Thread Color', type: 'color', default: '#ffffff' },
+      { key: 'shadow', label: 'Shadow', type: 'range', min: 0, max: 1, step: 0.1, default: 0.5 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      // Prevent 0 or very small size causing infinite loops or memory crashes
+      const size = Math.max(2.5, params.size ?? 4);
+      const density = params.density ?? 2;
+      const color = params.color ?? '#ffffff';
+      const shadowAlpha = params.shadow ?? 0.5;
+
+      const w = canvas.width, h = canvas.height;
+
+      // Get Data for hit testing
+      // We need to know where the text IS to draw stitches there.
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+
+      // Robust Hit Test Function
+      const isSolid = (tx, ty) => {
+        // FLOORS are critical here. Arrays can't take float indexes.
+        const xx = Math.floor(tx);
+        const yy = Math.floor(ty);
+
+        // Bounds check
+        if (xx < 0 || yy < 0 || xx >= w || yy >= h) return false;
+
+        // Alpha check (index = (y * w + x) * 4 + 3)
+        const idx = (yy * w + xx) * 4 + 3;
+        return srcData[idx] > 50; // Threshold
+      };
+
+      const stitchCanvas = createCanvas(w, h);
+      const sCtx = stitchCanvas.getContext('2d');
+
+      // Style setup
+      sCtx.strokeStyle = color;
+      sCtx.lineWidth = 1.5;
+      sCtx.lineCap = 'round';
+      sCtx.lineJoin = 'round';
+
+      // Scan the grid
+      for (let py = 0; py < h; py += size) {
+        for (let px = 0; px < w; px += size) {
+
+          // Sample the center of this grid block
+          const cx = px + size / 2;
+          const cy = py + size / 2;
+
+          if (isSolid(cx, cy)) {
+            sCtx.beginPath();
+
+            // Variance creates the "messy" thread look
+            const pad = size * 0.2;
+
+            // Cross Stitch (X shape)
+            // We repeat lines to simulate thread thickness/density
+            for (let k = 0; k < density; k++) {
+              // Jitter allows multiple threads to be seen
+              const j = (k * 0.5);
+
+              // Line 1: Top-Left to Bottom-Right
+              sCtx.moveTo(px + pad + j, py + pad);
+              sCtx.lineTo(px + size - pad + j, py + size - pad);
+
+              // Line 2: Top-Right to Bottom-Left
+              sCtx.moveTo(px + size - pad - j, py + pad);
+              sCtx.lineTo(px + pad - j, py + size - pad);
+            }
+            sCtx.stroke();
+          }
+        }
+      }
+
+      // Add Shadow for depth (makes it pop off the bg)
+      if (shadowAlpha > 0) {
+        sCtx.globalCompositeOperation = 'source-atop';
+        sCtx.shadowColor = 'black';
+        sCtx.shadowBlur = 2;
+        sCtx.shadowOffsetX = 1;
+        sCtx.shadowOffsetY = 1;
+        sCtx.stroke(); // Re-stroke to apply shadow
+        sCtx.globalCompositeOperation = 'source-over';
+      }
+
+      // Replace original text with the stitches
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(stitchCanvas, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  pattern: {
+    name: 'Pattern Fill',
+    params: [
+      { key: 'type', label: 'Style', type: 'select', options: ['Dots', 'Stripes', 'Checkers', 'Grid'], default: 'Stripes' },
+      { key: 'size', label: 'Scale', type: 'range', min: 2, max: 50, step: 1, default: 6 },
+      { key: 'color', label: 'Pattern Color', type: 'color', default: '#000000' },
+      { key: 'bg', label: 'Keep Base', type: 'select', options: ['Yes', 'No'], default: 'Yes' } // If no, transparent holes
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const type = params.type ?? 'Stripes';
+      const size = params.size ?? 6;
+      const color = params.color ?? '#000000';
+      const keepBase = params.bg === 'Yes';
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Generate Pattern Tile
+      const pCanvas = createCanvas(size * 2, size * 2);
+      const pCtx = pCanvas.getContext('2d');
+
+      pCtx.fillStyle = color;
+
+      if (type === 'Dots') {
+        pCtx.beginPath();
+        pCtx.arc(size, size, size * 0.4, 0, Math.PI * 2);
+        pCtx.fill();
+      } else if (type === 'Stripes') {
+        pCtx.beginPath();
+        pCtx.moveTo(0, 0); pCtx.lineTo(size * 2, size * 2); // Diagonal
+        pCtx.lineWidth = size * 0.5;
+        pCtx.strokeStyle = color;
+        pCtx.stroke();
+      } else if (type === 'Checkers') {
+        pCtx.fillRect(0, 0, size, size);
+        pCtx.fillRect(size, size, size, size);
+      } else if (type === 'Grid') {
+        pCtx.strokeStyle = color;
+        pCtx.lineWidth = Math.max(1, size * 0.1);
+        pCtx.strokeRect(0, 0, size * 2, size * 2);
+      }
+
+      const pattern = ctx.createPattern(pCanvas, 'repeat');
+
+      // 2. Apply Pattern
+      const temp = createCanvas(w, h);
+      const tCtx = temp.getContext('2d');
+
+      // If we keep base, we draw the original text first
+      if (keepBase) {
+        tCtx.drawImage(canvas, 0, 0);
+        tCtx.globalCompositeOperation = 'source-atop'; // Draw pattern ONLY on top of text pixels
+      } else {
+        // If not keeping base, we use the text as a mask for the pattern
+        tCtx.drawImage(canvas, 0, 0);
+        tCtx.globalCompositeOperation = 'source-in';
+      }
+
+      tCtx.fillStyle = pattern;
+      tCtx.fillRect(0, 0, w, h);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(temp, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  crystallize: {
+    name: 'Crystallize',
+    params: [
+      { key: 'size', label: 'Shard Size', type: 'range', min: 5, max: 100, step: 1, default: 20 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, default: 1 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const size = params.size ?? 20;
+      const w = canvas.width, h = canvas.height;
+
+      const seeded = createSeededRandom(params.seed);
+      const rnd = seeded ? seeded : Math.random;
+
+      // 1. Generate random points (Voronoi centers)
+      const count = Math.floor((w * h) / (size * size)) * 2;
+      const points = [];
+      for (let i = 0; i < count; i++) {
+        points.push({ x: rnd() * w, y: rnd() * h });
+      }
+
+      const srcData = ctx.getImageData(0, 0, w, h);
+      const src = new Uint32Array(srcData.data.buffer);
+      const outData = ctx.createImageData(w, h);
+      const out = new Uint32Array(outData.data.buffer);
+
+      // 2. Iterate pixels and find nearest point
+      // Optimization: We scan in blocks to avoid checking ALL points for ALL pixels (slow)
+      // For this simplified version, we'll check against a smaller subset or use a simple grid jitter
+
+      // Faster approach: Block-based Jitter (Mosaic)
+      for (let py = 0; py < h; py += size / 2) {
+        for (let px = 0; px < w; px += size / 2) {
+
+          // Random offset for this block
+          const offX = (rnd() - 0.5) * size;
+          const offY = (rnd() - 0.5) * size;
+
+          // Center of the "shard"
+          const cx = Math.floor(px + size / 4 + offX);
+          const cy = Math.floor(py + size / 4 + offY);
+
+          // Ensure valid sample
+          const safeCX = clamp(cx, 0, w - 1);
+          const safeCY = clamp(cy, 0, h - 1);
+
+          const colorVal = src[safeCY * w + safeCX];
+
+          // Fill a polygon-ish area (simulated by overlapping rects for speed)
+          // or simple rects. For "Crystal", triangles are better but complex to rasterize here.
+          // Let's stick to Voronoi approximation via nearest neighbor on a grid
+
+          // Draw this color into the output block
+          const bSize = Math.ceil(size);
+          for (let by = 0; by < bSize; by++) {
+            for (let bx = 0; bx < bSize; bx++) {
+              const drawX = Math.floor(px + bx);
+              const drawY = Math.floor(py + by);
+              if (drawX < w && drawY < h) {
+                // A simple distance check to make it look jagged/polygonal
+                if (Math.random() > 0.3) { // Noise to break boxes
+                  out[drawY * w + drawX] = colorVal;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Re-apply original alpha mask to clean up messy edges
+      // This ensures the crystal effect doesn't spill outside the text shape too much
+      // (Optional: remove this if you want an exploding look)
+      for (let i = 0; i < src.length; i++) {
+        if ((src[i] & 0xFF000000) === 0) out[i] = 0; // If original was transparent, keep transparent
+      }
+
+      outData.data.set(new Uint8ClampedArray(out.buffer));
+      ctx.putImageData(outData, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  mosaic: {
+    name: 'Mosaic',
+    params: [
+      { key: 'tileSize', label: 'Tile Size', type: 'range', min: 2, max: 64, step: 1, default: 16 },
+      { key: 'randomness', label: 'Randomness', type: 'range', min: 0, max: 1, step: 0.01, default: 0.3 },
+      { key: 'colorVariation', label: 'Color Variation', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const tileSize = Math.max(2, params.tileSize ?? 16);
+      const randomness = params.randomness ?? 0.3;
+      const colorVariation = params.colorVariation ?? 0.2;
+      const w = canvas.width, h = canvas.height;
+
+      const mosaicCanvas = createCanvas(w, h);
+      const mCtx = mosaicCanvas.getContext('2d');
+
+      // Get average colors for each tile
+      const imgData = ctx.getImageData(0, 0, w, h);
+
+      for (let ty = 0; ty < h; ty += tileSize) {
+        for (let tx = 0; tx < w; tx += tileSize) {
+          let r = 0, g = 0, b = 0, a = 0, count = 0;
+
+          // Sample tile area
+          for (let y = ty; y < Math.min(ty + tileSize, h); y++) {
+            for (let x = tx; x < Math.min(tx + tileSize, w); x++) {
+              const idx = (y * w + x) * 4;
+              if (imgData.data[idx + 3] > 0) {
+                r += imgData.data[idx];
+                g += imgData.data[idx + 1];
+                b += imgData.data[idx + 2];
+                a += imgData.data[idx + 3];
+                count++;
+              }
+            }
+          }
+
+          if (count > 0) {
+            r = Math.round(r / count);
+            g = Math.round(g / count);
+            b = Math.round(b / count);
+            a = Math.round(a / count);
+
+            // Add variation
+            if (colorVariation > 0) {
+              r = clamp(r + (Math.random() - 0.5) * 255 * colorVariation, 0, 255);
+              g = clamp(g + (Math.random() - 0.5) * 255 * colorVariation, 0, 255);
+              b = clamp(b + (Math.random() - 0.5) * 255 * colorVariation, 0, 255);
+            }
+
+            // Random tile offset
+            const offsetX = Math.random() * randomness * tileSize - (randomness * tileSize / 2);
+            const offsetY = Math.random() * randomness * tileSize - (randomness * tileSize / 2);
+
+            // Draw mosaic tile
+            mCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+            mCtx.fillRect(
+              tx + offsetX,
+              ty + offsetY,
+              tileSize * (0.8 + Math.random() * 0.4),
+              tileSize * (0.8 + Math.random() * 0.4)
+            );
+          }
+        }
+      }
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(mosaicCanvas, 0, 0);
+      return { canvas, ctx };
+    }
+  },
+
+  arch: {
+    name: 'Arch',
+    params: [
+      { key: 'curve', label: 'Curve Amount', type: 'range', min: -1920, max: 1920, step: 1, default: 50 },
+      { key: 'offsetY', label: 'Vertical Offset', type: 'range', min: -100, max: 100, step: 1, default: 0 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const curve = params.curve ?? 50;
+      const offsetY = params.offsetY ?? 0;
+      const w = canvas.width, h = canvas.height;
+
+      // --- 1. Detect Text Bounding Box ---
+      // We need to know where the text actually STARTS and ENDS to curve it properly.
+      const data = ctx.getImageData(0, 0, w, h).data;
+      let minX = w, maxX = 0;
+      let found = false;
+
+      // Scan for horizontal bounds (Optimized stride)
+      for (let y = 0; y < h; y += 4) {
+        for (let x = 0; x < w; x += 4) {
+          const alpha = data[(y * w + x) * 4 + 3];
+          if (alpha > 0) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            found = true;
+          }
+        }
+      }
+
+      // If canvas is empty, do nothing
+      if (!found) return { canvas, ctx };
+
+      // Add a little padding to the bounds so the curve doesn't cut off hard
+      const textWidth = (maxX - minX);
+      const centerX = minX + (textWidth / 2);
+
+      // --- 2. Apply Arch ---
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+
+      // We slice the ORIGINAL canvas (0 to w), but we calculate the math 
+      // relative to the TEXT bounds (centerX).
+      for (let ix = 0; ix < w; ix++) {
+
+        // Normalized X based on TEXT position (-1 to 1 range within the text)
+        // If ix is outside the text, val will be > 1 or < -1, which continues the curve naturally
+        const val = (ix - centerX) / (textWidth / 2);
+
+        // Parabolic Curve: y = (1 - x^2) * amount
+        // Peak is at x=0 (center of text)
+        const shift = -((1 - (val * val)) * curve) + offsetY;
+
+        // Draw vertical slice
+        // Source: tempCanvas, x=ix, y=0, w=1, h=h
+        // Dest:   ctx,        x=ix, y=shift
+        ctx.drawImage(tempCanvas, ix, 0, 1, h, ix, shift, 1, h);
+      }
+
+      return { canvas, ctx };
+    }
+  },
+
+
+
+  box: {
+    name: 'Box',
+    params: [
+      { key: 'color', label: 'Box Color', type: 'color', default: '#ec1d24' }, // Classic Marvel Red
+      { key: 'padding', label: 'Size (Padding)', type: 'range', min: 0, max: 100, step: 1, default: 15 },
+      { key: 'radius', label: 'Roundness', type: 'range', min: 0, max: 50, step: 1, default: 0 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const color = params.color ?? '#ec1d24';
+      const padding = params.padding ?? 15;
+      const radius = params.radius ?? 0;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Scan for Text Bounds (Auto-size the box to fit content)
+      // We reuse the bounding box logic to ensure the square fits the text perfectly
+      const data = ctx.getImageData(0, 0, w, h).data;
+      let minX = w, maxX = 0, minY = h, maxY = 0;
+      let found = false;
+
+      for (let py = 0; py < h; py += 4) {
+        for (let px = 0; px < w; px += 4) {
+          const alpha = data[(py * w + px) * 4 + 3];
+          if (alpha > 0) {
+            if (px < minX) minX = px;
+            if (px > maxX) maxX = px;
+            if (py < minY) minY = py;
+            if (py > maxY) maxY = py;
+            found = true;
+          }
+        }
+      }
+
+      // If empty, just return
+      if (!found) return { canvas, ctx };
+
+      // 2. Calculate Box Dimensions
+      const boxX = minX - padding;
+      const boxY = minY - padding;
+      const boxW = (maxX - minX) + (padding * 2);
+      const boxH = (maxY - minY) + (padding * 2);
+
+      // 3. Draw the Box
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+
+      tCtx.fillStyle = color;
+
+      if (tCtx.roundRect) {
+        tCtx.beginPath();
+        tCtx.roundRect(boxX, boxY, boxW, boxH, radius);
+        tCtx.fill();
+      } else {
+        // Fallback for browsers without roundRect
+        tCtx.fillRect(boxX, boxY, boxW, boxH);
+      }
+
+      // 4. Draw Text on Top
+      tCtx.drawImage(canvas, 0, 0);
+
+      // 5. Output
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(tempCanvas, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  extrude: {
+    name: '3D Extrude',
+    params: [
+      { key: 'depth', label: 'Depth', type: 'range', min: 0, max: 50, step: 1, default: 10 },
+      { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 360, step: 1, default: 45 },
+      { key: 'color', label: 'Side Color', type: 'color', default: '#555555' },
+      { key: 'shading', label: 'Darken Depth', type: 'range', min: 0, max: 1, step: 0.1, default: 0.5 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const depth = params.depth ?? 10;
+      const angle = (params.angle ?? 45) * (Math.PI / 180);
+      const color = params.color ?? '#555555';
+      const shading = params.shading ?? 0.5;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Create the Extrusion Layer
+      const extCanvas = createCanvas(w, h);
+      const eCtx = extCanvas.getContext('2d');
+
+      // 2. Prepare the "Side" color (silhouette)
+      const silCanvas = createCanvas(w, h);
+      const sCtx = silCanvas.getContext('2d');
+      sCtx.drawImage(canvas, 0, 0);
+      sCtx.globalCompositeOperation = 'source-in';
+      sCtx.fillStyle = color;
+      sCtx.fillRect(0, 0, w, h);
+
+      // 3. Draw layers back-to-front
+      // We draw from depth -> 0 so the face ends up on top
+      // Optimization: Don't draw every single pixel if depth is huge. Step if needed.
+      const step = 1;
+
+      for (let i = depth; i > 0; i -= step) {
+        const dx = Math.cos(angle) * i;
+        const dy = Math.sin(angle) * i;
+
+        // Calculate shading: Further back = darker?
+        // Or just solid color. Let's do solid color but allow global shading.
+        eCtx.globalAlpha = 1;
+
+        // Optional: darken the very bottom layers more for "fake ambient occlusion"
+        if (shading > 0) {
+          // Simple linear darken based on depth
+          const darkFactor = 1 - (i / depth) * shading;
+          eCtx.filter = `brightness(${darkFactor * 100}%)`;
+        }
+
+        eCtx.drawImage(silCanvas, dx, dy);
+        eCtx.filter = 'none';
+      }
+
+      // 4. Draw the Face (Original Text) on top
+      // The extrusion is "behind" the text naturally if we draw it at 0,0
+      // But we need to combine them.
+
+      // Clear main ctx
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw Extrusion
+      ctx.drawImage(extCanvas, 0, 0);
+
+      // Draw Face
+      // Note: We don't move the face. The extrusion grows "out" (or in).
+      // If you want the face to move "up", you'd shift this, but usually 
+      // text stays anchored and 3d goes back.
+      ctx.drawImage(canvas, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  slice: {
+    name: 'Slice / Cut',
+    params: [
+      { key: 'angle', label: 'Cut Angle', type: 'range', min: -90, max: 90, step: 1, default: -20 },
+      { key: 'offset', label: 'Separation', type: 'range', min: 0, max: 50, step: 1, default: 15 },
+      { key: 'yPos', label: 'Cut Position', type: 'range', min: 0, max: 100, step: 1, default: 50 } // Percent height
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const angleDeg = params.angle ?? -20;
+      const offset = params.offset ?? 15;
+      const yPerc = (params.yPos ?? 50) / 100;
+
+      const w = canvas.width, h = canvas.height;
+      const cutY = h * yPerc;
+
+      // 1. Create Top Half
+      const topC = createCanvas(w, h);
+      const tCtx = topC.getContext('2d');
+
+      // Clip Top Region
+      tCtx.save();
+      tCtx.beginPath();
+      // Draw a giant rectangle that represents the "Top" relative to the angled line
+      // Math: Rotate context around the cut point, draw rect, restore.
+      tCtx.translate(w / 2, cutY);
+      tCtx.rotate(angleDeg * Math.PI / 180);
+      tCtx.rect(-w, -h, w * 3, h); // Top half rect
+      tCtx.clip();
+
+      // Reset transform to draw text upright inside the clipped zone
+      tCtx.rotate(-angleDeg * Math.PI / 180);
+      tCtx.translate(-w / 2, -cutY);
+      tCtx.drawImage(canvas, 0, 0);
+      tCtx.restore();
+
+      // 2. Create Bottom Half
+      const botC = createCanvas(w, h);
+      const bCtx = botC.getContext('2d');
+
+      // Clip Bottom Region
+      bCtx.save();
+      bCtx.beginPath();
+      bCtx.translate(w / 2, cutY);
+      bCtx.rotate(angleDeg * Math.PI / 180);
+      bCtx.rect(-w, 0, w * 3, h); // Bottom half rect
+      bCtx.clip();
+
+      // Reset transform
+      bCtx.rotate(-angleDeg * Math.PI / 180);
+      bCtx.translate(-w / 2, -cutY);
+      bCtx.drawImage(canvas, 0, 0);
+      bCtx.restore();
+
+      // 3. Composite with shift
+      // Slide top along the angle? Or just horizontal/vertical shift?
+      // A clean "Cut" usually slides the top piece UP/LEFT or bottom DOWN/RIGHT.
+      // Let's slide along the cut angle for realism.
+      const rad = angleDeg * Math.PI / 180;
+      const dx = Math.cos(rad) * offset;
+      const dy = Math.sin(rad) * offset;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Move Top Left/Up
+      ctx.drawImage(topC, -dx / 2, -dy / 2);
+
+      // Move Bottom Right/Down
+      ctx.drawImage(botC, dx / 2, dy / 2);
+
+      return { canvas, ctx };
+    }
+  },
+
+  perspective: {
+    name: 'Perspective',
+    params: [
+      { key: 'depth', label: 'Tilt Strength', type: 'range', min: -1, max: 1, step: 0.05, default: 0.5 },
+      { key: 'direction', label: 'Side', type: 'select', options: ['Horizontal', 'Vertical'], default: 'Horizontal' }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const depth = params.depth ?? 0.5;
+      const isVert = params.direction === 'Vertical';
+      const w = canvas.width, h = canvas.height;
+
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+
+      if (!isVert) {
+        // HORIZONTAL: Left side big, Right side small (or vice versa)
+        const centerY = h / 2;
+
+        for (let ix = 0; ix < w; ix++) {
+          // Normalize 0 to 1
+          const perc = ix / w;
+
+          // Calculate scale factor for this column
+          // If depth > 0: Left=1, Right=1-depth
+          // If depth < 0: Left=1+depth, Right=1
+          let scale = 1;
+          if (depth > 0) scale = 1 - (perc * depth);
+          else scale = 1 - ((1 - perc) * Math.abs(depth));
+
+          const destH = h * scale;
+          const destY = centerY - (destH / 2);
+
+          // Draw slice
+          ctx.drawImage(tempCanvas, ix, 0, 1, h, ix, destY, 1, destH);
+        }
+      } else {
+        // VERTICAL: Top big, Bottom small
+        const centerX = w / 2;
+
+        for (let iy = 0; iy < h; iy++) {
+          const perc = iy / h;
+          let scale = 1;
+          if (depth > 0) scale = 1 - (perc * depth);
+          else scale = 1 - ((1 - perc) * Math.abs(depth));
+
+          const destW = w * scale;
+          const destX = centerX - (destW / 2);
+
+          ctx.drawImage(tempCanvas, 0, iy, w, 1, destX, iy, destW, 1);
+        }
+      }
+      return { canvas, ctx };
+    }
+  },
+
+  innerShadow: {
+    name: 'Inner Shadow',
+    params: [
+      { key: 'color', label: 'Color', type: 'color', default: '#000000' },
+      { key: 'blur', label: 'Blur', type: 'range', min: 0, max: 20, step: 1, default: 5 },
+      { key: 'offsetX', label: 'Offset X', type: 'range', min: -20, max: 20, step: 1, default: 3 },
+      { key: 'offsetY', label: 'Offset Y', type: 'range', min: -20, max: 20, step: 1, default: 3 },
+      { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.1, default: 0.8 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const color = params.color ?? '#000000';
+      const blur = params.blur ?? 5;
+      const offX = params.offsetX ?? 3;
+      const offY = params.offsetY ?? 3;
+      const opacity = params.opacity ?? 0.8;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Draw Text Normally first
+      // We need the base text visible.
+      // (If we were doing "Cutout" from a solid block, we wouldn't do this, 
+      // but "Inner Shadow" implies the text object has a shadow inside it).
+
+      // Actually, since we are MODIFYING the existing canvas, the text is already there.
+      // We just need to overlay the shadow.
+
+      // 2. Create the Shadow
+      // Logic: 
+      // A. Create an inverted mask of the text (Hole in a solid wall)
+      // B. Drop a shadow from that wall onto a new layer
+      // C. Mask that shadow layer so it ONLY appears where the original text was.
+
+      const shadowCanvas = createCanvas(w, h);
+      const sCtx = shadowCanvas.getContext('2d');
+
+      // Draw Text (as the "caster")
+      sCtx.drawImage(canvas, 0, 0);
+
+      // Composite: Source-Alpha? 
+      // Easier way for inner shadow:
+      // 1. Fill entire canvas with color.
+      // 2. Cut out the text (destination-out).
+      // 3. Draw shadow of the *result* (the negative space) offset inwards?
+
+      // Let's use the standard "Inverted Shadow" trick:
+
+      sCtx.globalCompositeOperation = 'source-over';
+      sCtx.drawImage(canvas, 0, 0);
+
+      // Turn the text opaque color (for the shadow caster)
+      sCtx.globalCompositeOperation = 'source-in';
+      sCtx.fillStyle = color;
+      sCtx.fillRect(0, 0, w, h);
+
+      // Now we have a solid colored text on sCtx.
+
+      // 3. The Composition
+      ctx.save();
+
+      // We want to draw on TOP of the existing text
+      // But clipped to the text.
+      ctx.globalCompositeOperation = 'source-atop';
+
+      // Setup Shadow
+      ctx.shadowColor = color;
+      ctx.shadowBlur = blur;
+      ctx.shadowOffsetX = offX;
+      ctx.shadowOffsetY = offY;
+      ctx.globalAlpha = opacity;
+
+      // The Trick:
+      // We draw the text *outside* the canvas, but with a shadow that falls *inside*.
+      // But to do that, we need an inverted shape.
+
+      // Alternative (Simpler & Faster for Canvas):
+      // Just draw the inverted mask with a shadow.
+
+      // 1. Mask to text
+      // (Already done via source-atop on the main ctx)
+
+      // 2. Draw an object that covers everything EXCEPT the text, 
+      //    and cast a shadow from it.
+      const invCanvas = createCanvas(w, h);
+      const iCtx = invCanvas.getContext('2d');
+
+      // Fill all
+      iCtx.fillStyle = '#000000';
+      iCtx.fillRect(0, 0, w, h);
+
+      // Remove text
+      iCtx.globalCompositeOperation = 'destination-out';
+      iCtx.drawImage(canvas, 0, 0);
+
+      // Now invCanvas is a solid block with a hole in the shape of the text.
+
+      // Draw this block with a shadow. The shadow will fall INTO the hole (the text).
+      ctx.drawImage(invCanvas, 0, 0);
+
+      ctx.restore();
+
+      return { canvas, ctx };
+    }
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // ===========================================
+  // KINETIC & MATERIAL (NEW)
+  // ===========================================
+
+  motionBlur: {
+    name: 'Motion Blur',
+    params: [
+      { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 360, step: 1, default: 0 },
+      { key: 'distance', label: 'Speed', type: 'range', min: 0, max: 100, step: 1, default: 30 },
+      { key: 'opacity', label: 'Trail Opacity', type: 'range', min: 0, max: 1, step: 0.1, default: 0.5 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const angle = (params.angle ?? 0) * (Math.PI / 180);
+      const dist = params.distance ?? 30;
+      const opacity = params.opacity ?? 0.5;
+      const w = canvas.width, h = canvas.height;
+
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+      
+      // Optimization: Instead of drawing 100 copies for a 100px blur (slow),
+      // we draw fewer copies with lower opacity to simulate the streak.
+      const steps = Math.min(dist, 20); // Cap steps for performance
+      const stepSize = dist / steps;
+
+      // 1. Draw the trails
+      tCtx.globalAlpha = opacity / (steps / 2); // Divide opacity so they don't stack to white immediately
+      
+      for(let i = 1; i <= steps; i++) {
+        const d = i * stepSize;
+        const dx = Math.cos(angle) * d;
+        const dy = Math.sin(angle) * d;
+        
+        // Draw centered? No, motion blur usually trails BEHIND.
+        // If angle is 0 (right), we draw trails to the left?
+        // Let's assume angle is the DIRECTION of movement. Trail goes opposite.
+        tCtx.drawImage(canvas, -dx, -dy);
+      }
+
+      // 2. Draw original on top
+      tCtx.globalAlpha = 1;
+      tCtx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(tempCanvas, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  chrome: {
+    name: 'Chrome / Metallic',
+    params: [
+      { key: 'sky', label: 'Sky Color', type: 'color', default: '#33ccff' },
+      { key: 'ground', label: 'Ground Color', type: 'color', default: '#333333' },
+      { key: 'horizon', label: 'Horizon Y', type: 'range', min: 0, max: 100, step: 1, default: 50 },
+      { key: 'edge', label: 'Edge Shine', type: 'range', min: 0, max: 10, step: 0.5, default: 2 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const sky = params.sky ?? '#33ccff';
+      const ground = params.ground ?? '#333333';
+      const horizonPerc = (params.horizon ?? 50) / 100;
+      const edgeWidth = params.edge ?? 2;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Create the Metallic Gradient
+      // Chrome is distinct because it has a sharp cut in the middle (Horizon)
+      const gradCanvas = createCanvas(w, h);
+      const gCtx = gradCanvas.getContext('2d');
+      
+      // We need bounds to position gradient correctly on the text
+      // (Simplified: use canvas height)
+      const grad = gCtx.createLinearGradient(0, 0, 0, h);
+      
+      // Sky stops
+      grad.addColorStop(0, '#ffffff'); // Glint at top
+      grad.addColorStop(Math.max(0, horizonPerc - 0.05), sky);
+      grad.addColorStop(horizonPerc, '#ffffff'); // Hard Horizon Line (White Flash)
+      grad.addColorStop(horizonPerc, ground); // Hard switch to ground
+      grad.addColorStop(1, '#000000'); // Bottom shadow
+      
+      gCtx.fillStyle = grad;
+      gCtx.fillRect(0,0,w,h);
+      
+      // 2. Composite Gradient INTO text
+      gCtx.globalCompositeOperation = 'destination-in';
+      gCtx.drawImage(canvas, 0, 0);
+
+      // 3. Add a white border (optional, enhances the metal look)
+      if (edgeWidth > 0) {
+        gCtx.globalCompositeOperation = 'source-over';
+        gCtx.shadowColor = 'white';
+        gCtx.shadowBlur = edgeWidth;
+        gCtx.shadowOffsetX = 0;
+        gCtx.shadowOffsetY = 0;
+        // Draw text again to trigger shadow, but we need to mask it strictly to edges?
+        // Simpler: Just stroke it
+        // Since we don't have the text path, we use the shadow-trick on the silhouette
+        const borderC = createCanvas(w, h);
+        const bCtx = borderC.getContext('2d');
+        bCtx.drawImage(canvas, 0, 0);
+        bCtx.globalCompositeOperation = 'source-in';
+        bCtx.fillStyle = 'white';
+        bCtx.fillRect(0,0,w,h); // Solid white text
+        
+        // Draw the white text behind the gradient text with a slight blur
+        ctx.clearRect(0, 0, w, h);
+        ctx.globalAlpha = 0.8;
+        ctx.drawImage(borderC, -1, -1); // Highlight Top-Left
+        ctx.drawImage(borderC, 1, 1);   // Highlight Bot-Right
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.clearRect(0, 0, w, h);
+      }
+
+      // Draw Chrome
+      ctx.drawImage(gradCanvas, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  echo: {
+    name: 'Echo / Trail',
+    params: [
+      { key: 'count', label: 'Copies', type: 'range', min: 1, max: 10, step: 1, default: 3 },
+      { key: 'offset', label: 'Spacing', type: 'range', min: 0, max: 50, step: 1, default: 20 },
+      { key: 'fade', label: 'Fade Out', type: 'range', min: 0, max: 1, step: 0.1, default: 0.2 },
+      { key: 'color', label: 'Tint', type: 'color', default: '' } // Optional tint
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const count = params.count ?? 3;
+      const offset = params.offset ?? 20;
+      const fade = params.fade ?? 0.2;
+      const tint = params.color; // If empty string, use original colors
+      const w = canvas.width, h = canvas.height;
+
+      const resultCanvas = createCanvas(w, h);
+      const rCtx = resultCanvas.getContext('2d');
+
+      // 1. Prepare a tinted version if needed
+      let srcCanvas = canvas;
+      if (tint) {
+        const tC = createCanvas(w, h);
+        const tcCtx = tC.getContext('2d');
+        tcCtx.drawImage(canvas, 0, 0);
+        tcCtx.globalCompositeOperation = 'source-in';
+        tcCtx.fillStyle = tint;
+        tcCtx.fillRect(0, 0, w, h);
+        srcCanvas = tC;
+      }
+
+      // 2. Draw Echoes (Back to Front)
+      // We draw the furthest copy first
+      for (let i = count; i > 0; i--) {
+        // Calculate transparency
+        // If fade is 0.2, each copy is 20% less visible? 
+        // Or simple linear: 
+        const alpha = Math.max(0, 1 - (i * fade));
+        
+        if (alpha > 0) {
+          rCtx.save();
+          rCtx.globalAlpha = alpha;
+          // Shift: usually echo goes to the right/down
+          rCtx.drawImage(srcCanvas, i * offset, 0); 
+          rCtx.restore();
+        }
+      }
+
+      // 3. Draw Main Text (Original, untinted)
+      rCtx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(resultCanvas, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  bulge: {
+    name: 'Bulge / Pinch',
+    params: [
+      { key: 'strength', label: 'Strength', type: 'range', min: -5, max: 5, step: 0.1, default: 0.5 },
+      { key: 'radius', label: 'Radius', type: 'range', min: 10, max: 1000, step: 10, default: 200 },
+      { key: 'offsetX', label: 'Center X', type: 'range', min: -500, max: 500, step: 10, default: 0 }, // New
+      { key: 'offsetY', label: 'Center Y', type: 'range', min: -500, max: 500, step: 10, default: 0 }  // New
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const strength = params.strength ?? 0.5;
+      const radius = params.radius ?? 200;
+      const offX = params.offsetX ?? 0;
+      const offY = params.offsetY ?? 0;
+      
+      const w = canvas.width, h = canvas.height;
+
+      const srcData = ctx.getImageData(0, 0, w, h);
+      const src = new Uint32Array(srcData.data.buffer);
+      const outData = ctx.createImageData(w, h);
+      const out = new Uint32Array(outData.data.buffer);
+
+      // Calculate Center based on canvas size + user offset
+      const cx = (w / 2) + offX;
+      const cy = (h / 2) + offY;
+      const radiusSq = radius * radius;
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          
+          const dx = px - cx;
+          const dy = py - cy;
+          const distSq = dx*dx + dy*dy;
+
+          // Only process inside the radius circle
+          if (distSq < radiusSq) {
+            const dist = Math.sqrt(distSq);
+            const percent = dist / radius;
+            
+            // Calculate angle
+            const angle = Math.atan2(dy, dx);
+            
+            // Calculate source distance
+            let srcDist = dist;
+            if (strength > 0) {
+               // Bulge: source is closer to center (magnify)
+               srcDist = dist * (1 - strength * (1 - percent)); 
+            } else {
+               // Pinch: source is further out (shrink)
+               srcDist = dist * (1 + Math.abs(strength) * (1 - percent));
+            }
+
+            const sx = cx + Math.cos(angle) * srcDist;
+            const sy = cy + Math.sin(angle) * srcDist;
+
+            const ix = Math.floor(sx);
+            const iy = Math.floor(sy);
+
+            // Boundary checks to avoid reading outside array
+            if (ix >= 0 && ix < w && iy >= 0 && iy < h) {
+               out[py*w + px] = src[iy*w + ix];
+            } else {
+               // If source pixel is outside canvas, leave empty (transparent)
+               // or repeat edge? Transparent is cleaner.
+            }
+
+          } else {
+            // Outside radius, copy original pixel as is
+            out[py*w + px] = src[py*w + px];
+          }
+        }
+      }
+      
+      outData.data.set(new Uint8ClampedArray(out.buffer));
+      ctx.putImageData(outData, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  ring: {
+    name: 'Ring / Circle',
+    params: [
+      { key: 'radius', label: 'Radius', type: 'range', min: 50, max: 500, step: 10, default: 200 },
+      { key: 'angle', label: 'Arc Angle', type: 'range', min: 90, max: 360, step: 10, default: 360 },
+      { key: 'rotate', label: 'Rotation', type: 'range', min: 0, max: 360, step: 1, default: 0 },
+      { key: 'inward', label: 'Facing', type: 'select', options: ['Inward', 'Outward'], default: 'Inward' }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const radius = params.radius ?? 200;
+      const arc = (params.angle ?? 360) * (Math.PI / 180);
+      const startRot = (params.rotate ?? 0) * (Math.PI / 180);
+      const inward = params.inward === 'Inward';
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Detect Text Width to map it to the circle circumference
+      // We need to know how "long" the text strip is to wrap it correctly.
+      // (Simplified: We assume the canvas width contains the relevant text).
+      // Ideally, you'd use the text metrics, but here we scan bounds.
+      const data = ctx.getImageData(0,0,w,h).data;
+      let minX = w, maxX = 0;
+      for(let y=0; y<h; y+=4) {
+        for(let x=0; x<w; x+=4) {
+          if(data[(y*w+x)*4+3]>0) {
+            if(x<minX) minX=x;
+            if(x>maxX) maxX=x;
+          }
+        }
+      }
+      if (minX > maxX) return { canvas, ctx }; // Empty
+
+      const textWidth = maxX - minX;
+      const textCenterX = minX + (textWidth/2);
+
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 2. Polar Mapping
+      // We iterate over the DESTINATION circle pixels and find which SOURCE pixel maps there.
+      // This prevents gaps.
+      
+      const cx = w / 2;
+      const cy = h / 2;
+
+      // Optimization: Bounding box of the destination circle to avoid scanning 1920x1080
+      const box = radius + (h/2); // approximate max extent
+      const minDestX = Math.max(0, Math.floor(cx - box));
+      const maxDestX = Math.min(w, Math.ceil(cx + box));
+      const minDestY = Math.max(0, Math.floor(cy - box));
+      const maxDestY = Math.min(h, Math.ceil(cy + box));
+
+      for (let py = minDestY; py < maxDestY; py++) {
+        for (let px = minDestX; px < maxDestX; px++) {
+          
+          const dx = px - cx;
+          const dy = py - cy;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          
+          // Angle from -PI to PI
+          let angle = Math.atan2(dy, dx) - startRot; 
+          
+          // Normalize angle to linear X
+          // We map the Arc Angle to the Text Width
+          
+          // If inward: text sits on radius, heads point to center? 
+          // Usually "Inward" means the bottom of text is on the circle.
+          // "Outward" means top of text is on the circle.
+          
+          // Calculate sample Y (distance from radius ring)
+          const deltaR = inward ? (radius - dist) : (dist - radius);
+          
+          // If we are too far from the ring (outside text height), skip
+          if (Math.abs(deltaR) > h/2) continue;
+          
+          // Map Angle to X
+          // -Arc/2 to +Arc/2 maps to -Width/2 to +Width/2
+          
+          // Normalize angle within range
+          // Wrap angle math is complex, simplified:
+          while(angle <= -Math.PI) angle += Math.PI*2;
+          while(angle > Math.PI) angle -= Math.PI*2;
+
+          // Check if within our defined arc
+          if (Math.abs(angle) > arc/2) continue;
+
+          // Ratio of angle to total arc
+          const ratio = angle / (arc/2); // -1 to 1
+          
+          // Map to Source X
+          const sx = textCenterX + (ratio * (textWidth/2));
+          
+          // Map to Source Y (Middle of text + delta)
+          const sy = (h/2) + deltaR;
+
+          // Sample
+          if (sx >= 0 && sx < w && sy >= 0 && sy < h) {
+             // Basic nearest neighbor
+             const idx = (Math.floor(sy) * w + Math.floor(sx)) * 4;
+             // But we need to write to (px, py)
+             // We can't use imageData for random writes easily without buffer
+             // So we assume we are using a buffer or draw 1x1 rects (slow).
+             // Let's use get/put logic via buffer for performance.
+          }
+        }
+      }
+      
+      // RE-IMPLEMENTATION: SLICE METHOD (Much Faster & Smoother)
+      // Instead of pixel-by-pixel polar coordinates (which is aliased and slow in JS),
+      // we cut the text into vertical strips and rotate them.
+      
+      const slices = Math.max(20, Math.ceil(textWidth / 2)); // 1 slice per 2px
+      const sliceWidth = textWidth / slices;
+      const anglePerSlice = arc / slices;
+      
+      for(let i=0; i<slices; i++) {
+        const sx = minX + (i * sliceWidth);
+        
+        // Destination Angle
+        // Map 0..slices to -Angle/2 .. +Angle/2
+        const progress = (i / slices) - 0.5; // -0.5 to 0.5
+        const rot = progress * arc + startRot + (Math.PI / 2); // +90 to start at 12 o'clock?
+        
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(rot);
+        
+        // Move out to radius
+        // Inward: Text Upright at top.
+        const rOffset = inward ? -radius : radius;
+        ctx.translate(0, rOffset);
+        
+        if (!inward) {
+           // Flip text if outward so it's readable? 
+           // Usually outward text needs to be mirrored or it looks upside down at bottom
+           // Let's keep simple wrap.
+        }
+
+        // Draw Slice
+        // We take a slice from tempCanvas and draw it centered here
+        ctx.drawImage(
+          tempCanvas, 
+          sx, 0, sliceWidth, h, 
+          -sliceWidth/2, -h/2, sliceWidth+1, h // +1 to fix gaps
+        );
+        
+        ctx.restore();
+      }
+
+      return { canvas, ctx };
+    }
+  },
+
+  roughen: {
+    name: 'Roughen Edges',
+    params: [
+      { key: 'strength', label: 'Strength', type: 'range', min: 0, max: 20, step: 1, default: 5 },
+      { key: 'scale', label: 'Detail', type: 'range', min: 1, max: 20, step: 1, default: 10 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, default: 1 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const strength = params.strength ?? 5;
+      const scale = params.scale ?? 10;
+      const seeded = createSeededRandom(params.seed);
+      const rnd = seeded ? seeded : Math.random;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Create a "Noise Map" for displacement
+      // We generate low-res noise and scale it up to get smooth "waves" along the edge
+      // instead of static/grainy noise.
+      
+      const noiseW = Math.ceil(w / scale);
+      const noiseH = Math.ceil(h / scale);
+      const noiseMap = new Float32Array(noiseW * noiseH * 2); // X and Y shift
+
+      for(let i=0; i<noiseMap.length; i++) {
+        noiseMap[i] = (rnd() - 0.5) * strength * 2;
+      }
+
+      // Helper to get smooth noise value
+      const getNoise = (x, y) => {
+        const nx = x / scale;
+        const ny = y / scale;
+        const ix = Math.floor(nx);
+        const iy = Math.floor(ny);
+        // Simple linear interpolation could go here, 
+        // but nearest neighbor is "jagged" which is what we want for roughen!
+        // We clamp to bounds
+        const idx = (Math.max(0, Math.min(noiseH-1, iy)) * noiseW + Math.max(0, Math.min(noiseW-1, ix))) * 2;
+        return { x: noiseMap[idx], y: noiseMap[idx+1] };
+      };
+
+      const srcData = ctx.getImageData(0, 0, w, h);
+      const src = new Uint32Array(srcData.data.buffer);
+      const outData = ctx.createImageData(w, h);
+      const out = new Uint32Array(outData.data.buffer);
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          
+          // Get shift for this pixel
+          const shift = getNoise(px, py);
+          
+          // To roughen the edge, we displace the SOURCE lookup.
+          // If we are at edge, we might pull a transparent pixel in (eroding)
+          // or push a solid pixel out (growing).
+          
+          const sx = Math.floor(px + shift.x);
+          const sy = Math.floor(py + shift.y);
+
+          if (sx >= 0 && sx < w && sy >= 0 && sy < h) {
+            const val = src[sy * w + sx];
+            // Only write if we actually grabbed something (or if we are eroding)
+            out[py * w + px] = val;
+          }
+        }
+      }
+
+      outData.data.set(new Uint8ClampedArray(out.buffer));
+      ctx.putImageData(outData, 0, 0);
+
+      return { canvas, ctx };
+    }
+  },
+
+  scale: {
+    name: 'Scale / Stretch',
+    params: [
+      { key: 'w', label: 'Width Scale', type: 'range', min: 0.1, max: 3, step: 0.05, default: 1 },
+      { key: 'h', label: 'Height Scale', type: 'range', min: 0.1, max: 3, step: 0.05, default: 1 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const sx = params.w ?? 1;
+      const sy = params.h ?? 1;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Copy original state
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.drawImage(canvas, 0, 0);
+
+      // 2. Clear and Prepare transform
+      ctx.clearRect(0, 0, w, h);
+      ctx.save();
+
+      // 3. Move to Center -> Scale -> Move Back
+      // This ensures the text expands/shrinks from its middle, not from the top-left corner.
+      ctx.translate(w / 2, h / 2);
+      ctx.scale(sx, sy);
+      ctx.translate(-w / 2, -h / 2);
+
+      // 4. Draw
+      ctx.drawImage(tempCanvas, 0, 0);
+      
+      ctx.restore();
+
+      return { canvas, ctx };
+    }
+  },
+
+  // ===========================================
+  // BASICS & UTILITIES (NEW)
+  // ===========================================
+
+  blur: {
+    name: 'Blur',
+    params: [
+      { key: 'amount', label: 'Amount', type: 'range', min: 0, max: 20, step: 0.5, default: 0 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const amount = params.amount ?? 0;
+      if (amount <= 0) return { canvas, ctx };
+
+      const w = canvas.width, h = canvas.height;
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+      
+      // Use standard Canvas Filter (hardware accelerated in modern browsers)
+      tCtx.filter = `blur(${amount}px)`;
+      tCtx.drawImage(canvas, 0, 0);
+      tCtx.filter = 'none';
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(tempCanvas, 0, 0);
+      return { canvas, ctx };
+    }
+  },
+
+  rotate: {
+    name: 'Rotate',
+    params: [
+      { key: 'angle', label: 'Angle', type: 'range', min: -180, max: 180, step: 1, default: 0 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const angle = (params.angle ?? 0) * (Math.PI / 180);
+      if (angle === 0) return { canvas, ctx };
+
+      const w = canvas.width, h = canvas.height;
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+
+      // Rotate around center
+      tCtx.translate(w / 2, h / 2);
+      tCtx.rotate(angle);
+      tCtx.translate(-w / 2, -h / 2);
+      
+      tCtx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(tempCanvas, 0, 0);
+      return { canvas, ctx };
+    }
+  },
+
+  adjustments: {
+    name: 'Color Adjust',
+    params: [
+      { key: 'hue', label: 'Hue', type: 'range', min: 0, max: 360, step: 1, default: 0 },
+      { key: 'sat', label: 'Saturation', type: 'range', min: 0, max: 200, step: 1, default: 100 },
+      { key: 'bright', label: 'Brightness', type: 'range', min: 0, max: 200, step: 1, default: 100 },
+      { key: 'contrast', label: 'Contrast', type: 'range', min: 0, max: 200, step: 1, default: 100 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const hVal = params.hue ?? 0;
+      const sVal = params.sat ?? 100;
+      const bVal = params.bright ?? 100;
+      const cVal = params.contrast ?? 100;
+
+      const w = canvas.width, h = canvas.height;
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+
+      // Combine CSS filters
+      tCtx.filter = `hue-rotate(${hVal}deg) saturate(${sVal}%) brightness(${bVal}%) contrast(${cVal}%)`;
+      tCtx.drawImage(canvas, 0, 0);
+      tCtx.filter = 'none';
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(tempCanvas, 0, 0);
+      return { canvas, ctx };
+    }
+  },
+
+  invert: {
+    name: 'Invert / Negative',
+    params: [
+      { key: 'amount', label: 'Amount', type: 'range', min: 0, max: 1, step: 0.01, default: 1 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const val = params.amount ?? 1;
+      const w = canvas.width, h = canvas.height;
+      
+      const tempCanvas = createCanvas(w, h);
+      const tCtx = tempCanvas.getContext('2d');
+
+      tCtx.filter = `invert(${val})`;
+      tCtx.drawImage(canvas, 0, 0);
+      tCtx.filter = 'none';
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(tempCanvas, 0, 0);
+      return { canvas, ctx };
+    }
+  },
+
 };
 
 /* -------------------------
