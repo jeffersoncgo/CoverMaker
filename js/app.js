@@ -318,6 +318,11 @@ function addTextEffectToLayer(layerIndex, userDefault) {
 }
 
 function addTextEffectLayer(e) {
+  if (e) {
+      e.preventDefault(); // Stop default browser behavior (like form submissions)
+      e.stopPropagation(); // Stop event from bubbling to parents
+      e.stopImmediatePropagation(); // Stop other listeners on this same element
+  }
   // event handler on button inside layer
   const layerItem = e.target.closest('.text-layer-item');
   const allLayers = Array.from(textLayersContainer.querySelectorAll('.text-layer-item'));
@@ -327,6 +332,11 @@ function addTextEffectLayer(e) {
 }
 
 function deleteTextEffectLayer(e) {
+  if (e) {
+      e.preventDefault(); // Stop default browser behavior (like form submissions)
+      e.stopPropagation(); // Stop event from bubbling to parents
+      e.stopImmediatePropagation(); // Stop other listeners on this same element
+  }
   // 1. PREVENT DOUBLE FIRING
   if (e) {
       e.preventDefault(); // Stop default browser behavior (like form submissions)
@@ -350,6 +360,12 @@ function deleteTextEffectLayer(e) {
 }
 
 function duplicateTextEffectLayer(e) {
+  // if event passed, prevent double firing
+  if (e) {
+      e.preventDefault(); // Stop default browser behavior (like form submissions)
+      e.stopPropagation(); // Stop event from bubbling to parents
+      e.stopImmediatePropagation(); // Stop other listeners on this same element
+  }
   const indexId = e.target.parentElement.id || e.target.closest('.text-effect-layer-item')?.id; // fallback
   if (!indexId) return;
   const parts = indexId.replace('text_effect_', '').split('_');
@@ -362,6 +378,11 @@ function duplicateTextEffectLayer(e) {
 }
 
 function setTextEffectLayerDefault(e) {
+  if (e) {
+      e.preventDefault(); // Stop default browser behavior (like form submissions)
+      e.stopPropagation(); // Stop event from bubbling to parents
+      e.stopImmediatePropagation(); // Stop other listeners on this same element
+  }
   const indexId = e.target.parentElement.id || e.target.closest('.text-effect-layer-item')?.id; // fallback
   if (!indexId) return;
   const parts = indexId.replace('text_effect_', '').split('_');
@@ -650,11 +671,12 @@ function loadFullProjectFromJson(jsonData, isSetupOnly = false) {
   // Make sure any registry params/defaults are applied to the composite
   try { normalizeCompositeParams(Setup.Settings.canvas.composite); } catch(err) {}
   
-  // Restore export settings
-  if (Setup.Settings.export) {
-    exportFormatSelectElement.value = Setup.Settings.export.format || 'png';
-    jpegQualityElement.value = Setup.Settings.export.jpegQuality || 0.95;
-  }
+  // Restore export settings 
+  // This will not restore the export settings UI because it's not part of the setup-only flow
+  // if (Setup.Settings.export) {
+  //   exportFormatSelectElement.value = Setup.Settings.export.format || 'webp';
+  //   jpegQualityElement.value = Setup.Settings.export.jpegQuality || 0.95;
+  // }
   
   // Note: Images are no longer loaded from JSON for performance reasons.
   // Images should be exported/imported using ZIP files.
@@ -775,6 +797,10 @@ function makeSaveAllJson() {
   return JSON.stringify(save, null, 2);
 }
 
+function makeSaveSetupJson() {
+  return JSON.stringify({ Setup }, null, 2);
+}
+
 function clearTextLayersMemory() {
   textLayersContainer.innerHTML = '';
   Setup.Settings.textLayers = [];
@@ -853,7 +879,9 @@ function loadTextLayers(layersData) {
       const newLayerId = addTextLayer(id); // This function should return the ID of the new layer
       const newLayerEl = document.getElementById(newLayerId); // Get the newly created DOM element
       // Populate basic font settings
-      newLayerEl.querySelector(".overlayText-input").value = layerData.overlayText;
+      const textInput = newLayerEl.querySelector(".overlayText-input");
+      textInput.value = layerData.overlayText;
+      updateLayerLabel(textInput); // Update label based on text
       newLayerEl.querySelector(".fontSelect-input").value = layerData.font.family;
       newLayerEl.querySelector(".fontWeightSelect-input").value = layerData.font.weight;
       newLayerEl.querySelector(".fontStyleSelect-input").value = layerData.font.style;
@@ -1032,72 +1060,30 @@ async function updateTextSettings() {
     newLayer.position.rotation = parseFloat(layerEl.querySelector(".rotation-input").value) || 0;
     layerEl.parentElement.parentElement.setAttribute('layerIndex', layerIndex);
 
-    // 3. Read Stroke Settings
-    const strokeElements = layerEl.querySelectorAll(".stroke-item");
-    let strokeIndex = 0;
-    for (const strokeEl of strokeElements) {
-      const newStroke = {};
-      newStroke.color = strokeEl.querySelector(".strokeColor-input").value;
-      newStroke.width = parseFloat(strokeEl.querySelector(".strokeWidth-input").value) || 1;
-      newStroke.opacity = parseFloat(strokeEl.querySelector(".strokeOpacity-input").value) || 0;
-      
-      // ⭐️ Read enabled state for stroke (checkbox is in parent container)
-      const strokeEnabledCheckbox = strokeEl.parentElement.parentElement.querySelector(".stroke-enabled-checkbox");
-      newStroke.enabled = strokeEnabledCheckbox ? strokeEnabledCheckbox.checked : true;
-
-      // Build strokeStyle
-      r = parseInt(newStroke.color.slice(1, 3), 16);
-      g = parseInt(newStroke.color.slice(3, 5), 16);
-      b = parseInt(newStroke.color.slice(5, 7), 16);
-      newStroke.style = `rgba(${r}, ${g}, ${b}, ${newStroke.opacity})`;
-      strokeEl.parentElement.parentElement.setAttribute('layerIndex', layerIndex);
-      strokeEl.parentElement.parentElement.setAttribute('strokeIndex', strokeIndex);
-      newLayer.strokes.push(newStroke);
-      strokeIndex++;
-    }
-
-    // 4. Read Shadow Settings
-    const shadowElements = layerEl.querySelectorAll(".shadow-item");
-    let shadowIndex = 0;
-    for (const shadowEl of shadowElements) {
-      const newShadow = {};
-      newShadow.color = shadowEl.querySelector(".shadowColor-input").value;
-      newShadow.blur = parseFloat(shadowEl.querySelector(".shadowBlur-input").value) || 0;
-      newShadow.offsetX = parseFloat(shadowEl.querySelector(".shadowOffsetX-input").value) || 0;
-      newShadow.offsetY = parseFloat(shadowEl.querySelector(".shadowOffsetY-input").value) || 0;
-      
-      // ⭐️ Read enabled state for shadow (checkbox is in parent container)
-      const shadowEnabledCheckbox = shadowEl.parentElement.parentElement.querySelector(".shadow-enabled-checkbox");
-      newShadow.enabled = shadowEnabledCheckbox ? shadowEnabledCheckbox.checked : true;
-      
-      shadowEl.parentElement.parentElement.setAttribute('layerIndex', layerIndex);
-      shadowEl.parentElement.parentElement.setAttribute('shadowIndex', shadowIndex);
-      newLayer.shadows.push(newShadow);
-      shadowIndex++;
-    }
-
-      // 5. Read Text Effect Layers (per-layer)
-      newLayer.effects = [];
-      const textEffectElements = layerEl.querySelectorAll('.text-effect-layer-item');
-      let textEffIndex = 0;
-      for (const effEl of textEffectElements) {
-        const newEff = {};
-        const typeSelect = effEl.querySelector('.effectTypeSelect-input');
-        newEff.type = typeSelect ? typeSelect.value : (availableTextEffects?.[0]?.id || 'fade');
-        const enabledCheckbox = effEl.querySelector('.text-effect-enabled-checkbox');
-        newEff.enabled = enabledCheckbox ? enabledCheckbox.checked : true;
-        newEff.params = newEff.params || {};
-        const paramControls = effEl.querySelectorAll('.effect-param-slider');
-        for (const control of paramControls) {
-          const pKey = control.dataset.paramKey;
-          if (!pKey) continue;
-          newEff.params[pKey] = getControlValue(control);
-        }
-        effEl.setAttribute('layerIndex', layerIndex);
-        effEl.setAttribute('effectIndex', textEffIndex);
-        newLayer.effects.push(newEff);
-        textEffIndex++;
+    // 5. Read Text Effect Layers (per-layer)
+    const labelEl = layerEl.querySelector('.add-text-effect-btn').parentElement.querySelector('label');
+    labelEl.setAttribute('layerIndex', layerIndex);
+    newLayer.effects = [];
+    const textEffectElements = layerEl.querySelectorAll('.text-effect-layer-item');
+    let textEffIndex = 0;
+    for (const effEl of textEffectElements) {
+      const newEff = {};
+      const typeSelect = effEl.querySelector('.effectTypeSelect-input');
+      newEff.type = typeSelect ? typeSelect.value : (availableTextEffects?.[0]?.id || 'fade');
+      const enabledCheckbox = effEl.querySelector('.text-effect-enabled-checkbox');
+      newEff.enabled = enabledCheckbox ? enabledCheckbox.checked : true;
+      newEff.params = newEff.params || {};
+      const paramControls = effEl.querySelectorAll('.effect-param-slider');
+      for (const control of paramControls) {
+        const pKey = control.dataset.paramKey;
+        if (!pKey) continue;
+        newEff.params[pKey] = getControlValue(control);
       }
+      effEl.setAttribute('layerIndex', layerIndex);
+      effEl.setAttribute('effectIndex', textEffIndex);
+      newLayer.effects.push(newEff);
+      textEffIndex++;
+    }
 
     // 5. Add the completed layer to settings
     Setup.Settings.textLayers.push(newLayer);
@@ -1155,8 +1141,9 @@ function getIndexFromId(id) {
 }
 
 function getLatestLayerId() {
-  const lastId = getIndexFromId(Setup.Settings.textLayers[Setup.Settings.textLayers.length - 1]?.id);
-  return isNaN(lastId) ? -1 : lastId;
+  const ids = Setup.Settings.textLayers.map(layer => getIndexFromId(layer.id));
+  const lastId = ids.length ? Math.max(...ids) : -1;
+  return lastId;
 }
 
 function ensureUniqueId(mask, currIndex, placeholder = '{n}') {
@@ -1171,6 +1158,15 @@ function ensureUniqueId(mask, currIndex, placeholder = '{n}') {
 }
 
 // Text Layers Buttons & Functions
+
+
+function updateLayerLabel(e) {
+  const newText = e.value?.trim() || 'New Layer';
+  const labelEl = e.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.querySelector('label.expand-label');
+  if (labelEl) {
+    labelEl.textContent = newText;
+  }
+}
 
 function addTextLayer(layerIndex) {
   const clone = textLayerTemplate.content.cloneNode(true);
@@ -1328,6 +1324,7 @@ function setImageEffectLayerDefault(e) {
   toastMessage('Effect Layer default set', { position: 'bottomCenter', type: 'success' });
 }
 
+
 // ======================
 // Export/Import Functions
 // ======================
@@ -1447,7 +1444,7 @@ function fillSlotsWithNumbers() {
       // Load the blob URL into the slot (loadImageIntoSlot will handle Image creation)
       loadImageIntoSlot(blobUrl, i);
       console.log(`Loaded number ${i} (${blobUrl}) into slot ${i}`);
-    }, 'image/png');
+    }, `image/${Setup.Settings.export.format}`, Setup.Settings.export.jpegQuality || 0.95);
   }
   
   toastMessage('Test: Filling slots with numbers...', { position: 'topRight', type: 'success' });
@@ -1468,17 +1465,9 @@ function exportAsPNG() {
       const format = Setup.Settings.export.format || 'png';
       const quality = Setup.Settings.export.jpegQuality || 0.95;
       
-      // Generate data URL with correct format
-      let dataURL;
-      if (format === 'jpeg') {
-        dataURL = Composites.Merged.toDataURL("image/jpeg", quality);
-      } else {
-        dataURL = Composites.Merged.toDataURL("image/png");
-      }
-      
       const fileName = getExportFileName();
       const link = document.createElement("a");
-      link.href = dataURL;
+      link.href = Composites.Merged.toDataURL(`image/${format}`, quality);
       link.download = fileName;
       link.style.display = 'none';
       
@@ -1522,6 +1511,8 @@ async function exportProjectFile() {
 
   try {
     const zip = new JSZip();
+    // REMOVED: zip.option(...) - This is not where we set compression
+    
     const fileName = getProjectBaseName();
 
     // Add project configuration
@@ -1534,9 +1525,9 @@ async function exportProjectFile() {
       const img = slotsImages[i];
       if (img) {
         // Convert image to blob
-        const blobPromise = imgToBlob(img, 'image/png', 1)
+        const blobPromise = imgToBlob(img, `image/${Setup.Settings.export.format}`, Setup.Settings.export.jpegQuality || 0.95)
           .then(blob => {
-            zip.file(`images/slot_${i}.png`, blob);
+            zip.file(`images/slot_${i}.${Setup.Settings.export.format}`, blob);
           })
           .catch(err => {
             console.error(`Failed to export image ${i}:`, err);
@@ -1549,9 +1540,18 @@ async function exportProjectFile() {
     toastMessage(`Processing ${imagePromises.length} images...`, { position: 'bottomCenter', type: 'info' });
     await Promise.all(imagePromises);
 
-    // Generate ZIP file
+    // Generate ZIP file WITH COMPRESSION
     toastMessage('Creating ZIP file...', { position: 'bottomCenter', type: 'info' });
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    
+    // --- THIS IS THE KEY CHANGE ---
+    const zipBlob = await zip.generateAsync({ 
+        type: 'blob',
+        compression: "DEFLATE",
+        compressionOptions: {
+            level: 9 // 1 (fastest) to 9 (best compression)
+        }
+    });
+    // ------------------------------
 
     // Download ZIP
     const link = document.createElement('a');
@@ -1593,7 +1593,7 @@ async function importProjectFile(event) {
     await importProjectFromZip(file);
   } else if (file.name.endsWith('.json')) {
     // Legacy JSON import (without images)
-    importProjectFromJson(file);
+    importProjectFromJson(file, true);
   } else {
     alert('Unsupported file format. Please use .zip or .json files.');
   }
@@ -1609,6 +1609,11 @@ async function importProjectFromZip(file) {
     alert('JSZip library not loaded. Please refresh the page.');
     return;
   }
+
+  const imagesExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff'];
+
+  // create a regex to match the image extensions using /slot_(\d+)\.png/
+  const imageRegex = new RegExp(`slot_(\\d+)\\.(${imagesExtensions.map(ext => ext.slice(1)).join('|')})$`, 'i');
 
   const btn = document.getElementById('importProjectBtn');
   btn.classList.add('disabled');
@@ -1660,19 +1665,19 @@ async function importProjectFromZip(file) {
   addTypeParamsOptions(typeSettingsContainer, Setup.Settings.canvas.composite.type, Setup.Settings.canvas.composite.params || {});
   
   // Restore export settings
+  // This will not restore the export settings UI because it's not part of the setup-only flow
   if (Setup.Settings.export) {
-    exportFormatSelectElement.value = Setup.Settings.export.format || 'png';
-    jpegQualityElement.value = Setup.Settings.export.jpegQuality || 0.95;
+    // To not replace the user choise, let's force the Setup.Settings.export.format to use the existing element value or webp
+    Setup.Settings.export.format = exportFormatSelectElement.value || 'webp';
+    Setup.Settings.export.jpegQuality = jpegQualityElement.value || 0.95;
   }    // Load images from ZIP
     toastMessage('Reading project data...', { position: 'bottomCenter', type: 'info' });
     const imageFiles = [];
     contents.folder('images').forEach((relativePath, file) => {
-      if (relativePath.endsWith('.png')) {
-        const match = relativePath.match(/slot_(\d+)\.png/);
-        if (match) {
-          const slotIndex = parseInt(match[1]);
-          imageFiles.push({ slotIndex, file });
-        }
+      const match = relativePath.match(imageRegex);
+      if (match) {
+        const slotIndex = parseInt(match[1]);
+        imageFiles.push({ slotIndex, file });
       }
     });
 
@@ -1770,7 +1775,7 @@ function openInNewTab(source) {
     // Always ensure it's treated as an image
     const fixedBlob = blob.type.startsWith("image/")
       ? blob
-      : new Blob([blob], { type: "image/png" });
+      : new Blob([blob], { type: `image/${Setup.Settings.export.format}` });
 
     const url = URL.createObjectURL(fixedBlob);
     const tab = window.open(url, "_blank");
@@ -1786,7 +1791,7 @@ function openInNewTab(source) {
 
     // Enforce image MIME if dataURL was malformed
     if (!blob.type.startsWith("image/")) {
-      return new Blob([await blob.arrayBuffer()], { type: "image/png" });
+      return new Blob([await blob.arrayBuffer()], { type: `image/${Setup.Settings.export.format}` });
     }
 
     return blob;
@@ -1795,6 +1800,7 @@ function openInNewTab(source) {
   let targetObj = null;
   let isCanvas = false;
   let isImage = false;
+  let shouldCrop = false;
 
   if (source?.target?.id === "openTabBtn" ||
       source?.target?.parentElement?.id === "openTabBtn") {
@@ -1805,6 +1811,7 @@ function openInNewTab(source) {
            source?.target?.parentElement?.id === "openTextComposite") {
     targetObj = Composites.Text.canvas;
     isCanvas = true;
+    shouldCrop = true;
   }
   else if (source?.target?.id === "openImageComposite" ||
            source?.target?.parentElement?.id === "openImageComposite") {
@@ -1820,9 +1827,9 @@ function openInNewTab(source) {
 
   if (isCanvas) {
     if (targetObj.toBlob) {
-      targetObj.toBlob(openBlob, "image/png");
+      cropCanvas(targetObj).toBlob(openBlob, `image/${Setup.Settings.export.format}`);
     } else if (targetObj.toDataURL) {
-      const dataURL = targetObj.toDataURL("image/png");
+      const dataURL = cropCanvas(targetObj).toDataURL(`image/${Setup.Settings.export.format}`, Setup.Settings.export.jpegQuality || 0.95);
       base64ToBlob(dataURL).then(openBlob);
     }
   }
@@ -1965,10 +1972,10 @@ saveTextLayersToStorage = Controller.wrap(saveTextLayersToStorage, true, 50, 100
 saveSetup = Controller.wrap(saveSetup, true, 500, 1000);
 onEffectParamChange = Controller.wrap(onEffectParamChange, true, 300, 500);
 onCompositeParamChange = Controller.wrap(onCompositeParamChange, true, 300, 500);
-// drawCompositeImage = Controller.wrap(drawCompositeImage, false, 300, 500);
-// drawCompositeText = Controller.wrap(drawCompositeText, false, 200, 100);
+drawCompositeImage = Controller.wrap(drawCompositeImage, false, 300, 500);
+drawCompositeText = Controller.wrap(drawCompositeText, false, 200, 100);
 setCanvasSize = Controller.wrap(setCanvasSize, true, 300, 200);
-// applyImageEffects = Controller.wrap(applyImageEffects, true, 200, 200);
+applyImageEffects = Controller.wrap(applyImageEffects, true, 200, 200);
 revokeAllBlobUrls = Controller.wrap(revokeAllBlobUrls, false, 200, 200);
 
 // ======================
@@ -2064,6 +2071,38 @@ document.getElementById("openTabBtn").addEventListener("click", openInNewTab);
 document.getElementById("openTextComposite").addEventListener("click", openInNewTab);
 document.getElementById("openImageComposite").addEventListener("click", openInNewTab);
 document.getElementById("exportProjectBtn").addEventListener("click", exportProjectFile);
+
+document.getElementById("exportSetupBtn").addEventListener("click", () => {
+  const btn = document.getElementById('exportSetupBtn');
+  btn.classList.add('disabled');
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '0.5';
+
+  try {
+    const json = makeSaveSetupJson();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const base = getProjectBaseName ? getProjectBaseName() : 'covermaker-setup';
+    link.href = url;
+    link.download = `${base}.covermaker.setup.json`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
+    toastMessage('Setup exported successfully!', { position: 'bottomCenter', type: 'success' });
+  } catch (err) {
+    console.error('Export setup failed:', err);
+    toastMessage('Failed to export setup', { position: 'bottomCenter', type: 'danger' });
+  } finally {
+    btn.classList.remove('disabled');
+    btn.style.pointerEvents = '';
+    btn.style.opacity = '';
+  }
+});
 document.getElementById("importProjectInput").addEventListener("change", importProjectFile);
 document.getElementById("importProjectBtn").addEventListener("click", () => {
   document.getElementById("importProjectInput").click();
@@ -2357,6 +2396,52 @@ function moveInArray(arr, fromIndex, toIndex) {
   return arr;
 }
 
+// ======================
+// Image Effect Drag & Drop
+// ======================
+
+function onEffectDragStart(event) {
+  const item = event.target.parentElement.closest('.effect-layer-item');
+  // Extract index from ID (format: effect_0, effect_1...)
+  const index = parseInt(item.id.replace('effect_', ''));
+  
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('application/json', JSON.stringify({
+    type: 'imageEffect',
+    index: index
+  }));
+}
+
+function onEffectDrop(event) {
+  removeDragOver(event);
+  event.preventDefault();
+
+  try {
+    const data = JSON.parse(event.dataTransfer.getData('application/json'));
+    if (data.type !== 'imageEffect') return;
+
+    const fromIndex = data.index;
+    const targetItem = event.target.closest('.effect-layer-item');
+    if (!targetItem) return;
+    
+    const toIndex = parseInt(targetItem.id.replace('effect_', ''));
+
+    if (fromIndex === toIndex) return;
+
+    // Move in Data Array
+    moveInArray(Setup.Settings.canvas.effects, fromIndex, toIndex);
+
+    // Re-render UI
+    renderEffectLayers();
+    
+    // Draw Canvas
+    drawComposite();
+
+  } catch (e) {
+    console.warn("Effect Drop error", e);
+  }
+}
+
 
 // ======================
 // Text Layer Drag & Drop
@@ -2416,52 +2501,6 @@ function onTextLayerDrop(event) {
 }
 
 // ======================
-// Image Effect Drag & Drop
-// ======================
-
-function onEffectDragStart(event) {
-  const item = event.target.parentElement.closest('.effect-layer-item');
-  // Extract index from ID (format: effect_0, effect_1...)
-  const index = parseInt(item.id.replace('effect_', ''));
-  
-  event.dataTransfer.effectAllowed = 'move';
-  event.dataTransfer.setData('application/json', JSON.stringify({
-    type: 'imageEffect',
-    index: index
-  }));
-}
-
-function onEffectDrop(event) {
-  removeDragOver(event);
-  event.preventDefault();
-
-  try {
-    const data = JSON.parse(event.dataTransfer.getData('application/json'));
-    if (data.type !== 'imageEffect') return;
-
-    const fromIndex = data.index;
-    const targetItem = event.target.closest('.effect-layer-item');
-    if (!targetItem) return;
-    
-    const toIndex = parseInt(targetItem.id.replace('effect_', ''));
-
-    if (fromIndex === toIndex) return;
-
-    // Move in Data Array
-    moveInArray(Setup.Settings.canvas.effects, fromIndex, toIndex);
-
-    // Re-render UI
-    renderEffectLayers();
-    
-    // Draw Canvas
-    drawComposite();
-
-  } catch (e) {
-    console.warn("Effect Drop error", e);
-  }
-}
-
-// ======================
 // Text Effect Drag & Drop
 // ======================
 
@@ -2483,25 +2522,48 @@ function onTextEffectDrop(event) {
   event.preventDefault();
 
   try {
+    console.log("Reached here 1", event);
     const data = JSON.parse(event.dataTransfer.getData('application/json'));
     if (data.type !== 'textEffect') return;
+    console.log("Reached here 2", data);
 
-    const targetItem = event.target.closest('.text-effect-layer-item');
+    const putAtEnd = !event.target.parentElement.classList.contains('text-effect-layer-item');
+    const targetItem = putAtEnd ? event.target : event.target.closest('.text-effect-layer-item');
+
     if (!targetItem) return;
 
-    const targetLayerIndex = parseInt(targetItem.getAttribute('layerIndex'));
-    const targetEffectIndex = parseInt(targetItem.getAttribute('effectIndex'));
+    const targetLayerIndex   = Number(targetItem.getAttribute('layerIndex'));
+    const targetEffectIndex  = putAtEnd ? Setup.Settings.textLayers[targetLayerIndex].effects.length : Number(targetItem.getAttribute('effectIndex'));
 
-    // Only allow moving within the SAME text layer
-    if (data.layerIndex !== targetLayerIndex) return;
-    if (data.effectIndex === targetEffectIndex) return;
 
-    // Move in Data Array
-    const effectsArray = Setup.Settings.textLayers[data.layerIndex].effects;
-    moveInArray(effectsArray, data.effectIndex, targetEffectIndex);
+    console.log("Reached here 3", targetItem);
 
-    // Re-render UI for this specific layer
-    renderTextEffectLayersFor(data.layerIndex);
+    console.log("Reached here 4", {
+      data,
+      targetLayerIndex,
+      targetEffectIndex
+    })
+
+    // If Same Layer, we just need to move within that layer
+    if(data.layerIndex == targetLayerIndex) {
+      // If is the same effect, do nothing
+      if(data.effectIndex === targetEffectIndex) return;
+      // First we move the effect in the array
+      moveInArray(Setup.Settings.textLayers[data.layerIndex].effects, data.effectIndex, targetEffectIndex);
+      
+      // Then we re-render the effect layers for that text layer only
+      renderTextEffectLayersFor(data.layerIndex);
+    } else {
+      // Different layers: we need to move between layers
+      const effectToMove = Setup.Settings.textLayers[data.layerIndex].effects[data.effectIndex];
+      // Remove from original layer
+      Setup.Settings.textLayers[data.layerIndex].effects.splice(data.effectIndex, 1);
+      // Add to target layer
+      Setup.Settings.textLayers[targetLayerIndex].effects.splice(targetEffectIndex, 0, effectToMove);
+      // Re-render both affected layers
+      renderTextEffectLayersFor(data.layerIndex);
+      renderTextEffectLayersFor(targetLayerIndex);
+    } 
     
     // Draw Canvas
     updateTextSettings();
@@ -2510,3 +2572,8 @@ function onTextEffectDrop(event) {
     console.warn("Text Effect Drop error", e);
   }
 }
+
+
+
+
+

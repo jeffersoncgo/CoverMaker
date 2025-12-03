@@ -2716,6 +2716,154 @@ const TEXT_EFFECTS = {
       return { canvas, ctx };
     }
   },
+  splatter: {
+    name: 'Splatter',
+    params: [
+      { key: 'mode', label: 'Type', type: 'select', options: ['Erode', 'Paint'], default: 'Erode ([REC] Style)' },
+      { key: 'color', label: 'Fluid Color', type: 'color', default: '#cc0000' }, 
+      { key: 'density', label: 'Amount', type: 'range', min: 1, max: 100, step: 1, default: 40 },
+      { key: 'size', label: 'Drop Size', type: 'range', min: 1, max: 50, step: 1, default: 15 },
+      { key: 'spread', label: 'Scatter', type: 'range', min: 0, max: 1, step: 0.01, default: 0.8 },
+      { key: 'distortion', label: 'Distortion', type: 'range', min: 0, max: 1, step: 0.05, default: 0.6 }, // New param
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
+    ],
+    apply: (ctx, canvas, text, x, y, params) => {
+      const mode = params.mode ?? 'Erode';
+      const isErode = mode.startsWith('Erode');
+      const color = params.color ?? '#cc0000';
+      const density = params.density ?? 40;
+      const baseSize = params.size ?? 15;
+      const spread = params.spread ?? 0.8;
+      const distortion = params.distortion ?? 0.6;
+      const seed = params.seed ?? 1;
+
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Deterministic Random Generator
+      let _s = seed * 12345;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      // Helper: Draw a Distorted Blob (Liquid Shape)
+      const drawBlob = (ctx, cx, cy, radius, distor) => {
+        ctx.beginPath();
+        const segments = 8 + Math.floor(radius / 2); // More segments for bigger drops
+        const angleStep = (Math.PI * 2) / segments;
+        const points = [];
+
+        // Generate perturbed points
+        for (let i = 0; i < segments; i++) {
+          const theta = i * angleStep;
+          // Random offset based on distortion
+          // distor 0 = 1.0 (perfect circle)
+          // distor 1 = 0.5 to 1.5 variation
+          const noise = (rng() - 0.5) * distor * 1.5; 
+          const r = Math.max(0.1, radius * (1 + noise));
+          points.push({
+            x: cx + Math.cos(theta) * r,
+            y: cy + Math.sin(theta) * r
+          });
+        }
+
+        // Smooth curve through points
+        // We move to the midpoint between the last and first point
+        const len = points.length;
+        const midX = (points[len - 1].x + points[0].x) / 2;
+        const midY = (points[len - 1].y + points[0].y) / 2;
+        
+        ctx.moveTo(midX, midY);
+
+        for (let i = 0; i < len; i++) {
+          const p1 = points[i];
+          const p2 = points[(i + 1) % len];
+          // Control point is p1, destination is midpoint(p1, p2)
+          const midNextX = (p1.x + p2.x) / 2;
+          const midNextY = (p1.y + p2.y) / 2;
+          ctx.quadraticCurveTo(p1.x, p1.y, midNextX, midNextY);
+        }
+        ctx.fill();
+      };
+
+      // 1. Create the "Splash Map"
+      const splashCanvas = createCanvas(w, h);
+      const sCtx = splashCanvas.getContext('2d');
+      
+      // Determine bounds to keep drops near text
+      const data = ctx.getImageData(0,0,w,h).data;
+      let minX = w, maxX = 0, minY = h, maxY = 0;
+      let hasText = false;
+      for(let py=0; py<h; py+=10) {
+        for(let px=0; px<w; px+=10) {
+           if(data[(py*w+px)*4+3] > 0) {
+              if(px<minX) minX=px; if(px>maxX) maxX=px;
+              if(py<minY) minY=py; if(py>maxY) maxY=py;
+              hasText = true;
+           }
+        }
+      }
+      if(!hasText) { minX=0; maxX=w; minY=0; maxY=h; }
+      
+      const cx = (minX + maxX) / 2;
+      const cy = (minY + maxY) / 2;
+      const textW = maxX - minX;
+      const textH = maxY - minY;
+
+      sCtx.fillStyle = '#000000'; 
+
+      // Draw Drops
+      const count = Math.floor((textW * textH) / (10000 / density)) + density;
+      
+      for (let i = 0; i < count; i++) {
+         let dx, dy;
+         
+         if (rng() > 0.3) {
+           // Random scatter
+           const limitW = textW * (0.5 + spread);
+           const limitH = textH * (0.5 + spread);
+           dx = cx + (rng() - 0.5) * limitW * 2;
+           dy = cy + (rng() - 0.5) * limitH * 2;
+         } else {
+           // Edge clustering
+           const edge = rng() > 0.5 ? minX : maxX;
+           dx = edge + (rng() - 0.5) * 100;
+           dy = cy + (rng() - 0.5) * textH;
+         }
+
+         const size = (rng() * baseSize) + 2;
+         
+         // Draw main distorted blob
+         drawBlob(sCtx, dx, dy, size, distortion);
+         
+         // Draw "Satellites" (tiny splatter bits)
+         const satellites = Math.floor(rng() * 5);
+         for(let j=0; j<satellites; j++) {
+            const angle = rng() * Math.PI * 2;
+            const dist = size * (1.5 + rng() * 3);
+            const sSize = size * 0.3 * rng();
+            // Higher distortion on satellites creates jagged specks
+            drawBlob(sCtx, dx + Math.cos(angle)*dist, dy + Math.sin(angle)*dist, sSize, Math.min(1, distortion + 0.2));
+         }
+      }
+      
+      // 2. Apply to Text
+      if (isErode) {
+         // [REC] Style: Remove text where the drops are
+         ctx.globalCompositeOperation = 'destination-out';
+         ctx.drawImage(splashCanvas, 0, 0);
+         ctx.globalCompositeOperation = 'source-over'; 
+      } else {
+         // Paint Style
+         sCtx.globalCompositeOperation = 'source-in';
+         sCtx.fillStyle = color;
+         sCtx.fillRect(0,0,w,h);
+         
+         ctx.globalCompositeOperation = 'source-over';
+         ctx.drawImage(splashCanvas, 0, 0);
+      }
+
+      return { canvas, ctx };
+    }
+  },
 
 };
 
@@ -2735,11 +2883,13 @@ function applyTextEffect(textCtx, textCanvas, effectType, text, x, y, params = {
 }
 
 function getAvailableTextEffects() {
-  return Object.keys(TEXT_EFFECTS).sort().map(key => ({
-    id: key,
-    name: TEXT_EFFECTS[key].name,
-    params: TEXT_EFFECTS[key].params || []
-  }));
+  return Object.entries(TEXT_EFFECTS)
+    .map(([id, effect]) => ({
+      id,
+      name: effect.name,
+      params: effect.params || []
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 if (typeof window !== 'undefined') {

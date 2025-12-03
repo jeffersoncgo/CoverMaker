@@ -138,7 +138,7 @@
               <div class="field text">
                 <div>
                   <span>Overlay Text:</span>
-                  <input class="overlayText-input" type="text" placeholder="Type your text here" value="Movies">
+                  <input class="overlayText-input" type="text" placeholder="Type your text here" value="Movies" oninput="updateLayerLabel(this)">
                 </div>
                 <div>
                   <span>Font:</span>
@@ -223,82 +223,10 @@
             </div>
             <div class="field checkbox">
               <input type="checkbox" class="expand-checkbox" save>
-              <label class="expand-label expand-btn relative" style="font-size: 0.9rem;">Effects</label>
+              <label class="expand-label expand-btn relative" ondrop="onTextEffectDrop(event)" ondragover="allowDrop(event)" style="font-size: 0.9rem;">Effects</label>
               <i class="fa-solid fa-plus add-text-effect-btn add-button" title="Add Effect"></i>
               <div class="expand-content">
                 <div class="text-effects-container"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </template>
-
-  <template id="stroke-template">
-    <div class="field checkbox">
-      <input type="checkbox" class="expand-checkbox" save>
-      <input type="checkbox" class="stroke-enabled-checkbox toggle-checkbox" checked>
-      <label class="expand-label expand-btn relative">Frame</label>
-      <i class="fa-solid fa-eye toggle-button" title="Enable/Disable Stroke"></i>
-      <i class="fa-solid fa-trash delete delete-stroke-btn delete-button" title="Delete Frame"></i>
-      <i class="fa-solid fa-bookmark default-stroke-btn default-button" title="Set as Default Frame Style"></i>
-      <i class="fa-solid fa-clone duplicate-stroke-btn duplicate-button" title="Duplicate Frame"></i>
-      <div class="expand-content">
-        <div class="stroke-item">
-          <div class="field text">
-            <div class="flex row equalW full100W space-between field">
-              <div class="mid50W">
-                <span>Color:</span>
-                <input class="strokeColor-input" type="color" value="#000000" style="flex: 0 0 2rem; padding: 0;">
-              </div>
-              <div class="mid50W">
-                <span>Opacity:</span>
-                <input class="strokeOpacity-input" type="range" value="1.0" step="0.1" min="0" max="1">
-              </div>
-            </div>
-            <div class="flex row equalW full100W space-between field">
-              <div class="mid50W">
-                <span>Width:</span>
-                <input class="strokeWidth-input" type="number" value="2" min="1">
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </template>
-
-  <template id="shadow-template">
-    <div class="field checkbox">
-      <input type="checkbox" class="expand-checkbox" save>
-      <input type="checkbox" class="shadow-enabled-checkbox toggle-checkbox" checked>
-      <label class="expand-label expand-btn relative">Bloom</label>
-      <i class="fa-solid fa-eye toggle-button" title="Enable/Disable Shadow"></i>
-      <i class="fa-solid fa-trash delete delete-shadow-btn delete-button" title="Delete Bloom"></i>
-      <i class="fa-solid fa-bookmark default-shadow-btn default-button" title="Set as Default Bloom Style"></i>
-      <i class="fa-solid fa-clone duplicate-shadow-btn duplicate-button" title="Duplicate Bloom"></i>
-      <div class="expand-content">
-        <div class="shadow-item">
-          <div class="field text">
-            <div class="flex row equalW full100W space-between field">
-              <div class="mid50W">
-                <span>Color:</span>
-                <input class="shadowColor-input" type="color" value="#000000" style="flex: 0 0 2rem; padding: 0;">
-              </div>
-              <div class="mid50W">
-                <span>Blur:</span>
-                <input class="shadowBlur-input" type="number" value="5" min="0">
-              </div>
-            </div>
-            <div class="flex row equalW full100W space-between field">
-              <div class="mid50W">
-                <span>Offset X:</span>
-                <input class="shadowOffsetX-input" type="number" value="5">
-              </div>
-              <div class="mid50W">
-                <span>Offset Y:</span>
-                <input class="shadowOffsetY-input" type="number" value="5">
               </div>
             </div>
           </div>
@@ -485,13 +413,14 @@
                           <div>
                             <label for="exportFormatSelect">Image Format:</label>
                             <select id="exportFormatSelect" save>
+                              <option value="webp">WEBP</option>
                               <option value="png">PNG</option>
                               <option value="jpeg">JPEG</option>
                             </select>
                           </div>
                           <div>
-                            <label for="jpegQuality">JPEG Quality (Only for JPEG):</label>
-                            <input type="number" id="jpegQuality" value="1" step="0.01" min="0" max="1" save>
+                            <label for="jpegQuality">Export Quality:</label>
+                            <input type="number" id="jpegQuality" value="0.95" step="0.01" min="0" max="1" save>
                           </div>
                         </div>
                       </div>
@@ -519,11 +448,14 @@
       <canvas id="myCanvas" width="1920" height="1080"></canvas>
       <div class="canvasBars field">
         <div id="importProjectBtn" class="button" title="Open Project File">
-          <i class="fa-solid fa-file-import" title="Open Project File"></i>
+          <i class="fa-solid fa-folder-open" title="Open Project File"></i>
           <input type="file" id="importProjectInput" accept=".json,.zip,.covermaker.zip" style="display:none">
         </div>
         <div id="exportProjectBtn" class="button" title="Save Project File">
-          <i class="fa-solid fa-file-export" title="Save Project File"></i>
+          <i class="fa-solid fa-file-zipper" title="Save Project File"></i>
+        </div>
+        <div id="exportSetupBtn" class="button" title="Save Setup (JSON)">
+          <i class="fa-solid fa-file-code" title="Save Setup (JSON)"></i>
         </div>
         <div id="exportBtn" class="button" title="Download Composite Image">
           <i class="fa-solid fa-download" title="Download Composite Image"></i>

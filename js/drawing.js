@@ -603,7 +603,7 @@ async function urlToBlob(url) {
  * @param {number} quality - Image quality 0-1 (for jpeg/webp)
  * @returns {Promise<Blob>}
  */
-async function imgToBlob(imgElem, mime = "image/png", quality = 1) {
+async function imgToBlob(imgElem, mime = "image/webp", quality = 0.95) {
   const canvas = document.createElement("canvas");
   canvas.width = imgElem.naturalWidth || imgElem.width;
   canvas.height = imgElem.naturalHeight || imgElem.height;
@@ -632,4 +632,87 @@ async function imgToBlob(imgElem, mime = "image/png", quality = 1) {
 async function imgToBlobUrl(imgElem, mime = "image/png", quality = 0.95) {
   const blob = await imgToBlob(imgElem, mime, quality);
   return URL.createObjectURL(blob);
+}
+
+function cropCanvas(sourceCanvas) {
+  const ctx = sourceCanvas.getContext('2d');
+  const w = sourceCanvas.width;
+  const h = sourceCanvas.height;
+  
+  // 1. Get the raw pixel data
+  // Warning: This will fail if the canvas is "tainted" (has images from other domains without CORS)
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+
+  let top = 0, bottom = h, left = 0, right = w;
+
+  // 2. Scan for Top
+  // We loop through rows until we find a non-transparent pixel
+  top: for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      // Check Alpha channel (every 4th byte: R, G, B, A)
+      if (data[(y * w + x) * 4 + 3] > 0) {
+        top = y;
+        break top; // Stop outer loop
+      }
+    }
+  }
+
+  // If top is still 0 (and we didn't break), the canvas might be empty.
+  // However, we need to verify if the very first pixel was empty or if the whole thing is empty.
+  // A quick check: if we looped through everything and found nothing.
+  // (Simplification: We assume if top didn't break loop logic, we might be at the end, 
+  // but let's handle the "Empty Canvas" case at the end).
+
+  // 3. Scan for Bottom
+  bottom: for (let y = h - 1; y >= top; y--) {
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] > 0) {
+        bottom = y + 1; // +1 because we want the height to include this row
+        break bottom;
+      }
+    }
+  }
+
+  // Check if empty canvas
+  if (bottom <= top) {
+     return null; // Canvas is fully transparent
+  }
+
+  // 4. Scan for Left (Restrict Y loop to top/bottom bounds for speed)
+  left: for (let x = 0; x < w; x++) {
+    for (let y = top; y < bottom; y++) {
+      if (data[(y * w + x) * 4 + 3] > 0) {
+        left = x;
+        break left;
+      }
+    }
+  }
+
+  // 5. Scan for Right
+  right: for (let x = w - 1; x >= left; x--) {
+    for (let y = top; y < bottom; y++) {
+      if (data[(y * w + x) * 4 + 3] > 0) {
+        right = x + 1;
+        break right;
+      }
+    }
+  }
+
+  // 6. Cut the content
+  const croppedWidth = right - left;
+  const croppedHeight = bottom - top;
+
+  const croppedCanvas = document.createElement('canvas');
+  croppedCanvas.width = croppedWidth;
+  croppedCanvas.height = croppedHeight;
+  
+  // Draw the specific region from source to the new canvas
+  croppedCanvas.getContext('2d').drawImage(
+    sourceCanvas, 
+    left, top, croppedWidth, croppedHeight, // Source Rect
+    0, 0, croppedWidth, croppedHeight       // Dest Rect
+  );
+
+  return croppedCanvas;
 }

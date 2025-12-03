@@ -1,0 +1,629 @@
+{
+  "Setup": {
+    "Sizes": {
+      "cover": {
+        "width": 1920,
+        "height": 1080,
+        "quality": 80
+      },
+      "poster": {
+        "width": 1080,
+        "height": 1920,
+        "quality": 60
+      },
+      "square": {
+        "width": 1,
+        "height": 1,
+        "quality": 100
+      },
+      "custom": {
+        "width": 1,
+        "height": 1,
+        "quality": 100
+      }
+    },
+    "Library": {
+      "loadedLibrary": ""
+    },
+    "Images": {
+      "loading": "images/loading.gif",
+      "error": "images/error.png"
+    },
+    "loadingType": "eager",
+    "Settings": {
+      "textLayers": [
+        {
+          "font": {
+            "family": "Arial",
+            "weight": "lighter",
+            "style": "normal",
+            "size": 128,
+            "color": "#ffffff",
+            "opacity": 1
+          },
+          "position": {
+            "textAlign": "center",
+            "textBaseline": "middle",
+            "x": 0,
+            "y": 265,
+            "rotation": 0
+          },
+          "strokes": [],
+          "shadows": [],
+          "id": "layer_5",
+          "overlayText": "COLLECTION",
+          "enabled": true,
+          "fontStyle": "normal lighter 128px \"Arial\"",
+          "fillStyle": "rgba(255, 255, 255, 1)",
+          "effects": [
+            {
+              "type": "outline",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "thickness": 6.5
+              }
+            },
+            {
+              "type": "neon",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "intensity": 3.1,
+                "size": 2
+              }
+            },
+            {
+              "type": "longShadow",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "blur": 6,
+                "length": 21,
+                "angle": 240,
+                "opacity": 0.2
+              }
+            },
+            {
+              "type": "vectorWarp",
+              "enabled": true,
+              "params": {
+                "amount": 4,
+                "direction": "right",
+                "frequency": 3.8
+              }
+            },
+            {
+              "type": "box",
+              "enabled": true,
+              "params": {
+                "color": "#000000",
+                "padding": 25,
+                "radius": 0
+              }
+            },
+            {
+              "type": "outline",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "thickness": 5.5
+              }
+            },
+            {
+              "type": "opacity",
+              "enabled": true,
+              "params": {
+                "amount": 0.92
+              }
+            }
+          ]
+        },
+        {
+          "font": {
+            "family": "Brush Script MT",
+            "weight": "lighter",
+            "style": "normal",
+            "size": 343,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "position": {
+            "textAlign": "center",
+            "textBaseline": "middle",
+            "x": 0,
+            "y": 6,
+            "rotation": 0
+          },
+          "strokes": [],
+          "shadows": [],
+          "id": "layer_0",
+          "overlayText": "AA",
+          "enabled": true,
+          "fontStyle": "normal lighter 343px \"Brush Script MT\"",
+          "fillStyle": "rgba(0, 0, 0, 1)",
+          "effects": [
+            {
+              "type": "box",
+              "enabled": true,
+              "params": {
+                "color": "#000000",
+                "padding": 66,
+                "radius": 0
+              }
+            },
+            {
+              "type": "scale",
+              "enabled": true,
+              "params": {
+                "w": 2.65,
+                "h": 1
+              }
+            },
+            {
+              "type": "outline",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "thickness": 4.5
+              }
+            },
+            {
+              "type": "vectorWarp",
+              "enabled": false,
+              "params": {
+                "amount": 12,
+                "direction": "right",
+                "frequency": 3
+              }
+            }
+          ]
+        },
+        {
+          "font": {
+            "family": "Arial",
+            "weight": "lighter",
+            "style": "normal",
+            "size": 236,
+            "color": "#ffffff",
+            "opacity": 1
+          },
+          "position": {
+            "textAlign": "center",
+            "textBaseline": "middle",
+            "x": 108,
+            "y": 0,
+            "rotation": 0
+          },
+          "strokes": [],
+          "shadows": [],
+          "id": "layer_1",
+          "overlayText": "REC",
+          "enabled": true,
+          "fontStyle": "normal lighter 236px \"Arial\"",
+          "fillStyle": "rgba(255, 255, 255, 1)",
+          "effects": [
+            {
+              "type": "neon",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "intensity": 2,
+                "size": 8
+              }
+            },
+            {
+              "type": "outline",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "thickness": 2
+              }
+            },
+            {
+              "type": "neon",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "intensity": 4.1,
+                "size": 16
+              }
+            },
+            {
+              "type": "vectorWarp",
+              "enabled": true,
+              "params": {
+                "amount": 3,
+                "direction": "right",
+                "frequency": 6.6
+              }
+            }
+          ]
+        },
+        {
+          "font": {
+            "family": "Arial",
+            "weight": "lighter",
+            "style": "normal",
+            "size": 295,
+            "color": "#ffffff",
+            "opacity": 1
+          },
+          "position": {
+            "textAlign": "center",
+            "textBaseline": "middle",
+            "x": -422,
+            "y": -21,
+            "rotation": 0
+          },
+          "strokes": [],
+          "shadows": [],
+          "id": "layer_2",
+          "overlayText": "[",
+          "enabled": true,
+          "fontStyle": "normal lighter 295px \"Arial\"",
+          "fillStyle": "rgba(255, 255, 255, 1)",
+          "effects": [
+            {
+              "type": "outline",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "thickness": 6.5
+              }
+            },
+            {
+              "type": "neon",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "intensity": 4.1,
+                "size": 16
+              }
+            },
+            {
+              "type": "longShadow",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "blur": 6,
+                "length": 25,
+                "angle": 240,
+                "opacity": 0.2
+              }
+            },
+            {
+              "type": "vectorWarp",
+              "enabled": true,
+              "params": {
+                "amount": 7,
+                "direction": "right",
+                "frequency": 0.4
+              }
+            },
+            {
+              "type": "vectorWarp",
+              "enabled": true,
+              "params": {
+                "amount": 3,
+                "direction": "right",
+                "frequency": 4.9
+              }
+            }
+          ]
+        },
+        {
+          "font": {
+            "family": "Arial",
+            "weight": "lighter",
+            "style": "normal",
+            "size": 295,
+            "color": "#ffffff",
+            "opacity": 1
+          },
+          "position": {
+            "textAlign": "center",
+            "textBaseline": "middle",
+            "x": 422,
+            "y": -21,
+            "rotation": 0
+          },
+          "strokes": [],
+          "shadows": [],
+          "id": "layer_3",
+          "overlayText": "]",
+          "enabled": true,
+          "fontStyle": "normal lighter 295px \"Arial\"",
+          "fillStyle": "rgba(255, 255, 255, 1)",
+          "effects": [
+            {
+              "type": "outline",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "thickness": 6.5
+              }
+            },
+            {
+              "type": "neon",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "intensity": 4.1,
+                "size": 16
+              }
+            },
+            {
+              "type": "longShadow",
+              "enabled": true,
+              "params": {
+                "color": "#ffffff",
+                "blur": 6,
+                "length": 25,
+                "angle": 240,
+                "opacity": 0.2
+              }
+            },
+            {
+              "type": "vectorWarp",
+              "enabled": true,
+              "params": {
+                "amount": 7,
+                "direction": "left",
+                "frequency": 0.4
+              }
+            },
+            {
+              "type": "vectorWarp",
+              "enabled": true,
+              "params": {
+                "amount": 3,
+                "direction": "left",
+                "frequency": 4.9
+              }
+            }
+          ]
+        },
+        {
+          "font": {
+            "family": "Brush Script MT",
+            "weight": "lighter",
+            "style": "normal",
+            "size": 1600,
+            "color": "#ff0000",
+            "opacity": 1
+          },
+          "position": {
+            "textAlign": "center",
+            "textBaseline": "middle",
+            "x": -291,
+            "y": -371,
+            "rotation": 0
+          },
+          "strokes": [],
+          "shadows": [],
+          "id": "layer_4",
+          "overlayText": ".",
+          "enabled": true,
+          "fontStyle": "normal lighter 1600px \"Brush Script MT\"",
+          "fillStyle": "rgba(255, 0, 0, 1)",
+          "effects": [
+            {
+              "type": "longShadow",
+              "enabled": true,
+              "params": {
+                "color": "#ff0000",
+                "blur": 5,
+                "length": 20,
+                "angle": 0,
+                "opacity": 0.55
+              }
+            },
+            {
+              "type": "vectorWarp",
+              "enabled": true,
+              "params": {
+                "amount": 3,
+                "direction": "right",
+                "frequency": 6.6
+              }
+            }
+          ]
+        }
+      ],
+      "canvas": {
+        "type": "cctv",
+        "format": "poster",
+        "opacity": 0,
+        "overlayColorStart": "#000000",
+        "overlayColorStartRGB": {
+          "r": 0,
+          "g": 0,
+          "b": 0
+        },
+        "overlayColorEnd": "#000000",
+        "overlayColorEndRGB": {
+          "r": 0,
+          "g": 0,
+          "b": 0
+        },
+        "overlayOpacityStart": 0.1,
+        "overlayOpacityEnd": 0.4,
+        "reflectionDistance": 0.7,
+        "reflectionScale": 0.8,
+        "baseScale": 1.4,
+        "blurAmount": 5,
+        "spacing": 1,
+        "salt": 3,
+        "composite": {
+          "type": "cctv",
+          "params": {
+            "columns": 2,
+            "noise": 70
+          },
+          "enabled": true
+        },
+        "effects": [
+          {
+            "type": "scanLines",
+            "params": {
+              "opacity": 1,
+              "density": 10
+            },
+            "enabled": true
+          }
+        ]
+      },
+      "export": {
+        "format": "png",
+        "jpegQuality": 1
+      }
+    },
+    "defaults": {
+      "shadow": {
+        "color": "#ffffff",
+        "blur": 45,
+        "offsetX": 12,
+        "offsetY": 12,
+        "enabled": true
+      },
+      "stroke": {
+        "color": "#4f4f4f",
+        "width": 32,
+        "opacity": 1,
+        "enabled": true,
+        "style": "rgba(79, 79, 79, 1)"
+      },
+      "TextLayer": {
+        "font": {
+          "family": "Carrois Gothic SC",
+          "weight": "bold",
+          "style": "normal",
+          "size": 462,
+          "color": "#ababab",
+          "opacity": 1
+        },
+        "position": {
+          "textAlign": "center",
+          "textBaseline": "middle",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        "strokes": [],
+        "shadows": [],
+        "id": "layer_0",
+        "overlayText": "MOVIES",
+        "enabled": true,
+        "fontStyle": "normal bold 462px \"Carrois Gothic SC\"",
+        "fillStyle": "rgba(171, 171, 171, 1)",
+        "effects": [
+          {
+            "type": "outline",
+            "enabled": true,
+            "params": {
+              "color": "#c2c2c2",
+              "thickness": 4
+            }
+          },
+          {
+            "type": "outline",
+            "enabled": true,
+            "params": {
+              "color": "#878787",
+              "thickness": 8.5
+            }
+          },
+          {
+            "type": "outline",
+            "enabled": true,
+            "params": {
+              "color": "#878787",
+              "thickness": 4.5
+            }
+          },
+          {
+            "type": "outline",
+            "enabled": true,
+            "params": {
+              "color": "#616161",
+              "thickness": 2.5
+            }
+          },
+          {
+            "type": "longShadow",
+            "enabled": true,
+            "params": {
+              "color": "#616161",
+              "blur": 0,
+              "length": 6,
+              "angle": 29,
+              "opacity": 1
+            }
+          },
+          {
+            "type": "longShadow",
+            "enabled": true,
+            "params": {
+              "color": "#4f4f4f",
+              "blur": 0,
+              "length": 10,
+              "angle": 29,
+              "opacity": 1
+            }
+          },
+          {
+            "type": "outline",
+            "enabled": true,
+            "params": {
+              "color": "#c2c2c2",
+              "thickness": 1
+            }
+          },
+          {
+            "type": "longShadow",
+            "enabled": true,
+            "params": {
+              "color": "#000000",
+              "blur": 15,
+              "length": 60,
+              "angle": 29,
+              "opacity": 0.11
+            }
+          },
+          {
+            "type": "distress",
+            "enabled": true,
+            "params": {
+              "mode": "wave",
+              "amount": 1,
+              "seed": 0
+            }
+          }
+        ]
+      },
+      "composite": {
+        "type": "line",
+        "params": {}
+      },
+      "effects": {
+        "type": "overlay",
+        "params": {
+          "startColor": "#000000",
+          "startOpacity": 0,
+          "endColor": "#000000",
+          "endOpacity": 0.9
+        },
+        "enabled": true
+      },
+      "textEffect": {
+        "type": "outline",
+        "enabled": true,
+        "params": {
+          "color": "#c2c2c2",
+          "thickness": 4
+        }
+      }
+    }
+  }
+}

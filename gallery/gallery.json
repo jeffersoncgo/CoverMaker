@@ -1,5 +1,27 @@
 [
   {
+    "id": "rec-collection",
+    "title": "Rec — Collection",
+    "shortDescription": "A dark and gritty style inspired by the [REC] horror franchise.",
+    "image": "gallery/projects/rec-collection/rec.collection.result.png",
+    "type": "cover",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/rec-collection/project.json",
+    "project": "gallery/projects/rec-collection/rec.collection.project.zip"
+  },
+  {
+    "id": "marvel-collection",
+    "title": "Marvel — Collection",
+    "shortDescription": "A cinematic and bold style designed for Marvel movie collections.",
+    "image": "gallery/projects/marvel-collection/marvel.collection.result.png",
+    "type": "cover",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/marvel-collection/project.json",
+    "project": "gallery/projects/marvel-collection/marvel.collection.project.zip"
+  },
+  {
     "id": "war-metal",
     "title": "War — Metal",
     "shortDescription": "A high-contrast metallic poster featuring stacked text, long shadow, and distress effects.",

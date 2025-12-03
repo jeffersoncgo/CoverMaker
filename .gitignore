@@ -8,3 +8,5 @@ images/Thumbs.db
 .devcontainer/
 .devcontainer.json
 .readme/
+.temp/
+tmp/
