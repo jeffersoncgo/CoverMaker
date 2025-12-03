@@ -2,9 +2,9 @@
 
 This file is auto-generated from the `gallery/gallery.json` file.
 
-Generated: 2025-12-01T21:16:25.680Z
+Generated: 2025-12-02T23:12:43.437Z
 
-## Projects (5)
+## Projects (6)
 
 <details>
 <summary>Cover (4)</summary>
@@ -151,9 +151,43 @@ Generated: 2025-12-01T21:16:25.680Z
 </details>
 
 <details>
-<summary>Poster (1)</summary>
+<summary>Poster (2)</summary>
 
 <div style="display:flex; flex-wrap:wrap; gap:16px;">
+<div style="
+  width:260px;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:12px;
+  margin:6px;
+  box-shadow:0 2px 4px rgba(0,0,0,0.08);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+">
+
+  <img src="gallery/projects/lego-collection/lego.collection.result.png" alt="Lego — Collection" loading="lazy"
+       style="width:100%; height:auto; border-radius:6px;" />
+
+  <div style="font-weight:600; font-size:16px;">
+    Lego — Collection
+  </div>
+
+  <div style="font-size:13px; opacity:0.8;">
+    A vibrant, playful poster with pixel matrix effects and stacked text, perfect for Lego-themed collections.
+  </div>
+
+  <div style="font-size:12px;">
+    Author:
+    <a href="https://github.com/jeffersoncgo/CoverMaker" target="_blank">jeffersoncgo</a>
+  </div>
+
+  <div style="display:flex; gap:8px; font-size:12px;">
+    <a href="gallery/projects/lego-collection/project.json">Setup</a>
+    <a href="gallery/projects/lego-collection/lego.collection.project.zip">Project</a>
+  </div>
+
+</div>
 <div style="
   width:260px;
   border:1px solid #ddd;
