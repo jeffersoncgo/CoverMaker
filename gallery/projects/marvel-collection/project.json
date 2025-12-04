@@ -137,7 +137,7 @@
         }
       ],
       "canvas": {
-        "type": "jigsawPuzzle",
+        "type": "editorial",
         "format": "poster",
         "opacity": 0,
         "overlayColorStart": "#000000",
@@ -161,18 +161,19 @@
         "spacing": 1,
         "salt": 3,
         "composite": {
-          "type": "jigsawPuzzle",
+          "type": "editorial",
           "params": {
-            "pieces": 17,
-            "seed": 23
+            "layout": "Left Hero",
+            "split": 65,
+            "gap": 5
           },
           "enabled": true
         },
         "effects": []
       },
       "export": {
-        "format": "png",
-        "jpegQuality": 1
+        "format": "webp",
+        "jpegQuality": "0.95"
       }
     },
     "defaults": {
