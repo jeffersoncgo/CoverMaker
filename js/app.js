@@ -845,11 +845,11 @@ function loadSetup() {
     const defaultSetup = window.defaultSetup || Setup;
     Setup = deepMerge(JSON.parse(savedSetup), defaultSetup);
     // Update export settings UI
-    if (Setup.Export.Project.Images) {
+    if (Setup?.Export?.Project?.Images) {
       exportProjectImagesFormatSelectElement.value = Setup.Export.Project.Images.format || 'webp';
       exportProjectImagesQualityElement.value = Setup.Export.Project.Images.jpegQuality || 0.95;
     }
-    if (Setup.Export.Image.Images) {
+    if (Setup?.Export?.Image?.Images) {
       exportImageImagesFormatSelectElement.value = Setup.Export.Image.Images.format || 'webp';
       exportImageImagesQualityElement.value = Setup.Export.Image.Images.jpegQuality || 0.95;
     }
