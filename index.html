@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="css/toast.css">
   <link rel="stylesheet" href="css/animations.css">
   <link rel="stylesheet" href="css/utilities.css">
+  <link rel="stylesheet" href="css/gallery.css">
   <link rel="stylesheet" href="css/mobile.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
     integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
@@ -45,7 +46,7 @@
     </div>
   </div>
 
-  <div class="floatWindow" id="galleryBox" style="display: none; width: 720px; max-width: calc(100vw - 2rem);">
+  <div class="floatWindow" id="galleryBox" style="display: none; width: 90vw; max-width: 1400px; max-height: 90vh;">
     <div class="windowBar">
       <h2>Gallery</h2>
       <button class="closeBtn">×</button>
@@ -64,24 +65,39 @@
           <button id="gallerySearchClear" class="icon-button" title="Clear search"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </div>
-      <div class="field checkbox gallery-groups">
-        <div>
-          <input type="checkbox" id="expandGalleryPresets" class="expand-checkbox" save>
-          <label for="expandGalleryPresets" class="expand-label expand-btn relative gallery-group-title" data-for="presets">Presets (0)</label>
-          <div class="gallery-group expand-content gallery-list scroll-container" id="galleryPresetsList"></div>
+      <div class="field checkbox gallery-groups" id="galleryGroupsContainer">
+        <!-- Groups will be injected here by js/gallery.js -->
+        <div id="galleryNoResults" class="no-results" style="display:none;">No results found</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gallery Modal -->
+  <div id="galleryModal" class="gallery-modal" style="display: none;">
+    <div class="gallery-modal-overlay" onclick="closeGalleryModal()"></div>
+    <div class="gallery-modal-content">
+      <button class="gallery-modal-close" onclick="closeGalleryModal()">×</button>
+      <div class="gallery-modal-body">
+        <div class="gallery-modal-image-container">
+          <img class="gallery-modal-image" src="" alt="" />
         </div>
-
-        <div>
-          <input type="checkbox" id="expandGalleryProjects" class="expand-checkbox" save>
-          <label for="expandGalleryProjects" class="gallery-group-title expand-label expand-btn relative" data-for="projects">Projects (0)</label>
-          <div class="gallery-group expand-content gallery-list scroll-container" id="galleryProjectsList"></div>
-        </div>
-
-
-          <div id="galleryNoResults" class="no-results" style="display:none;">No results found</div>
+        <div class="gallery-modal-info">
+          <h3 class="gallery-modal-title"></h3>
+          <p class="gallery-modal-description"></p>
+          <div class="gallery-modal-author">
+            <span></span>
+            <a href="#" target="_blank" rel="noopener noreferrer" title="Open author page">
+              <i class="fa-solid fa-up-right-from-square"></i>
+            </a>
+          </div>
+          <div class="gallery-modal-actions">
+            <button class="button gallery-modal-setup-btn">Use Json</button>
+            <button class="button gallery-modal-project-btn">Use Full Project</button>
+          </div>
         </div>
       </div>
     </div>
+  </div>
 
 
   <template id="slot-template">
@@ -400,30 +416,55 @@
             </div>
 
             <div class="field checkbox">
-              <input type="checkbox" id="expandOptionsSettings" class="expand-checkbox" save>
+              <input type="checkbox" id="expandOptionsSettings" class="expand-checkbox">
               <label for="expandOptionsSettings" class="expand-label expand-btn relative">Options</label>
               <div class="expand-content">
                 <div class="field options">
                   <div class="field checkbox">
                     <div>
-                      <input type="checkbox" id="expandExportSettings" class="expand-checkbox" save>
-                      <label for="expandExportSettings" class="expand-label expand-btn relative">Export</label>
+                      <input type="checkbox" id="expandExportProjectSettings" class="expand-checkbox">
+                      <label for="expandExportProjectSettings" class="expand-label expand-btn relative">Project Export</label>
                       <div class="expand-content">
                         <div class="field Export">
                           <div>
-                            <label for="exportFormatSelect">Image Format:</label>
-                            <select id="exportFormatSelect" save>
+                            <label for="exportProjectImagesFormatSelect">Image Format:</label>
+                            <select id="exportProjectImagesFormatSelect">
                               <option value="webp">WEBP</option>
                               <option value="png">PNG</option>
                               <option value="jpeg">JPEG</option>
                             </select>
                           </div>
                           <div>
-                            <label for="jpegQuality">Export Quality:</label>
-                            <input type="number" id="jpegQuality" value="0.95" step="0.01" min="0" max="1" save>
+                            <label for="exportProjectImagesQuality">Export Quality:</label>
+                            <input type="number" id="exportProjectImagesQuality" value="0.95" step="0.01" min="0" max="1">
                           </div>
                         </div>
                       </div>
+                    </div>
+                    <div>
+                      <input type="checkbox" id="expandExportImageSettings" class="expand-checkbox">
+                      <label for="expandExportImageSettings" class="expand-label expand-btn relative">Image Export</label>
+                      <div class="expand-content">
+                        <div class="field Export">
+                          <div>
+                            <label for="exportImageImagesFormatSelect">Image Format:</label>
+                            <select id="exportImageImagesFormatSelect">
+                              <option value="png">PNG</option>
+                              <option value="webp">WEBP</option>
+                              <option value="jpeg">JPEG</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label for="exportImageQuality">Export Quality:</label>
+                            <input type="number" id="exportImageQuality" value="1" step="0.01" min="0" max="1">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="field export-config-buttons full100W flex row space-between">
+                      <!-- buttons to export and import Config -->
+                      <button id="importConfigBtn">Import Config</button>
+                      <button id="exportConfigBtn">Export Config</button>
                     </div>
                   </div>
                 </div>
@@ -499,14 +540,16 @@
 
     <div id="toast-root"></div>
 
-    <script src="https://jeffersoncgo.github.io/cdn/js/common.js"></script>
-    <script src="https://jeffersoncgo.github.io/cdn/js/base.js"></script>
-    <script src="https://jeffersoncgo.github.io/cdn/js/object.js"></script>
-    <script src="https://jeffersoncgo.github.io/cdn/js/controller.js"></script>
-    <script src="https://jeffersoncgo.github.io/cdn/js/observer.js"></script>
-    <script src="https://jeffersoncgo.github.io/cdn/js/pagememory.js"></script>
-    <script src="https://jeffersoncgo.github.io/cdn/js/search.js"></script>
-    <script src="https://jeffersoncgo.github.io/cdn/js/fetchqueue.js"></script>
+    <script src="js/vendor/common.js"></script>
+    <script src="js/vendor/search.js"></script>
+    <script src="js/vendor/controller.js"></script>
+    <script src="js/vendor/pagememory.js"></script>
+    <script src="js/vendor/observer.js"></script>
+    <script src="js/vendor/fetchqueue.js"></script>
+
+
+    <!-- <script src="https://jeffersoncgo.github.io/cdn/js/base.js"></script> -->
+    <!-- <script src="https://jeffersoncgo.github.io/cdn/js/object.js"></script> -->
 
     <script src="js/jellyfin.js"></script>
     <script src="js/windowsHandle.js"></script>

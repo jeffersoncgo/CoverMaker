@@ -14,7 +14,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'startOpacity', label: 'Fade Opacity 1', type: 'range', min: 0, max: 1, step: 0.01, default: 0.1, group: 'Overlay_Start' },
       { key: 'endOpacity', label: 'Fade Opacity 2', type: 'range', min: 0, max: 1, step: 0.01, default: 1, group: 'Overlay_End' },
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       if (!images.length) return;
 
       const spacing = params.spacing ?? 0;
@@ -125,7 +125,7 @@ const COMPOSITE_REGISTRY = {
         ctx.restore();
       });
 
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -135,7 +135,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'baseScale', label: 'Scale', type: 'range', min: 0.1, max: 1.5, step: 0.05, default: 1 },
       { key: 'spacing', label: 'Spacing', type: 'range', min: 0, max: 50, step: 1, default: 5 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
 
@@ -191,7 +191,7 @@ const COMPOSITE_REGISTRY = {
         }
         dy += rowHeight + spacing;
       }
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -201,7 +201,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'spacing', label: 'Spacing', type: 'range', min: 0, max: 20, step: 1, default: 3 },
       { key: 'salt', label: 'Variation', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
 
@@ -318,7 +318,7 @@ const COMPOSITE_REGISTRY = {
         ctx.strokeRect(-w / 2, -h / 2, w, h);
         ctx.restore();
       });
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -327,7 +327,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Rotation Offset', type: 'range', min: 0, max: 360, step: 1, default: 0 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
 
@@ -391,7 +391,7 @@ const COMPOSITE_REGISTRY = {
         ctx.stroke();
         ctx.restore();
       });
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -400,7 +400,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Rotation', type: 'range', min: 0, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const salt = params.salt ?? 1;
@@ -482,7 +482,7 @@ const COMPOSITE_REGISTRY = {
         ctx.strokeRect(-width / 2, -height / 2, width, height);
         ctx.restore();
       });
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -492,7 +492,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'salt', label: 'Layout Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 },
       { key: 'spacingColor', label: 'Border Color', type: 'color', default: '#ffffff' }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
 
@@ -574,7 +574,7 @@ const COMPOSITE_REGISTRY = {
         ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
         ctx.restore();
       });
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -583,7 +583,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Layout Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const salt = params.salt ?? 1;
@@ -691,7 +691,7 @@ const COMPOSITE_REGISTRY = {
         ctx.strokeRect(-width / 2, -height / 2, width, height);
         ctx.restore();
       });
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -700,7 +700,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'scaleStep', label: 'Shrink Factor', type: 'range', min: 0.5, max: 0.95, step: 0.01, default: 0.85 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const scaleStep = params.scaleStep ?? 0.85;
@@ -739,7 +739,7 @@ const COMPOSITE_REGISTRY = {
         ctx.drawImage(img, sx, sy, sWidth, sHeight, x, y, w, h);
         ctx.restore();
       }
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -748,7 +748,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Variation', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const salt = params.salt ?? 1;
@@ -832,7 +832,7 @@ const COMPOSITE_REGISTRY = {
         ctx.strokeRect(-cardW / 2, -cardH / 2, cardW, cardH);
         ctx.restore();
       }
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -841,7 +841,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Scatter Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const salt = params.salt ?? 1;
@@ -918,7 +918,7 @@ const COMPOSITE_REGISTRY = {
         ctx.strokeRect(x, y, width, height);
         ctx.restore();
       }
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -927,7 +927,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Pattern', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const salt = params.salt ?? 1;
@@ -1008,7 +1008,7 @@ const COMPOSITE_REGISTRY = {
         ctx.strokeRect(x, y, width, height);
         ctx.restore();
       });
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -1017,7 +1017,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Variation', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const salt = params.salt ?? 1;
@@ -1097,7 +1097,7 @@ const COMPOSITE_REGISTRY = {
         ctx.strokeRect(-width / 2, -height / 2, width, height);
         ctx.restore();
       });
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -1107,7 +1107,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'salt', label: 'Variation', type: 'range', min: 1, max: 100, step: 1, default: 1 },
       { key: 'overlap', label: 'Overlap', type: 'range', min: 0.5, max: 0.9, step: 0.05, default: 0.7 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -1231,7 +1231,7 @@ const COMPOSITE_REGISTRY = {
           ctx.restore();
         }
       }
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -1240,7 +1240,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Scatter Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -1348,7 +1348,7 @@ const COMPOSITE_REGISTRY = {
         }
         ctx.restore();
       }
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -1357,7 +1357,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Scatter Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -1414,7 +1414,7 @@ const COMPOSITE_REGISTRY = {
         ctx.drawImage(pImg, -w / 2, -h / 2, w, h);
         ctx.restore();
       }
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -1423,7 +1423,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Pattern Variation', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const baseWidth = canvas.width;
@@ -1524,7 +1524,7 @@ const COMPOSITE_REGISTRY = {
         ctx.strokeRect(x, y, width, height);
         ctx.restore();
       }
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -1533,7 +1533,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'salt', label: 'Layout Variation', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -1613,7 +1613,7 @@ const COMPOSITE_REGISTRY = {
         ctx.drawImage(img, sx, sy, sw, sh, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
         ctx.restore();
       }
-      return { ctx, canvas, images, params }
+      return { ctx, canvas, images, params, abortSignal}
     }
   },
 
@@ -1624,7 +1624,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'spacing', label: 'Frame Spacing', type: 'range', min: 0, max: 50, step: 1, default: 10 },
       { key: 'color', label: 'Strip Color', type: 'color', default: '#111111' }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -1739,7 +1739,7 @@ const COMPOSITE_REGISTRY = {
         ctx.strokeRect(x, y, frameW, frameH);
       });
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -1749,7 +1749,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'spacing', label: 'Gap Size', type: 'range', min: 0, max: 20, step: 1, default: 5 },
       { key: 'scale', label: 'Hex Size', type: 'range', min: 0.5, max: 1.5, step: 0.1, default: 1.0 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
 
@@ -1864,7 +1864,7 @@ const COMPOSITE_REGISTRY = {
         ctx.restore();
       });
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -1874,7 +1874,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'direction', label: 'Vanishing Point', type: 'select', options: ['Left', 'Right'], default: 'Right' },
       { key: 'depth', label: 'Depth Intensity', type: 'range', min: 0.1, max: 0.9, step: 0.1, default: 0.6 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -1963,7 +1963,7 @@ const COMPOSITE_REGISTRY = {
         currentX += slotWidth + margin;
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -1972,7 +1972,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'spacing', label: 'Spacing', type: 'range', min: 0, max: 20, step: 1, default: 5 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -2054,7 +2054,7 @@ const COMPOSITE_REGISTRY = {
         }
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -2065,7 +2065,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'spacing', label: 'Spacing', type: 'range', min: 0, max: 30, step: 1, default: 10 },
       { key: 'borderColor', label: 'Line Color', type: 'color', default: '#ffffff' }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -2195,7 +2195,7 @@ const COMPOSITE_REGISTRY = {
         ctx.restore();
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -2206,7 +2206,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'split', label: 'Hero Size %', type: 'range', min: 30, max: 80, step: 5, default: 60 },
       { key: 'gap', label: 'Gap', type: 'range', min: 0, max: 20, step: 1, default: 5 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -2315,7 +2315,7 @@ const COMPOSITE_REGISTRY = {
         });
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -2325,7 +2325,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'columns', label: 'Columns', type: 'range', min: 2, max: 5, step: 1, default: 2 },
       { key: 'noise', label: 'Static Noise', type: 'range', min: 0, max: 100, step: 10, default: 20 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -2455,7 +2455,7 @@ const COMPOSITE_REGISTRY = {
         ctx.restore();
       });
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -2466,7 +2466,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'maxSize', label: 'Max Size', type: 'range', min: 150, max: 400, step: 10, default: 250 },
       { key: 'salt', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -2566,7 +2566,7 @@ const COMPOSITE_REGISTRY = {
         ctx.restore();
       });
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -2613,7 +2613,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'glassOpacity', label: 'Glass Opacity', type: 'range', min: 0.1, max: 1, step: 0.05, default: 0.9 },
       { key: 'seed', label: 'Scatter Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -2770,7 +2770,7 @@ const COMPOSITE_REGISTRY = {
         ctx.restore();
       });
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -2780,7 +2780,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'gutter', label: 'Gutter Size', type: 'range', min: 0, max: 20, step: 1, default: 8 },
       { key: 'border', label: 'Border Width', type: 'range', min: 0, max: 10, step: 1, default: 3 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -2894,7 +2894,7 @@ const COMPOSITE_REGISTRY = {
         y += rowH + gutter;
       });
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -2904,7 +2904,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'size', label: 'Tile Size', type: 'range', min: 50, max: 300, step: 10, default: 150 },
       { key: 'gap', label: 'Gap', type: 'range', min: 0, max: 20, step: 1, default: 5 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3032,7 +3032,7 @@ const COMPOSITE_REGISTRY = {
         }
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -3041,7 +3041,7 @@ const COMPOSITE_REGISTRY = {
     params: [
       { key: 'centerGap', label: 'Center Gap', type: 'range', min: 0, max: 200, step: 10, default: 50 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3144,7 +3144,7 @@ const COMPOSITE_REGISTRY = {
         ctx.stroke();
       });
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -3154,7 +3154,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'intensity', label: 'Chaos', type: 'range', min: 1, max: 20, step: 1, default: 5 },
       { key: 'scale', label: 'Block Size', type: 'range', min: 10, max: 100, step: 5, default: 40 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3220,7 +3220,7 @@ const COMPOSITE_REGISTRY = {
         ctx.fillRect(0, y, cw, 2);
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -3231,7 +3231,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'gap', label: 'Divider Width', type: 'range', min: 0, max: 50, step: 1, default: 10 },
       { key: 'color', label: 'Divider Color', type: 'color', default: '#ff0000' }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3342,7 +3342,7 @@ const COMPOSITE_REGISTRY = {
       ctx.stroke();
       ctx.restore();
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -3352,7 +3352,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'strips', label: 'Strip Count', type: 'range', min: 10, max: 100, step: 2, default: 40 },
       { key: 'mode', label: 'Direction', type: 'select', options: ['Vertical', 'Horizontal'], default: 'Vertical' }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3426,7 +3426,7 @@ const COMPOSITE_REGISTRY = {
         else ctx.fillRect(x, y + h - 1, w, 1);
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -3436,7 +3436,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'gap', label: 'Gap Size', type: 'range', min: 0, max: 50, step: 1, default: 20 },
       { key: 'border', label: 'Border', type: 'range', min: 0, max: 20, step: 1, default: 0 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3516,7 +3516,7 @@ const COMPOSITE_REGISTRY = {
         ctx.restore();
       });
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -3526,7 +3526,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'size', label: 'Grid Size', type: 'range', min: 2, max: 10, step: 1, default: 4 },
       { key: 'opacity', label: 'Check Opacity', type: 'range', min: 0, max: 1, step: 0.1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3603,7 +3603,7 @@ const COMPOSITE_REGISTRY = {
         }
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -3615,7 +3615,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'intensity', label: 'Texture Opacity', type: 'range', min: 0, max: 1, step: 0.1, default: 0.8 },
       { key: 'zoom', label: 'Texture Zoom', type: 'range', min: 0.5, max: 2, step: 0.1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3711,7 +3711,7 @@ const COMPOSITE_REGISTRY = {
       ctx.drawImage(tmp, 0, 0);
       ctx.restore();
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -3721,7 +3721,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'seed', label: 'Curve Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 },
       { key: 'zoom', label: 'Camera Zoom', type: 'range', min: 0.1, max: 14, step: 0.1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3850,7 +3850,7 @@ const COMPOSITE_REGISTRY = {
         ctx.restore();
       });
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -3860,7 +3860,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'pieces', label: 'Piece Count', type: 'range', min: 4, max: 64, step: 1, default: 16 },
       { key: 'seed', label: 'Puzzle Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -4100,7 +4100,7 @@ const COMPOSITE_REGISTRY = {
         }
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -4110,7 +4110,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'segments', label: 'Segments', type: 'range', min: 4, max: 24, step: 2, default: 8 },
       { key: 'seed', label: 'Pattern Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -4187,7 +4187,7 @@ const COMPOSITE_REGISTRY = {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, cw, ch);
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -4198,7 +4198,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'color', label: 'Bar Color', type: 'color', default: '#000000' },
       { key: 'blur', label: 'Blur Background', type: 'range', min: 0, max: 20, step: 1, default: 0 }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -4268,7 +4268,7 @@ const COMPOSITE_REGISTRY = {
         if (barW > 0) ctx.fillRect(cw - barW, 0, barW, ch);
       }
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   },
 
@@ -4279,7 +4279,7 @@ const COMPOSITE_REGISTRY = {
       { key: 'size', label: 'Fade Size %', type: 'range', min: 10, max: 100, step: 5, default: 40 },
       { key: 'color', label: 'Color', type: 'color', default: '#000000' }
     ],
-    apply: (ctx, canvas, images, params) => {
+    apply: (ctx, canvas, images, params, abortSignal) => {
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -4340,7 +4340,7 @@ const COMPOSITE_REGISTRY = {
       
       ctx.restore();
 
-      return { ctx, canvas, images, params };
+      return { ctx, canvas, images, params, abortSignal};
     }
   }
 };

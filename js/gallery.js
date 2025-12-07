@@ -25,91 +25,115 @@ function debounce(fn, wait) {
 function makeGalleryCard(item) {
   const el = document.createElement('div');
   el.className = 'gallery-card poster';
-
-  const title = document.createElement('div');
-  title.className = 'title';
-  title.textContent = item.title || '';
+  el.dataset.itemId = item.id || '';
 
   const img = document.createElement('img');
   img.className = 'preview';
   img.src = item.image || '';
   img.loading = 'lazy';
   img.alt = item.title || '';
-  img.addEventListener('click', () => {
-    if (item.image) window.open(item.image, '_blank', 'noopener noreferrer');
-  });
-
-  const desc = document.createElement('div');
-  desc.className = 'shortDescription';
-  desc.textContent = item.shortDescription || '';
-
-  const author = document.createElement('div');
-  author.className = 'author';
-  const authorName = document.createElement('span');
-  authorName.textContent = item.author || '';
-  author.appendChild(authorName);
-  if (item.page) {
-    const a = document.createElement('a');
-    a.href = item.page;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.title = 'Open author page';
-    a.className = 'icon-link';
-    a.innerHTML = '<i class="fa-solid fa-up-right-from-square"></i>';
-    // Add small margin
-    author.appendChild(a);
-  }
-
-  // Wrap content into a right-side content column
-  const content = document.createElement('div');
-  content.className = 'content';
-
-  const actions = document.createElement('div');
-  actions.className = 'gallery-actions';
-
-  const setupBtn = document.createElement('button');
-  setupBtn.className = 'button setup-button';
-  setupBtn.textContent = 'Use Setup';
-  setupBtn.addEventListener('click', async () => {
-    try {
-      hideWindow('galleryBox');
-      setupBtn.disabled = true;
-      await useSetup(item.setup || item.project);
-    } finally {
-      setupBtn.disabled = false;
-    }
-  });
-  // If there's no setup or project, disable this action
-  if (!item.setup && !item.project) setupBtn.disabled = true;
-
-  const projectBtn = document.createElement('button');
-  projectBtn.className = 'button project-button';
-  projectBtn.textContent = 'Use Full Project';
-  projectBtn.addEventListener('click', async () => {
-    try {
-      hideWindow('galleryBox');
-      projectBtn.disabled = true;
-      await useFullProject(item.project);
-    } finally {
-      projectBtn.disabled = false;
-    }
-  });
-  if (!item.project) projectBtn.disabled = true;
-
-  actions.appendChild(setupBtn);
-  actions.appendChild(projectBtn);
-
-  // Order: title, description, author, then actions (buttons)
-  content.appendChild(title);
-  content.appendChild(desc);
-  content.appendChild(author);
-  content.appendChild(actions);
-
+  
+  // const title = document.createElement('div');
+  // title.className = 'card-title';
+  // title.textContent = item.title || '';
+  
   el.appendChild(img);
-  el.appendChild(content);
+  // el.appendChild(title);
+  
+  // Open modal on click and handle selection
+  el.addEventListener('click', () => {
+    // Remove selected class from all other cards
+    document.querySelectorAll('.gallery-card.selected').forEach(card => card.classList.remove('selected'));
+    // Add to this one
+    el.classList.add('selected');
+    openGalleryModal(item);
+  });
 
   return el;
 }
+
+function openGalleryModal(item) {
+  const modal = document.getElementById('galleryModal');
+  if (!modal) return;
+  modal.style.zIndex = Date.now(); // bring to front
+  
+  // Populate modal content
+  const modalImg = modal.querySelector('.gallery-modal-image');
+  const modalTitle = modal.querySelector('.gallery-modal-title');
+  const modalDesc = modal.querySelector('.gallery-modal-description');
+  const modalAuthor = modal.querySelector('.gallery-modal-author span');
+  const modalAuthorLink = modal.querySelector('.gallery-modal-author a');
+  const setupBtn = modal.querySelector('.gallery-modal-setup-btn');
+  const projectBtn = modal.querySelector('.gallery-modal-project-btn');
+  
+  if (modalImg) {
+    modalImg.src = item.image || '';
+    modalImg.style.cursor = 'pointer';
+    modalImg.title = 'Click to open full image';
+    modalImg.onclick = () => {
+      if (item.image) window.open(item.image, '_blank');
+    };
+  }
+  if (modalTitle) modalTitle.textContent = item.title || '';
+  if (modalDesc) modalDesc.textContent = item.shortDescription || '';
+  if (modalAuthor) modalAuthor.textContent = item.author || '';
+  
+  if (modalAuthorLink) {
+    if (item.page) {
+      modalAuthorLink.href = item.page;
+      modalAuthorLink.style.display = 'inline-flex';
+    } else {
+      modalAuthorLink.style.display = 'none';
+    }
+  }
+  
+  // Setup button
+  if (setupBtn) {
+    setupBtn.onclick = async () => {
+      try {
+        setupBtn.disabled = true;
+        closeGalleryModal();
+        hideWindow('galleryBox');
+        await useSetup(item.setup || item.project);
+      } finally {
+        setupBtn.disabled = false;
+      }
+    };
+    setupBtn.disabled = !item.setup && !item.project;
+  }
+  
+  // Project button
+  if (projectBtn) {
+    projectBtn.onclick = async () => {
+      try {
+        projectBtn.disabled = true;
+        closeGalleryModal();
+        hideWindow('galleryBox');
+        await useFullProject(item.project);
+      } finally {
+        projectBtn.disabled = false;
+      }
+    };
+    projectBtn.disabled = !item.project;
+  }
+  
+  modal.style.display = 'flex';
+}
+
+function closeGalleryModal() {
+  const modal = document.getElementById('galleryModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Close modal on ESC key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('galleryModal');
+    if (modal && modal.style.display !== 'none') {
+      closeGalleryModal();
+    }
+  }
+});
 
 async function useFullProject(url) {
   if (!url) return toastMessage('No project URL specified', { position: 'bottomCenter', type: 'warning' });
@@ -209,20 +233,63 @@ async function renderGallery() {
 }
 
 function renderGroupedGallery(items) {
-  const presets = (items || []).filter(item => !item.project);
-  const projects = (items || []).filter(item => item.project);
-  renderGalleryItems(presets, 'galleryPresetsList');
-  renderGalleryItems(projects, 'galleryProjectsList');
+  const container = document.getElementById('galleryGroupsContainer');
+  if (!container) return;
+
+  // Clear existing groups (except no-results div)
   const noResults = document.getElementById('galleryNoResults');
-  if (noResults) {
-    const total = (presets.length || 0) + (projects.length || 0);
-    noResults.style.display = total === 0 ? 'block' : 'none';
+  container.innerHTML = '';
+  if (noResults) container.appendChild(noResults);
+
+  if (!items || items.length === 0) {
+    if (noResults) noResults.style.display = 'block';
+    return;
+  } else {
+    if (noResults) noResults.style.display = 'none';
   }
-  // Update group titles with counts
-  const presetsTitle = document.querySelector('.gallery-group-title[data-for="presets"]') || document.querySelectorAll('.gallery-group-title')[0];
-  const projectsTitle = document.querySelector('.gallery-group-title[data-for="projects"]') || document.querySelectorAll('.gallery-group-title')[1];
-  if (presetsTitle) presetsTitle.textContent = `Presets (${presets.length})`;
-  if (projectsTitle) projectsTitle.textContent = `Projects (${projects.length})`;
+
+  // Group items by type
+  const groups = {};
+  items.forEach(item => {
+    const type = item.type || 'Other';
+    if (!groups[type]) groups[type] = [];
+    groups[type].push(item);
+  });
+
+  // Create DOM for each group
+  Object.keys(groups).sort().forEach(type => {
+    const groupItems = groups[type];
+    const groupId = `galleryGroup-${type.replace(/\s+/g, '-')}`;
+    
+    const groupDiv = document.createElement('div');
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `expand-${groupId}`;
+    checkbox.className = 'expand-checkbox';
+    checkbox.checked = true; // Default expanded
+    // checkbox.setAttribute('save', ''); // Optional: save state
+
+    const label = document.createElement('label');
+    label.htmlFor = `expand-${groupId}`;
+    label.className = 'expand-label expand-btn relative gallery-group-title';
+    label.dataset.for = type;
+    // Capitalize first letter
+    const displayType = type.charAt(0).toUpperCase() + type.slice(1);
+    label.textContent = `${displayType} (${groupItems.length})`;
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'gallery-group expand-content gallery-grid scroll-container';
+    contentDiv.id = `${groupId}-list`;
+
+    groupDiv.appendChild(checkbox);
+    groupDiv.appendChild(label);
+    groupDiv.appendChild(contentDiv);
+    container.insertBefore(groupDiv, noResults);
+
+    // Render items
+    renderGalleryItems(groupItems, `${groupId}-list`);
+  });
 }
 
 // Wait until app.js has loaded (import functions may be defined there).

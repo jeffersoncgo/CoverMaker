@@ -60,7 +60,7 @@ async function runStep(prevHash = 0, fn, ...params) {
     params = [];
   
   // console.log({fn, index, newHash, prevHash, ...params });
-  const result = typeof fn == 'function' ? await fn(...params) : {...params[0]};
+  const result = typeof fn == 'function' ? await fn(...params) : [...params];
   // console.log(`Caching step ${index}`, fn, result, params);
   stepsCache[index] = { hash: newHash, ...result, index };
   return stepsCache[index];
@@ -73,21 +73,23 @@ function markStepDirty(index) {
 }
 
 function clearStepsCache() {
-  stepsCache = [];
+  stepsCache.length = 0;
+  composite.lastHash = null;
+  lastStepIndex = 0;
 }
 
-function createCanvas(w, h) {
+function createCanvas(w, h, abortSignal) {
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   return canvas;
 }
 
-function cloneCanvas(sourceCanvas) {
-  const newCanvas = createCanvas(sourceCanvas.width, sourceCanvas.height);
+function cloneCanvas(sourceCanvas, abortSignal) {
+  const newCanvas = createCanvas(sourceCanvas.width, sourceCanvas.height, abortSignal);
   const newCtx = newCanvas.getContext('2d');
   newCtx.drawImage(sourceCanvas, 0, 0);
-  return {canvas: newCanvas, ctx: newCtx};
+  return {canvas: newCanvas, ctx: newCtx, abortSignal};
 }
 
 // ======================
@@ -239,17 +241,31 @@ function setCanvasSize(width, height) {
   drawComposite();
 }
 
-async function drawComposite() {
+// Extract AbortSignal from params if present
+function extractAbortSignal(params) {
+  if (!params || params.length === 0) return null;
+  for (const param of params) {
+    if(param?.constructor?.name === 'AbortSignal')
+      return param;
+  }
+  return null;
+}
+
+async function drawComposite(...params) {
   lastStepIndex = 0; // reset step index for caching
-  const canvasSize = await runStep(null, null, window.composite.size);//This will create the initial canvas, only so we have something to draw on, and have a initial hash
-  if(!canvasSize || !canvasSize.width || !canvasSize.height) return;
+
+  const abortSignal = extractAbortSignal(params);
+
+  const canvasSize = await runStep(null, null, window.composite.size, abortSignal);//This will create the initial canvas, only so we have something to draw on, and have a initial hash
+  // after this point canvasSize alrady carry the abort signal and hash
+  if(!canvasSize || !canvasSize[0].width || !canvasSize[0].height) return;
   
   window.Composites ??= {}; // Ensure global Composites object exists
 
-  window.Composites.Image = await drawCompositeImage(canvasSize); //canvasSize is passed, so if changed, it will force all steps to redraw
+  window.Composites.Image = await drawCompositeImage(canvasSize.hash, abortSignal); //canvasSize is passed, so if changed, it will force all steps to redraw
   if(!window.Composites.Image || !window.Composites.Image.ctx || !window.Composites.Image.canvas) return;
   
-  window.Composites.Text = await drawCompositeText(canvasSize); //canvasSize is passed, so if changed, it will force all steps to redraw
+  window.Composites.Text = await drawCompositeText(canvasSize.hash, canvasSize[0].width, canvasSize[0].height, abortSignal); //canvasSize is passed, so if changed, it will force all steps to redraw
 
   const newHash = stepHash({ imageHash: window.Composites.Image.hash, textHash: window.Composites.Text?.hash || 0 });
   if(composite.lastHash === newHash) {
@@ -259,10 +275,10 @@ async function drawComposite() {
   composite.lastHash = newHash;
 
   if(window.Composites.Text && window.Composites.Text.ctx && window.Composites.Text.canvas) {
-    window.Composites.Merged = mergeCanvases(window.Composites.Image.canvas, window.Composites.Text.canvas, 0, 0, 1.0);
-    await copyCompositeToMainCanvas({canvas: window.Composites.Merged});//ctx not needed here
+    window.Composites.Merged = mergeCanvases(window.Composites.Image.canvas, window.Composites.Text.canvas, 0, 0, 1.0, ...params);
+    await copyCompositeToMainCanvas({canvas: window.Composites.Merged}, ...params);//ctx not needed here
   } else {
-    await copyCompositeToMainCanvas(window.Composites.Image);
+    await copyCompositeToMainCanvas(window.Composites.Image, ...params);
   }
 }
 
@@ -282,13 +298,12 @@ async function copyCompositeToMainCanvas(composite) {
   mainCtx.drawImage(composite.canvas, 0, 0);
 }
 
-async function applyImageEffects(..._params) {
+async function applyImageEffects(canvas, ctx, hash, abortSignal) {
   try {
     console.log('Applying image effects...');
     // 1. Initialize with the starting canvas
-    let { canvas, ctx, hash } = _params[0] || {};
     
-    const effects = Setup.Settings.canvas.effects || [];
+    const effects = projectConfig.canvas.effects || [];
 
     if(!canvas || !ctx || effects.length === 0) {
       return { canvas, ctx, hash };
@@ -304,7 +319,7 @@ async function applyImageEffects(..._params) {
       // 3. Clone the CURRENT state
       // On the first loop, this clones the Original.
       // On the second loop, this clones the Result of the first loop (e.g., the blurred image).
-      const cloned = cloneCanvas(canvas);
+      const cloned = cloneCanvas(canvas, abortSignal);
       
       // Update local references to point to the new clone
       canvas = cloned.canvas;
@@ -312,7 +327,7 @@ async function applyImageEffects(..._params) {
       
       // 4. Apply the effect to the clone
       // The 'await' ensures we don't start the next loop until this is totally finished
-      const result = await runStep(hash, effectDef.apply, ctx, canvas, eff.params || {}, eff);
+      const result = await runStep(hash, effectDef.apply, ctx, canvas, eff.params || {}, abortSignal, eff);
       // 5. Update the accumulators
       // The output of this step becomes the input for the next step
       canvas = result.canvas;
@@ -321,7 +336,7 @@ async function applyImageEffects(..._params) {
     }
 
     // Return the final result after all layers are applied
-    return { canvas, ctx, hash };
+    return { canvas, ctx, hash, abortSignal };
   } catch (err) {
     console.error('Error applying effect layers:', err);
   }
@@ -337,24 +352,23 @@ async function applyImageEffects(..._params) {
  * @param {Object} [options] - Optional overrides for type and params. Example: { type: 'line', params: {} }
  * @returns {boolean} True if a composite was applied, false if not.
  */
-async function applyComposite(..._params) {
-  let {canvas, ctx, options = {}, slotsImages = [], hash} = _params[0] || {};
-  const cloned = cloneCanvas(canvas);
+async function applyComposite(canvas, ctx, options = {}, slotsImages = [], hash, abortSignal) {
+  const cloned = cloneCanvas(canvas, abortSignal);
   canvas = cloned.canvas;
   ctx = cloned.ctx;
   try {
-    if (typeof ensureCompositeDefaults === 'function') try { ensureCompositeDefaults(); } catch(e) {}
-    const eff = Setup.Settings.canvas.composite || {};
+    if (typeof ensureCompositeDefaults === 'function') try { ensureCompositeDefaults(abortSignal); } catch(e) {}
+    const eff = projectConfig.canvas.composite || {};
 
     if (eff.enabled === false) return false;
 
-    const type = options.type || eff.type || Setup.Settings.canvas.type;
+    const type = options.type || eff.type || projectConfig.canvas.type;
     const params = options.params || eff.params || {};
 
     const effectDef = (typeof COMPOSITE_REGISTRY !== 'undefined') ? COMPOSITE_REGISTRY[type] : undefined;
     if (!effectDef) return false;
 
-    return await runStep(hash, effectDef.apply, ctx, canvas, slotsImages, params, { srcOnly: slotsImages.map(img => fnv1a(img?.src  || '')) }, eff);
+    return await runStep(hash, effectDef.apply, ctx, canvas, slotsImages, params, abortSignal, { srcOnly: slotsImages.map(img => fnv1a(img?.src  || '')) }, eff);
   } catch (err) {
     console.error('Error applying composite effect:', err);
     return {};
@@ -374,7 +388,7 @@ async function creteTransparentCanvas(width, height) {
   return { canvas, ctx };
 }
 
-async function createBaseTextLayer(width, height, text, position, fontStyle, fillStyle) {
+async function createBaseTextLayer(width, height, text, position, fontStyle, fillStyle, abortSignal) {
   // Create a transparent canvas for this specific text layer
   const { canvas, ctx } = await creteTransparentCanvas(width, height);
   
@@ -407,31 +421,28 @@ async function createBaseTextLayer(width, height, text, position, fontStyle, fil
   ctx.fillText(text, finalX, finalY);
 
   // Return canvas + metadata needed for effects (x, y, text)
-  return { canvas, ctx, meta: { text, x: finalX, y: finalY } };
+  return { canvas, ctx, meta: { text, x: finalX, y: finalY }, abortSignal  };
 }
 
-async function mergeImageLayers(canvasList) {
+async function mergeImageLayers(canvasList, abortSignal) {
   // This wil initially crete an empty canvas
   // It will then loop over each canvas in the list and draw it onto the main canvas
   if (!Array.isArray(canvasList) || canvasList.length === 0) {
     return null;
   }
   const baseCanvas = canvasList[0];
-  const mergedCanvas = createCanvas(baseCanvas.width, baseCanvas.height);
+  const mergedCanvas = createCanvas(baseCanvas.width, baseCanvas.height, abortSignal);
   const mergedCtx = mergedCanvas.getContext('2d');
   for (const layerCanvas of canvasList) {
     mergedCtx.drawImage(layerCanvas, 0, 0);
   }
-  return { canvas: mergedCanvas, ctx: mergedCtx };
+  return { canvas: mergedCanvas, ctx: mergedCtx, abortSignal };
 }
 
-async function drawCompositeText(..._params) {
+async function drawCompositeText(canvasHash, width, height, abortSignal) {
   try {
     // 1. Initialize Background / base info
-    const canvasSize = _params[0] || {};
-    const { width, height, hash: initialHash } = canvasSize;
-
-    const layers = Setup.Settings.textLayers || [];
+    const layers = projectConfig.textLayers || [];
 
     // Collection of per-layer canvases (isolated text layers)
     const imgLayers = [];
@@ -444,8 +455,8 @@ async function drawCompositeText(..._params) {
 
       // ----- PHASE A: Generate the Isolated Text Layer -----
 
-      // A1: Start hash for this layer from the initialHash
-      let layerHash = initialHash;
+      // A1: Start hash for this layer from the canvasHash
+      let layerHash = canvasHash;
 
       // A2: Create the base text graphic (raw text on transparent)
       const baseResult = await runStep(
@@ -456,7 +467,8 @@ async function drawCompositeText(..._params) {
         layer.overlayText,
         layer.position,
         layer.fontStyle,
-        layer.fillStyle
+        layer.fillStyle,
+        abortSignal
       );
 
       let { canvas, ctx, hash, meta } = baseResult;
@@ -473,7 +485,7 @@ async function drawCompositeText(..._params) {
         if (!effectDef) continue;
 
         // Clone the TEXT canvas (not the main background)
-        const clonedText = cloneCanvas(canvas);
+        const clonedText = cloneCanvas(canvas, abortSignal);
         canvas = clonedText.canvas;
         ctx = clonedText.ctx;
 
@@ -486,6 +498,7 @@ async function drawCompositeText(..._params) {
           x,
           y,
           eff.params || {},
+          abortSignal,
           eff
         );
 
@@ -501,24 +514,26 @@ async function drawCompositeText(..._params) {
 
     // 3. Merge all isolated text layers onto a final composite
     // Decide how to compute the final hash.
-    // Option 1: let mergeImageLayers derive a new hash from initialHash + layerHashes
+    // Option 1: let mergeImageLayers derive a new hash from canvasHash + layerHashes
     const merged = await runStep(
-      initialHash,
+      canvasHash,
       mergeImageLayers,
       imgLayers,
-      layerHashes // optional extra param if mergeImageLayers accepts it
+      layerHashes, // optional extra param if mergeImageLayers accepts it
+      abortSignal 
     );
 
-    const finalHash = merged.hash ?? initialHash; // fallback to initialHash if merge doesn't return one
+    const finalHash = merged.hash ?? canvasHash; // fallback to canvasHash if merge doesn't return one
 
     return {
       canvas: merged.canvas,
       ctx: merged.ctx,
       hash: finalHash,
+      abortSignal
     };
   } catch (err) {
     console.error('Error in drawCompositeText:', err);
-    return _params[0]; // Return original state on error
+    return canvasHash; // Return original state on error
   }
 }
 
@@ -526,25 +541,23 @@ async function drawCompositeText(..._params) {
 // Canvas Drawing Functions (Background)
 // ======================
 
-async function createBackgroundCanvas() {
+async function createBackgroundCanvas(abortSignal) {
   const canvas = createCanvas(composite.size.width, composite.size.height);
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = Setup.Settings.canvas.backgroundColor || '#000000';
+  ctx.fillStyle = projectConfig.canvas.backgroundColor || '#000000';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   window.temp1 = canvas;
   window.temp1Ctx = ctx;
-  return { canvas, ctx };
+  return { canvas, ctx, abortSignal };
 }
 
-async function drawCompositeImage(...canvasSize) {
+async function drawCompositeImage(canvasHash, abortSignal) {
   try {
-    // Let's fisrt use the run Step and the canvasSize hash to create a cached background canvas
-    const canvas = await runStep(canvasSize.hash, createBackgroundCanvas, canvasSize);
+    const canvas = await runStep(canvasHash, createBackgroundCanvas, abortSignal);
+    const imageCanvas = await applyComposite(canvas.canvas, canvas.ctx, {}, slotsImages, canvasHash, abortSignal);
 
-    const imageCanvas = await applyComposite({ ...canvas, slotsImages });
-
-    return await applyImageEffects({ ...imageCanvas });
+    return await applyImageEffects( imageCanvas.canvas, imageCanvas.ctx, imageCanvas.hash, abortSignal);
   } catch (err) {
     const type = Setup?.Settings?.canvas?.composite?.type || Setup?.Settings?.canvas?.type;
     const msg = `Error applying composite "${type}" via COMPOSITE_REGISTRY: ${err?.message || err}`;
@@ -552,7 +565,7 @@ async function drawCompositeImage(...canvasSize) {
     if (typeof toastMessage === 'function') {
       try { toastMessage(msg, { type: 'danger', duration: 6000 }); } catch (tErr) { console.error('Toast error:', tErr) }
     }
-    return {...canvasSize}; // Stop execution
+    return {canvasHash}; // Stop execution
   }
 }
 

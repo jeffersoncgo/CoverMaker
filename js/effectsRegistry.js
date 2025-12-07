@@ -8,12 +8,12 @@ const EFFECTS_REGISTRY = {
       // Expanded blur range for more intense effect where desired
       { key: 'amount', label: 'Blur Amount', type: 'range', min: 0, max: 100, step: 1, default: 5 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       ctx.save();
       ctx.filter = `blur(${params.amount ?? 0}px)`;
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx}
+      return { canvas, ctx, abortSignal }
     }
   },
   grayscale: {
@@ -21,12 +21,12 @@ const EFFECTS_REGISTRY = {
     params: [
       { key: 'amount', label: 'Grayscale', type: 'range', min: 0, max: 1, step: 0.05, default: 1 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       ctx.save();
       ctx.filter = `grayscale(${params.amount ?? 0})`;
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx}
+      return { canvas, ctx, abortSignal }
     }
   },
   invert: {
@@ -34,12 +34,12 @@ const EFFECTS_REGISTRY = {
     params: [
       { key: 'amount', label: 'Invert', type: 'range', min: 0, max: 1, step: 0.05, default: 1 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       ctx.save();
       ctx.filter = `invert(${params.amount ?? 0})`;
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   brightness: {
@@ -48,12 +48,12 @@ const EFFECTS_REGISTRY = {
       // Expanded brightness range for stronger adjustments
       { key: 'amount', label: 'Brightness', type: 'range', min: 0, max: 4, step: 0.1, default: 1 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       ctx.save();
       ctx.filter = `brightness(${params.amount ?? 1})`;
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   contrast: {
@@ -61,12 +61,12 @@ const EFFECTS_REGISTRY = {
     params: [
       { key: 'amount', label: 'Contrast', type: 'range', min: 0, max: 3, step: 0.05, default: 1 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       ctx.save();
       ctx.filter = `contrast(${params.amount ?? 1})`;
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   saturate: {
@@ -74,12 +74,12 @@ const EFFECTS_REGISTRY = {
     params: [
       { key: 'amount', label: 'Saturate', type: 'range', min: 0, max: 3, step: 0.05, default: 1 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       ctx.save();
       ctx.filter = `saturate(${params.amount ?? 1})`;
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   sepia: {
@@ -87,12 +87,12 @@ const EFFECTS_REGISTRY = {
     params: [
       { key: 'amount', label: 'Sepia', type: 'range', min: 0, max: 1, step: 0.05, default: 0 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       ctx.save();
       ctx.filter = `sepia(${params.amount ?? 0})`;
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   hueRotate: {
@@ -100,12 +100,12 @@ const EFFECTS_REGISTRY = {
     params: [
       { key: 'angle', label: 'Hue Angle', type: 'range', min: 0, max: 360, step: 1, default: 0 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       ctx.save();
       ctx.filter = `hue-rotate(${params.angle ?? 0}deg)`;
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   vignette: {
@@ -113,7 +113,7 @@ const EFFECTS_REGISTRY = {
     params: [
       { key: 'intensity', label: 'Intensity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.5 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       const { intensity = 0.5 } = params;
       // Draw vignette on top using radial gradient
       const grad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.8);
@@ -123,7 +123,7 @@ const EFFECTS_REGISTRY = {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.restore();
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   overlay: {
@@ -134,7 +134,7 @@ const EFFECTS_REGISTRY = {
       { key: 'endColor', label: 'Color', type: 'color', default: '#000000', group: 'End' },
       { key: 'endOpacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.9, group: 'End' }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       const startColor = params.startColor ?? '#000000';
       const endColor = params.endColor ?? '#000000';
       const startOpacity = parseFloat(params.startOpacity ?? 0.5);
@@ -148,7 +148,7 @@ const EFFECTS_REGISTRY = {
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.restore();
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   scale: {
@@ -161,7 +161,7 @@ const EFFECTS_REGISTRY = {
       { key: 'backgroundColor', label: 'Background Color', type: 'color', default: '#000000', group: 'Background' },
       { key: 'backgroundOpacity', label: 'Background Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 1, group: 'Background' }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       const fullW = canvas.width;
       const fullH = canvas.height;
       const scaleX = Math.max(0.01, Math.min(2, parseFloat(params.scaleX ?? 0.95)));
@@ -200,7 +200,7 @@ const EFFECTS_REGISTRY = {
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(temp, 0, 0, temp.width, temp.height, dx, dy, dw, dh);
       ctx.restore();
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   sharpen: {
@@ -208,7 +208,7 @@ const EFFECTS_REGISTRY = {
     params: [
       { key: 'amount', label: 'Amount', type: 'range', min: 0, max: 2, step: 0.01, default: 1 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       // Convolution sharpen kernel, scaled by amount
       const amount = params.amount ?? 1;
       const w = canvas.width;
@@ -244,7 +244,7 @@ const EFFECTS_REGISTRY = {
         }
       }
       ctx.putImageData(imageData, 0, 0);
-      return { canvas, ctx }
+      return { canvas, ctx, abortSignal }
     }
   },
   reflection: {
@@ -269,7 +269,7 @@ const EFFECTS_REGISTRY = {
       { key: 'fadeEnd', label: 'Fade End', type: 'range', min: 0, max: 1, step: 0.01, default: 1 },
     ],
 
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       // 1. Get Parameters
       const fullW = canvas.width;
       const fullH = canvas.height;
@@ -368,7 +368,7 @@ const EFFECTS_REGISTRY = {
       ctx.drawImage(temp, offsetX - originShiftX, fullH + offsetY);
 
       ctx.restore();
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal };
     }
   },
   flip: {
@@ -377,7 +377,7 @@ const EFFECTS_REGISTRY = {
       { key: 'horizontal', label: 'Horizontal', type: 'checkbox', default: true },
       { key: 'vertical', label: 'Vertical', type: 'checkbox', default: false }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       const horizontal = params.horizontal ?? true;
       const vertical = params.vertical ?? false;
       ctx.save();
@@ -385,7 +385,7 @@ const EFFECTS_REGISTRY = {
       ctx.scale(horizontal ? -1 : 1, vertical ? -1 : 1);
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal };
     }
   },
   // 1. Pixelate Filter
@@ -394,7 +394,7 @@ const EFFECTS_REGISTRY = {
     params: [
       { key: 'pixelSize', label: 'Size', type: 'range', min: 1, max: 64, step: 1, default: 8 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       const psize = Math.max(1, Math.round(params.pixelSize ?? 8));
       const w = ctx.canvas.width;
       const h = ctx.canvas.height;
@@ -419,7 +419,7 @@ const EFFECTS_REGISTRY = {
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(tmp, 0, 0, sw, sh, 0, 0, w, h);
       ctx.restore();
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal };
     }
   },
 
@@ -430,7 +430,7 @@ const EFFECTS_REGISTRY = {
       { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 },
       { key: 'density', label: 'Density', type: 'range', min: 1, max: 10, step: 1, default: 8 }
     ],
-    apply: (ctx, canvas, params) => {
+    apply: (ctx, canvas, params, abortSignal) => {
       // Ensure clamp exists or use Math fallback
       const val = params.opacity ?? 0.2;
       const opacity = Math.min(Math.max(val, 0), 1);
@@ -454,7 +454,7 @@ const EFFECTS_REGISTRY = {
       }
 
       ctx.restore();
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal };
     }
   }
 };

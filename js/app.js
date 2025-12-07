@@ -17,7 +17,7 @@ function addEffectParamsOptions(paramsContainer, effectType, paramsObj, effectIn
     opt.textContent = e.name;
     typeSelect.appendChild(opt);
   });
-  const eff = Setup.Settings.canvas.effects[effectIndex];
+  const eff = projectConfig.canvas.effects[effectIndex];
   if (eff) typeSelect.value = eff.type;
   typeSelect.addEventListener('change', changeEffectLayerType);
   typeContainer.appendChild(typeLabel);
@@ -129,7 +129,7 @@ function changeEffectLayerType(event) {
   const newType = event.target.value;
   // When we change the info of one layer only, we use it to update only that layer
   const idx = parseInt(field.closest('.effect-layer-item').id.replace('effect_', ''), 10);
-  let eff = Setup.Settings.canvas.effects[idx];
+  let eff = projectConfig.canvas.effects[idx];
   const newTypeDef = EFFECTS_REGISTRY[newType];
 
   if (!newTypeDef) return;
@@ -184,7 +184,7 @@ function normalizeEffectParams(effects) {
 }
 
 function renderEffectLayers() {
-  const effects = Setup.Settings.canvas.effects || [];
+  const effects = projectConfig.canvas.effects || [];
   // Ensure each effect DOM exists and is in correct order
   for (let i = 0; i < effects.length; i++) {
     const id = `effect_${i}`;
@@ -210,7 +210,7 @@ function renderEffectLayers() {
 
 // Update a single image effect layer DOM based on current Setup.Settings
 function renderImageEffectLayer(idx) {
-  const eff = Setup.Settings.canvas.effects?.[idx];
+  const eff = projectConfig.canvas.effects?.[idx];
   if (!eff) return;
   const field = document.getElementById(`effect_${idx}`);
   // If element missing, create it by cloning the template and append
@@ -298,8 +298,8 @@ function readParamsFromContainer(container) {
 // ======================
 
 function addTextEffectToLayer(layerIndex, userDefault) {
-  if (!Array.isArray(Setup.Settings.textLayers)) Setup.Settings.textLayers = [];
-  if (!Setup.Settings.textLayers[layerIndex]) return;
+  if (!Array.isArray(projectConfig.textLayers)) projectConfig.textLayers = [];
+  if (!projectConfig.textLayers[layerIndex]) return;
 
   const userDefaultObj = userDefault || {};
   const effectType = userDefaultObj.type ?? availableTextEffects?.[0]?.id ?? 'fade';
@@ -311,10 +311,10 @@ function addTextEffectToLayer(layerIndex, userDefault) {
 
   const finalParams = { ...registryDefaults, ...(userDefaultObj.params ?? {}) };
 
-  Setup.Settings.textLayers[layerIndex].effects = Setup.Settings.textLayers[layerIndex].effects || [];
-  Setup.Settings.textLayers[layerIndex].effects.push({ type: effectType, params: finalParams, enabled: true });
+  projectConfig.textLayers[layerIndex].effects = projectConfig.textLayers[layerIndex].effects || [];
+  projectConfig.textLayers[layerIndex].effects.push({ type: effectType, params: finalParams, enabled: true });
   // Render the new effect only
-  renderTextEffectLayer(layerIndex, Setup.Settings.textLayers[layerIndex].effects.length - 1);
+  renderTextEffectLayer(layerIndex, projectConfig.textLayers[layerIndex].effects.length - 1);
 }
 
 function addTextEffectLayer(e) {
@@ -353,9 +353,9 @@ function deleteTextEffectLayer(e) {
   const effectIndex = parseInt(parts[1]);
 
   if (isNaN(layerIndex) || isNaN(effectIndex)) return;
-  if (!Setup.Settings.textLayers[layerIndex] || !Array.isArray(Setup.Settings.textLayers[layerIndex].effects)) return;
+  if (!projectConfig.textLayers[layerIndex] || !Array.isArray(projectConfig.textLayers[layerIndex].effects)) return;
 
-  Setup.Settings.textLayers[layerIndex].effects.splice(effectIndex, 1);
+  projectConfig.textLayers[layerIndex].effects.splice(effectIndex, 1);
   renderTextEffectLayersFor(layerIndex);
 }
 
@@ -372,8 +372,8 @@ function duplicateTextEffectLayer(e) {
   const layerIndex = parseInt(parts[0]);
   const effectIndex = parseInt(parts[1]);
   if (isNaN(layerIndex) || isNaN(effectIndex)) return;
-  const effectCopy = JSON.parse(JSON.stringify(Setup.Settings.textLayers[layerIndex].effects[effectIndex]));
-  Setup.Settings.textLayers[layerIndex].effects.splice(effectIndex + 1, 0, effectCopy);
+  const effectCopy = JSON.parse(JSON.stringify(projectConfig.textLayers[layerIndex].effects[effectIndex]));
+  projectConfig.textLayers[layerIndex].effects.splice(effectIndex + 1, 0, effectCopy);
   renderTextEffectLayersFor(layerIndex);
 }
 
@@ -389,8 +389,8 @@ function setTextEffectLayerDefault(e) {
   const layerIndex = parseInt(parts[0]);
   const effectIndex = parseInt(parts[1]);
   if (isNaN(layerIndex) || isNaN(effectIndex)) return;
-  Setup.defaults.textEffect = {...Setup.Settings.textLayers[layerIndex].effects[effectIndex]};
-  saveSetup();
+  Setup.defaults.textEffect = {...projectConfig.textLayers[layerIndex].effects[effectIndex]};
+  saveprojectConfig();
   toastMessage('Text Effect default set', { position: 'bottomCenter', type: 'success' });
 }
 
@@ -399,7 +399,7 @@ function renderTextEffectLayersFor(layerIndex) {
   if (!layerEl) return;
   const container = layerEl.querySelector('.text-effects-container');
   if (!container) return;
-  const effects = Setup.Settings.textLayers[layerIndex].effects || [];
+  const effects = projectConfig.textLayers[layerIndex].effects || [];
 
   // Ensure each effect DOM exists, is in the correct order and updated
   for (let i = 0; i < effects.length; i++) {
@@ -439,8 +439,8 @@ function changeTextEffectLayerType(event) {
   const idxParts = field.id.replace('text_effect_', '').split('_');
   const layerIndex = parseInt(idxParts[0]);
   const effIndex = parseInt(idxParts[1]);
-  if (!Setup.Settings.textLayers[layerIndex]) return;
-  const eff = Setup.Settings.textLayers[layerIndex].effects[effIndex];
+  if (!projectConfig.textLayers[layerIndex]) return;
+  const eff = projectConfig.textLayers[layerIndex].effects[effIndex];
   const newTypeDef = TEXT_EFFECTS[newType];
   if (!newTypeDef) return;
   eff.type = newType;
@@ -453,7 +453,7 @@ function changeTextEffectLayerType(event) {
 
 // Update a single text effect layer's DOM
 function renderTextEffectLayer(layerIndex, effIndex) {
-  const layer = Setup.Settings.textLayers?.[layerIndex];
+  const layer = projectConfig.textLayers?.[layerIndex];
   if (!layer || !Array.isArray(layer.effects) || !layer.effects[effIndex]) return;
   const eff = layer.effects[effIndex];
   const container = textLayersContainer.querySelectorAll('.text-layer-item')[layerIndex]?.querySelector('.text-effects-container');
@@ -561,8 +561,6 @@ const posterTemplate = document.getElementById('poster-template');
 
 // ⭐️ NEW: Template References ⭐️
 const textLayerTemplate = document.getElementById("text-layer-template");
-const strokeTemplate = document.getElementById("stroke-template");
-const shadowTemplate = document.getElementById("shadow-template");
 
 // ⭐️ NEW: Container References ⭐️
 const textLayersContainer = document.getElementById("text-layers-container");
@@ -581,8 +579,11 @@ const customWidthElement = document.getElementById("customWidth");
 const customHeightElement = document.getElementById("customHeight");
 
 // Export Settings
-const exportFormatSelectElement = document.getElementById("exportFormatSelect");
-const jpegQualityElement = document.getElementById("jpegQuality");
+const exportProjectImagesFormatSelectElement = document.getElementById("exportProjectImagesFormatSelect");
+const exportProjectImagesQualityElement = document.getElementById("exportProjectImagesQuality");
+
+const exportImageImagesFormatSelectElement = document.getElementById("exportImageImagesFormatSelect");
+const exportImageImagesQualityElement = document.getElementById("exportImageImagesQuality");
 
 // Jellyfin UI
 const jellyfinContainer = document.getElementById('jellyfinimages');
@@ -642,12 +643,36 @@ function deepMerge(target, defaults) {
   return result;
 }
 
+function deprecatedProjectConfigFixes(jsonData) {
+    delete jsonData.Setup.Sizes;
+    delete jsonData.Setup.Library;
+    delete jsonData.Setup.Images;
+    delete jsonData.Setup.loadingType;
+    delete jsonData.Setup.defaults;
+    delete jsonData.Setup.Settings.export;
+
+    // on the jsonData.Setup.Settings.textLayers array, remove strokes and shadows keys
+    if (jsonData.Setup && jsonData.Setup.Settings && Array.isArray(jsonData.Setup.Settings.textLayers)) {
+      jsonData.Setup.Settings.textLayers.forEach(layer => {
+        delete layer.strokes;
+        delete layer.shadows;
+      });
+    }
+
+    return jsonData;
+}
+
 function loadFullProjectFromJson(jsonData, isSetupOnly = false) {
   // set the memory as not loaded
   window.memoryLoaded = false;
   // first, we need to clear all the text layers
   clearTextLayersMemory();
   // then clear the images using the existing function
+
+  jsonData = deprecatedProjectConfigFixes(jsonData);
+
+  projectConfig = jsonData.Setup.Settings;
+
   if (!isSetupOnly)
     deleteAllSlots();
   if (jsonData.Setup) {
@@ -656,26 +681,26 @@ function loadFullProjectFromJson(jsonData, isSetupOnly = false) {
     // Merge imported Setup with defaults to ensure all keys exist
     Setup = deepMerge(jsonData.Setup, defaultSetup);
     // Normalize params for effects so UI expects an object map
-    normalizeEffectParams(Setup.Settings.canvas.effects);
+    normalizeEffectParams(projectConfig.canvas.effects);
     // Remove unsupported/legacy param level data
-    try { (Setup.Settings.canvas.effects || []).forEach(e => delete e.params_enabled); } catch(err) {}
-    loadTextLayers(Setup.Settings.textLayers);
+    try { (projectConfig.canvas.effects || []).forEach(e => delete e.params_enabled); } catch(err) {}
+    loadTextLayers(projectConfig.textLayers);
   }
   // Normalize composite params after merge (applied after ensureCompositeDefaults below)
   // restore also the fields from the expandImageSettings element
-  RatioSelectElement.value = Setup.Settings.canvas.format;
-  typeSelectElement.value = Setup.Settings.canvas.type;
+  RatioSelectElement.value = projectConfig.canvas.format;
+  typeSelectElement.value = projectConfig.canvas.type;
   // Ensure composite object exists and UI is in sync
-  ensureCompositeDefaults();
-  addTypeParamsOptions(typeSettingsContainer, Setup.Settings.canvas.composite.type, Setup.Settings.canvas.composite.params || {});
+  // ensureCompositeDefaults();
+  addTypeParamsOptions(typeSettingsContainer, projectConfig.canvas.composite.type, projectConfig.canvas.composite.params || {});
   // Make sure any registry params/defaults are applied to the composite
-  try { normalizeCompositeParams(Setup.Settings.canvas.composite); } catch(err) {}
+  // try { normalizeCompositeParams(projectConfig.canvas.composite); } catch(err) {}
   
   // Restore export settings 
   // This will not restore the export settings UI because it's not part of the setup-only flow
-  // if (Setup.Settings.export) {
-  //   exportFormatSelectElement.value = Setup.Settings.export.format || 'webp';
-  //   jpegQualityElement.value = Setup.Settings.export.jpegQuality || 0.95;
+  // if (Setup.Export.Project.Images) {
+  //   exportProjectImagesFormatSelectElement.value = Setup.Export.Project.Images.format || 'webp';
+  //   exportProjectImagesQualityElement.value = Setup.Export.Project.Images.jpegQuality || 0.95;
   // }
   
   // Note: Images are no longer loaded from JSON for performance reasons.
@@ -713,8 +738,7 @@ function loadFullProjectFromJson(jsonData, isSetupOnly = false) {
   window.memoryLoaded = true;
   updateImageSettings();
   updateTextSettings();
-  saveSetup();
-  saveTextLayersToStorage();
+  saveprojectConfig();
   saveFieldsToStorage();
   drawComposite();
 }
@@ -732,46 +756,46 @@ function normalizeCompositeParams(compositeObj) {
 }
 
 // Ensure composite uses defaults when missing/empty and merges params where appropriate
-function ensureCompositeDefaults() {
+function ensureCompositeDefaults(...params) {
   // Ensure canvas exists
   if (!Setup.Settings) Setup.Settings = {};
-  if (!Setup.Settings.canvas) Setup.Settings.canvas = {};
+  if (!projectConfig.canvas) projectConfig.canvas = {};
 
-  const defaultComposite = (Setup.defaults && Setup.defaults.composite) ? JSON.parse(JSON.stringify(Setup.defaults.composite)) : null;
+  const defaultComposite = (Setup.defaults && Setup.defaults.canvas) ? JSON.parse(JSON.stringify(Setup.defaults.canvas)) : null;
   // If composite missing or explicitly an empty object (no own keys), set from defaults
-  const comp = Setup.Settings.canvas.composite;
+  const comp = projectConfig.canvas.composite;
   const isEmptyObj = comp && typeof comp === 'object' && Object.keys(comp).length === 0;
   if (!comp || isEmptyObj) {
     if (defaultComposite) {
       // Ensure type falls back to canvas type if missing
-      if (!defaultComposite.type) defaultComposite.type = Setup.Settings.canvas.type || (typeof typeSelectElement !== 'undefined' && typeSelectElement?.value) || 'line';
+      if (!defaultComposite.type) defaultComposite.type = projectConfig.canvas.type || (typeof typeSelectElement !== 'undefined' && typeSelectElement?.value) || 'line';
       // Ensure enabled property exists (default to true)
       if (defaultComposite.enabled === undefined) defaultComposite.enabled = true;
-      Setup.Settings.canvas.composite = defaultComposite;
+      projectConfig.canvas.composite = defaultComposite;
       return;
     }
     // Fallback minimal composite
-    Setup.Settings.canvas.composite = { enabled: true, type: Setup.Settings.canvas.type || (typeof typeSelectElement !== 'undefined' && typeSelectElement?.value) || 'line', params: {} };
+    projectConfig.canvas.composite = { enabled: true, type: projectConfig.canvas.type || (typeof typeSelectElement !== 'undefined' && typeSelectElement?.value) || 'line', params: {} };
     return;
   }
 
   // If composite exists but has no type, prefer default composite type
-  if (!Setup.Settings.canvas.composite.type) {
-    if (defaultComposite && defaultComposite.type) Setup.Settings.canvas.composite.type = defaultComposite.type;
-    else Setup.Settings.canvas.composite.type = Setup.Settings.canvas.type || (typeof typeSelectElement !== 'undefined' && typeSelectElement?.value) || 'line';
+  if (!projectConfig.canvas.composite.type) {
+    if (defaultComposite && defaultComposite.type) projectConfig.canvas.composite.type = defaultComposite.type;
+    else projectConfig.canvas.composite.type = projectConfig.canvas.type || (typeof typeSelectElement !== 'undefined' && typeSelectElement?.value) || 'line';
   }
 
   // Ensure params map exists
-  if (!Setup.Settings.canvas.composite.params || typeof Setup.Settings.canvas.composite.params !== 'object') {
-    Setup.Settings.canvas.composite.params = {};
+  if (!projectConfig.canvas.composite.params || typeof projectConfig.canvas.composite.params !== 'object') {
+    projectConfig.canvas.composite.params = {};
   }
 
   // Merge missing params from default (only if defaultComposite exists and type matches)
-  if (defaultComposite && defaultComposite.params && defaultComposite.type === Setup.Settings.canvas.composite.type) {
-    const existing = Setup.Settings.canvas.composite.params || {};
+  if (defaultComposite && defaultComposite.params && defaultComposite.type === projectConfig.canvas.composite.type) {
+    const existing = projectConfig.canvas.composite.params || {};
     for (const k in defaultComposite.params) {
       if (!Object.prototype.hasOwnProperty.call(existing, k)) {
-        Setup.Settings.canvas.composite.params[k] = defaultComposite.params[k];
+        projectConfig.canvas.composite.params[k] = defaultComposite.params[k];
       }
     }
   }
@@ -781,7 +805,7 @@ function ensureCompositeDefaults() {
   // but we still need the composite params populated with the registry's defaults.
   try {
     if (typeof normalizeCompositeParams === 'function') {
-      normalizeCompositeParams(Setup.Settings.canvas.composite);
+      normalizeCompositeParams(projectConfig.canvas.composite, ...params);
     }
   } catch (err) {
     // Do not fail the whole flow if normalization fails — just log for debugging
@@ -791,19 +815,15 @@ function ensureCompositeDefaults() {
 
 function makeSaveAllJson() {
   const save = {};
-  save.Setup = Setup;
+  save.Setup = projectConfig ? { Settings: projectConfig } : { Settings: {} };
   // Don't include image URLs - images will be exported separately in ZIP
   save.imageSlots = slotsImages.map(img => img ? 'placeholder' : null);
   return JSON.stringify(save, null, 2);
 }
 
-function makeSaveSetupJson() {
-  return JSON.stringify({ Setup }, null, 2);
-}
-
 function clearTextLayersMemory() {
   textLayersContainer.innerHTML = '';
-  Setup.Settings.textLayers = [];
+  projectConfig.textLayers = [];
   updateTextSettings();
   localStorage.removeItem("textLayers");
 }
@@ -813,35 +833,53 @@ function saveSetup() {
     localStorage.setItem("setup", JSON.stringify(Setup));
 }
 
+function saveprojectConfig() {
+  if(window.memoryLoaded)
+    localStorage.setItem("projectConfig", JSON.stringify(projectConfig));
+  
+}
+
 function loadSetup() {
   const savedSetup = localStorage.getItem("setup");
   if (savedSetup) {
     const defaultSetup = window.defaultSetup || Setup;
-    // Merge saved Setup with defaults to ensure all keys exist
     Setup = deepMerge(JSON.parse(savedSetup), defaultSetup);
-    // Normalize params for effects, converting old array format to object mapping
-    normalizeEffectParams(Setup.Settings.canvas.effects);
-    // Remove legacy params_enabled flags if present
-    try { (Setup.Settings.canvas.effects || []).forEach(e => delete e.params_enabled); } catch (err) {}
-    // Sanitize composite params to registry schema
+    // Update export settings UI
+    if (Setup.Export.Project.Images) {
+      exportProjectImagesFormatSelectElement.value = Setup.Export.Project.Images.format || 'webp';
+      exportProjectImagesQualityElement.value = Setup.Export.Project.Images.jpegQuality || 0.95;
+    }
+    if (Setup.Export.Image.Images) {
+      exportImageImagesFormatSelectElement.value = Setup.Export.Image.Images.format || 'webp';
+      exportImageImagesQualityElement.value = Setup.Export.Image.Images.jpegQuality || 0.95;
+    }
+  }
+}
+
+function loadprojectConfig() {
+  const savedprojectConfig = localStorage.getItem("projectConfig");
+  if (savedprojectConfig) {
+    const defaultprojectConfig = window.defaultprojectConfig || projectConfig;
+    projectConfig = deepMerge(JSON.parse(savedprojectConfig), defaultprojectConfig);
+    normalizeEffectParams(projectConfig.canvas.effects);
+    try { (projectConfig.canvas.effects || []).forEach(e => delete e.params_enabled); } catch (err) {}
     try {
-      if (Setup.Settings.canvas?.composite) {
-        const def = COMPOSITE_REGISTRY[Setup.Settings.canvas.composite.type] || {};
+      if (projectConfig.canvas?.composite) {
+        const def = COMPOSITE_REGISTRY[projectConfig.canvas.composite.type] || {};
         const schemaKeys = new Set((def.params || []).map(p => p.key));
         const sanitized = {};
-        const existing = Setup.Settings.canvas.composite.params || {};
+        const existing = projectConfig.canvas.composite.params || {};
         for (const k of schemaKeys) {
           sanitized[k] = existing[k] !== undefined ? existing[k] : (def.params.find(p => p.key === k)?.default);
         }
-        Setup.Settings.canvas.composite.params = sanitized;
+        projectConfig.canvas.composite.params = sanitized;
       }
     } catch (err) {
       console.warn('Error normalizing composite params on loadSetup:', err);
     }
-    // Ensure composite exists and merge defaults when missing/empty
     try { ensureCompositeDefaults(); } catch(err) { console.warn('Error ensuring composite defaults:', err); }
-    // Ensure composite params reflect registry defaults
-    try { normalizeCompositeParams(Setup.Settings.canvas.composite); } catch(err) { console.warn('Error normalizing composite params after ensureCompositeDefaults:', err); }
+    try { normalizeCompositeParams(projectConfig.canvas.composite); } catch(err) { console.warn('Error normalizing composite params after ensureCompositeDefaults:', err); }
+    loadTextLayers(projectConfig.textLayers);
   }
 }
 
@@ -849,15 +887,8 @@ function clearSavedSetup() {
   localStorage.removeItem("setup");
 }
 
-function saveTextLayersToStorage() {
-  if(window.memoryLoaded)
-    localStorage.setItem("textLayers", JSON.stringify(Setup.Settings.textLayers));
-}
-
-function loadTextLayersFromStorage() {
-  const savedLayers = localStorage.getItem("textLayers");
-  if (savedLayers)
-    loadTextLayers(JSON.parse(savedLayers))
+function clearSavedprojectConfig() {
+  localStorage.removeItem("projectConfig");
 }
 
 function loadTextLayers(layersData) {
@@ -875,7 +906,7 @@ function loadTextLayers(layersData) {
       const layerData = layersData[index];
       const id = ensureUniqueId("layer_{n}", getIndexFromId(layerData.id)).index;
       idsToCheck.push(id)
-      // Do manually, using the functions, to add layer, strokes and shadows.
+      // Do manually, using the functions, to add layer.
       const newLayerId = addTextLayer(id); // This function should return the ID of the new layer
       const newLayerEl = document.getElementById(newLayerId); // Get the newly created DOM element
       // Populate basic font settings
@@ -946,47 +977,6 @@ function loadTextLayers(layersData) {
   window._loadingTextLayers = false;
 }
 
-function loadTextShadows(layerIndex, shadowsData) {
-  const layerEl = textLayersContainer.querySelectorAll(".text-layer-item")[layerIndex];
-  if (shadowsData) {
-    for (let index = 0; index < shadowsData.length; index++) {
-      const shadowData = shadowsData[index];
-      const shadowEl = layerEl.querySelector(`#${addShadow({ target: layerEl.querySelector(".add-shadow-btn") })}`).parentElement.querySelector('.shadow-item');
-      shadowEl.querySelector(".shadowColor-input").value = shadowData.color;
-      shadowEl.querySelector(".shadowBlur-input").value = shadowData.blur;
-      shadowEl.querySelector(".shadowOffsetX-input").value = shadowData.offsetX;
-      shadowEl.querySelector(".shadowOffsetY-input").value = shadowData.offsetY;
-      
-      // ⭐️ Restore enabled state for shadow
-      const shadowEnabledCheckbox = shadowEl.parentElement.parentElement.querySelector(".shadow-enabled-checkbox");
-      if (shadowEnabledCheckbox) {
-        shadowEnabledCheckbox.checked = shadowData.enabled !== false;
-      }
-    }
-  }
-  updateTextSettings(); // Redraw canvas with loaded settings
-}
-
-function loadTextStrokes(layerIndex, strokesData) {
-  const layerEl = textLayersContainer.querySelectorAll(".text-layer-item")[layerIndex];
-  if (strokesData) {
-    for (let index = 0; index < strokesData.length; index++) {
-      const strokeData = strokesData[index];
-      const strokeEl = layerEl.querySelector(`#${addStroke({ target: layerEl.querySelector(".add-stroke-btn") })}`).parentElement.querySelector('.stroke-item');
-      strokeEl.querySelector(".strokeColor-input").value = strokeData.color;
-      strokeEl.querySelector(".strokeWidth-input").value = strokeData.width;
-      strokeEl.querySelector(".strokeOpacity-input").value = strokeData.opacity;
-      
-      // ⭐️ Restore enabled state for stroke
-      const strokeEnabledCheckbox = strokeEl.parentElement.parentElement.querySelector(".stroke-enabled-checkbox");
-      if (strokeEnabledCheckbox) {
-        strokeEnabledCheckbox.checked = strokeData.enabled !== false;
-      }
-    }
-  }
-  updateTextSettings(); // Redraw canvas with loaded settings
-}
-
 
 // ======================
 // Tab Functions
@@ -1009,9 +999,7 @@ function changeTab(e) {
 // ======================
 
 async function updateTextSettings() {
-  // saveTextLayersToStorage()
-  // Clear the settings array to rebuild it
-  Setup.Settings.textLayers = [];
+  projectConfig.textLayers = [];
 
   const layerElements = textLayersContainer.querySelectorAll(".text-layer-item");
 
@@ -1021,8 +1009,6 @@ async function updateTextSettings() {
     const newLayer = {
       font: {},
       position: {},
-      strokes: [],
-      shadows: [],
       id: layerEl.parentElement.parentElement.id
     };
 
@@ -1086,12 +1072,13 @@ async function updateTextSettings() {
     }
 
     // 5. Add the completed layer to settings
-    Setup.Settings.textLayers.push(newLayer);
+    projectConfig.textLayers.push(newLayer);
     layerIndex++;
   }
 
   // 6. Redraw the canvas
   drawComposite();
+  saveprojectConfig();
 }
 
 function updateCustomValues() {
@@ -1100,8 +1087,8 @@ function updateCustomValues() {
 }
 
 function updateImageSettings(skipEffectsRerender = false) {
-  Setup.Settings.canvas.format = RatioSelectElement.value;
-  const _format = Setup.Sizes[Setup.Settings.canvas.format]
+  projectConfig.canvas.format = RatioSelectElement.value;
+  const _format = Setup.Sizes[projectConfig.canvas.format]
   const ratio = _format.width / _format.height;
 
   // The idea is that the min size be 1920
@@ -1113,20 +1100,25 @@ function updateImageSettings(skipEffectsRerender = false) {
     _format.height = 1920;
   }
   
-  Setup.Settings.canvas.type = typeSelectElement.value;
+  projectConfig.canvas.type = typeSelectElement.value;
   setCanvasSize(_format.width, _format.height);
   // Use unified drawComposite so pipeline is used when available
   drawComposite();
   if (!skipEffectsRerender) renderEffectLayers();
+  saveprojectConfig();
 }
 
 function updateExportSettings() {
-  Setup.Settings.export.format = exportFormatSelectElement.value || 'png';
-  Setup.Settings.export.jpegQuality = parseFloat(jpegQualityElement.value) || 0.95;
+  Setup.Export.Project.Images.format = exportProjectImagesFormatSelectElement.value || 'png';
+  Setup.Export.Project.Images.quality = parseFloat(exportProjectImagesQualityElement.value) || 0.95;
+  Setup.Export.Image.Images.format = exportImageImagesFormatSelectElement.value || 'png';
+  Setup.Export.Image.Images.quality = parseFloat(exportImageImagesQualityElement.value) || 0.95;
   
   // Clamp quality between 0 and 1
-  if (Setup.Settings.export.jpegQuality < 0) Setup.Settings.export.jpegQuality = 0;
-  if (Setup.Settings.export.jpegQuality > 1) Setup.Settings.export.jpegQuality = 1;
+  if (Setup.Export.Project.Images.quality < 0) Setup.Export.Project.Images.quality = 0;
+  if (Setup.Export.Project.Images.quality > 1) Setup.Export.Project.Images.quality = 1;
+  if (Setup.Export.Image.Images.quality < 0) Setup.Export.Image.Images.quality = 0;
+  if (Setup.Export.Image.Images.quality > 1) Setup.Export.Image.Images.quality = 1;
   
   saveSetup();
 }
@@ -1141,7 +1133,7 @@ function getIndexFromId(id) {
 }
 
 function getLatestLayerId() {
-  const ids = Setup.Settings.textLayers.map(layer => getIndexFromId(layer.id));
+  const ids = projectConfig.textLayers.map(layer => getIndexFromId(layer.id));
   const lastId = ids.length ? Math.max(...ids) : -1;
   return lastId;
 }
@@ -1233,22 +1225,22 @@ function addTextLayer(layerIndex) {
   // it must use the addStroke and addShadow, because only they will add and run the necessary commands
   // Then this here will update their info with the default ones
   if(window.memoryLoaded) {
-    if (Setup.defaults.TextLayer) {
+    if (Setup.defaults.textLayers) {
       // Populate basic font settings
-      clone.querySelector(".overlayText-input").value = Setup.defaults.TextLayer.overlayText;
-      clone.querySelector(".fontSelect-input").value = Setup.defaults.TextLayer.font.family;
-      clone.querySelector(".fontWeightSelect-input").value = Setup.defaults.TextLayer.font.weight;
-      clone.querySelector(".fontStyleSelect-input").value = Setup.defaults.TextLayer.font.style;
-      clone.querySelector(".fontSize-input").value = Setup.defaults.TextLayer.font.size;
-      clone.querySelector(".fontColor-input").value = Setup.defaults.TextLayer.font.color;
-      clone.querySelector(".fontOpacity-input").value = Setup.defaults.TextLayer.font.opacity;
+      clone.querySelector(".overlayText-input").value = Setup.defaults.textLayers.overlayText;
+      clone.querySelector(".fontSelect-input").value = Setup.defaults.textLayers.font.family;
+      clone.querySelector(".fontWeightSelect-input").value = Setup.defaults.textLayers.font.weight;
+      clone.querySelector(".fontStyleSelect-input").value = Setup.defaults.textLayers.font.style;
+      clone.querySelector(".fontSize-input").value = Setup.defaults.textLayers.font.size;
+      clone.querySelector(".fontColor-input").value = Setup.defaults.textLayers.font.color;
+      clone.querySelector(".fontOpacity-input").value = Setup.defaults.textLayers.font.opacity;
 
       // Populate position settings
-      clone.querySelector(".textAlign-input").value = Setup.defaults.TextLayer.position.textAlign;
-      clone.querySelector(".textBaseline-input").value = Setup.defaults.TextLayer.position.textBaseline;
-      clone.querySelector(".positionX-input").value = Setup.defaults.TextLayer.position.x;
-      clone.querySelector(".positionY-input").value = Setup.defaults.TextLayer.position.y;
-      clone.querySelector(".rotation-input").value = Setup.defaults.TextLayer.position.rotation || 0;
+      clone.querySelector(".textAlign-input").value = Setup.defaults.textLayers.position.textAlign;
+      clone.querySelector(".textBaseline-input").value = Setup.defaults.textLayers.position.textBaseline;
+      clone.querySelector(".positionX-input").value = Setup.defaults.textLayers.position.x;
+      clone.querySelector(".positionY-input").value = Setup.defaults.textLayers.position.y;
+      clone.querySelector(".rotation-input").value = Setup.defaults.textLayers.position.rotation || 0;
     }
   }
 
@@ -1259,19 +1251,18 @@ function addTextLayer(layerIndex) {
 
 function duplicateTextLayer(e) {
   const layerIndex = parseInt(e.target.parentElement.getAttribute('layerIndex'));
-  loadTextLayers([Setup.Settings.textLayers[layerIndex]]);
+  loadTextLayers([projectConfig.textLayers[layerIndex]]);
 }
 
 function setTextLayerDefault(e) {
   const layerIndex = parseInt(e.target.parentElement.getAttribute('layerIndex'));
-  Setup.defaults.TextLayer = {...Setup.Settings.textLayers[layerIndex]}
+  Setup.defaults.textLayers = {...projectConfig.textLayers[layerIndex]}
   saveSetup();
   toastMessage('Text Layer default set', { position: 'bottomCenter', type: 'success' });
 }
 
 function deleteTextLayer(e) {
   e.target.parentElement.remove();
-  saveTextLayersToStorage();
   updateTextSettings();
 }
 
@@ -1295,31 +1286,31 @@ function addImageEffectLayer() {
   const finalParams = { ...registryDefaults, ...(userDefault.params ?? {}) 
   };
 
-  Setup.Settings.canvas.effects.push({
+  projectConfig.canvas.effects.push({
     type: effectType,
     params: finalParams,
     enabled: true
   });
   // Only render the newly added effect
-  renderImageEffectLayer(Setup.Settings.canvas.effects.length - 1);
+  renderImageEffectLayer(projectConfig.canvas.effects.length - 1);
 }
 
 function deleteImageEffectLayer(e) {
   const index = parseInt(e.target.parentElement.id.replace('effect_', ''));
-  Setup.Settings.canvas.effects.splice(index, 1);
+  projectConfig.canvas.effects.splice(index, 1);
   renderEffectLayers();
 }
 
 function duplicateImageEffectLayer(e) {
   const index = parseInt(e.target.parentElement.id.replace('effect_', ''));
-  const effectCopy = JSON.parse(JSON.stringify(Setup.Settings.canvas.effects[index]));
-  Setup.Settings.canvas.effects.splice(index + 1, 0, effectCopy);
+  const effectCopy = JSON.parse(JSON.stringify(projectConfig.canvas.effects[index]));
+  projectConfig.canvas.effects.splice(index + 1, 0, effectCopy);
   renderEffectLayers();
 }
 
 function setImageEffectLayerDefault(e) {
   const index = parseInt(e.target.parentElement.id.replace('effect_', ''));
-  Setup.defaults.effects = {...Setup.Settings.canvas.effects[index]};
+  Setup.defaults.effects = {...projectConfig.canvas.effects[index]};
   saveSetup();
   toastMessage('Effect Layer default set', { position: 'bottomCenter', type: 'success' });
 }
@@ -1329,10 +1320,84 @@ function setImageEffectLayerDefault(e) {
 // Export/Import Functions
 // ======================
 
+
+/**
+ * Export Config as JSON file
+ */
+function exportConfigFile() {
+  const btn = document.getElementById('exportConfigBtn');
+  btn.classList.add('disabled');
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '0.5';
+
+  try {
+    const json = JSON.stringify(Setup, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'covermaker-config.json';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
+    toastMessage('Config exported successfully!', { position: 'bottomCenter', type: 'success' });
+  } catch (err) {
+    console.error('Export config failed:', err);
+    toastMessage('Failed to export config', { position: 'bottomCenter', type: 'danger' });
+  } finally {
+    btn.classList.remove('disabled');
+    btn.style.pointerEvents = '';
+    btn.style.opacity = '';
+  }
+}
+
+/**
+ * Import Config from JSON file
+ */
+function importConfigFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Reset the input so the same file can be selected again
+  event.target.value = '';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const jsonData = JSON.parse(e.target.result);
+      
+      if (!jsonData.Config) {
+        toastMessage('Invalid config file: missing Config object', { position: 'bottomCenter', type: 'danger' });
+        return;
+      }
+
+      // Merge imported Config with defaults to ensure all keys exist
+      const defaultConfig = window.defaultConfig || Config;
+      Config = deepMerge(jsonData.Config, defaultConfig);
+      
+      // Update UI with imported Config values
+      loadConfig();
+      
+      // Save to localStorage
+      saveConfig();
+      
+      toastMessage('Config imported successfully!', { position: 'bottomCenter', type: 'success' });
+    } catch (err) {
+      console.error('Import config failed:', err);
+      toastMessage('Failed to import config: ' + err.message, { position: 'bottomCenter', type: 'danger' });
+    }
+  };
+  reader.readAsText(file);
+}
+
 function getExportFileName() {
   // Get the file extension based on export format
-  const format = Setup.Settings.export.format || 'png';
-  const extension = format === 'jpeg' ? '.jpg' : '.png';
+  const format = Setup.Export.Canvas.format || 'png';
+  const extension = format === 'jpeg' ? '.jpg' : '.' + format;
   
   // If we have a stored project name from import, use it
   if (window.projectFileName) {
@@ -1340,8 +1405,8 @@ function getExportFileName() {
   }
   
   // Otherwise, build filename from all text layers
-  if (Setup.Settings.textLayers.length > 0) {
-    const allTexts = Setup.Settings.textLayers
+  if (projectConfig.textLayers.length > 0) {
+    const allTexts = projectConfig.textLayers
       .map(layer => layer.overlayText)
       .filter(text => text && text.trim())
       .join(' - ');
@@ -1361,8 +1426,8 @@ function getProjectBaseName() {
   }
   
   // Otherwise, build filename from all text layers
-  if (Setup.Settings.textLayers.length > 0) {
-    const allTexts = Setup.Settings.textLayers
+  if (projectConfig.textLayers.length > 0) {
+    const allTexts = projectConfig.textLayers
       .map(layer => layer.overlayText)
       .filter(text => text && text.trim())
       .join(' - ');
@@ -1444,7 +1509,7 @@ function fillSlotsWithNumbers() {
       // Load the blob URL into the slot (loadImageIntoSlot will handle Image creation)
       loadImageIntoSlot(blobUrl, i);
       console.log(`Loaded number ${i} (${blobUrl}) into slot ${i}`);
-    }, `image/${Setup.Settings.export.format}`, Setup.Settings.export.jpegQuality || 0.95);
+    }, `image/${Setup.Export.Project.Images.format}`, Setup.Export.Project.Images.quality || 0.95);
   }
   
   toastMessage('Test: Filling slots with numbers...', { position: 'topRight', type: 'success' });
@@ -1462,8 +1527,8 @@ function exportAsPNG() {
   setTimeout(() => {
     try {
       // Get export format and quality from settings
-      const format = Setup.Settings.export.format || 'png';
-      const quality = Setup.Settings.export.jpegQuality || 0.95;
+      const format = Setup.Export.Canvas.format || 'png';
+      const quality = Setup.Export.Canvas.quality || 1.0;
       
       const fileName = getExportFileName();
       const link = document.createElement("a");
@@ -1525,9 +1590,9 @@ async function exportProjectFile() {
       const img = slotsImages[i];
       if (img) {
         // Convert image to blob
-        const blobPromise = imgToBlob(img, `image/${Setup.Settings.export.format}`, Setup.Settings.export.jpegQuality || 0.95)
+        const blobPromise = imgToBlob(img, `image/${Setup.Export.Project.Images.format}`, Setup.Export.Project.Images.quality || 0.95)
           .then(blob => {
-            zip.file(`images/slot_${i}.${Setup.Settings.export.format}`, blob);
+            zip.file(`images/slot_${i}.${Setup.Export.Project.Images.format}`, blob);
           })
           .catch(err => {
             console.error(`Failed to export image ${i}:`, err);
@@ -1588,17 +1653,33 @@ async function importProjectFile(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  // Check if it's a ZIP file
-  if (file.name.endsWith('.zip') || file.name.endsWith('.covermaker.zip')) {
-    await importProjectFromZip(file);
-  } else if (file.name.endsWith('.json')) {
-    // Legacy JSON import (without images)
-    importProjectFromJson(file, true);
-  } else {
-    alert('Unsupported file format. Please use .zip or .json files.');
-  }
+  clearStepsCache(); // Clear any cached steps before importing to ensure a clean state
+  
+  const btn = document.getElementById('importProjectBtn');
+  btn.classList.add('disabled');
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '0.5';
 
-  event.target.value = ''; // Clear the input
+  try {
+    // Check if it's a ZIP file
+    if (file.name.endsWith('.zip') || file.name.endsWith('.covermaker.zip')) {
+      await importProjectFromZip(file);
+    } else if (file.name.endsWith('.json')) {
+      // Legacy JSON import (without images)
+      await importProjectFromJson(file);
+    } else {
+      alert('Unsupported file format. Please use .zip or .json files.');
+    }
+  } catch (error) {
+    console.error('Import failed:', error);
+    toastMessage('Failed to import project: ' + error.message, { position: 'bottomCenter', type: 'danger' });
+  } finally {
+    btn.classList.remove('disabled');
+    btn.style.pointerEvents = '';
+    btn.style.opacity = '';
+    event.target.value = ''; // Clear the input
+  }
+  drawComposite();
 }
 
 /**
@@ -1606,165 +1687,110 @@ async function importProjectFile(event) {
  */
 async function importProjectFromZip(file) {
   if (typeof JSZip === 'undefined') {
-    alert('JSZip library not loaded. Please refresh the page.');
-    return;
+    throw new Error('JSZip library not loaded. Please refresh the page.');
   }
 
-  const imagesExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff'];
-
-  // create a regex to match the image extensions using /slot_(\d+)\.png/
-  const imageRegex = new RegExp(`slot_(\\d+)\\.(${imagesExtensions.map(ext => ext.slice(1)).join('|')})$`, 'i');
-
-  const btn = document.getElementById('importProjectBtn');
-  btn.classList.add('disabled');
-  btn.style.pointerEvents = 'none';
-  btn.style.opacity = '0.5';
-  
   toastMessage('Opening project file...', { position: 'bottomCenter', type: 'info' });
 
-  try {
-    // Store the original filename (without extension) for future exports
-    const fileName = file.name.replace(/\.covermaker\.zip$|\.zip$/i, '');
-    window.projectFileName = utils.safeWindowsFileName(fileName);
-    
-    const zip = new JSZip();
-    const contents = await zip.loadAsync(file);
-
-    // Read project.json
-    const projectJsonFile = contents.file('project.json');
-    if (!projectJsonFile) {
-      throw new Error('Invalid project file: project.json not found');
-    }
-
-    const jsonText = await projectJsonFile.async('text');
-    const projectData = JSON.parse(jsonText);
-
-    // Clear existing data
-    window.memoryLoaded = false;
-    clearTextLayersMemory();
-    deleteAllSlots();
-
-    // Load configuration
-    if (projectData.Setup) {
-      // Get the default Setup from config.js
-      const defaultSetup = window.defaultSetup || Setup;
-      // Merge imported Setup with defaults to ensure all keys exist
-      Setup = deepMerge(projectData.Setup, defaultSetup);
-      // Normalize params for effects so we don't end up with arrays in saved setups
-      normalizeEffectParams(Setup.Settings.canvas.effects);
-      // Remove legacy per-param toggles
-      try { (Setup.Settings.canvas.effects || []).forEach(e => delete e.params_enabled); } catch (err) {}
-      loadTextLayers(Setup.Settings.textLayers);
-    }
-
-  // Restore UI fields
-  RatioSelectElement.value = Setup.Settings.canvas.format;
-  typeSelectElement.value = Setup.Settings.canvas.type;
-  // Ensure composite object exists and UI is in sync
-  ensureCompositeDefaults();
-  addTypeParamsOptions(typeSettingsContainer, Setup.Settings.canvas.composite.type, Setup.Settings.canvas.composite.params || {});
+  // Store the original filename (without extension) for future exports
+  const fileName = file.name.replace(/\.covermaker\.zip$|\.zip$/i, '');
+  window.projectFileName = utils.safeWindowsFileName(fileName);
   
-  // Restore export settings
-  // This will not restore the export settings UI because it's not part of the setup-only flow
-  if (Setup.Settings.export) {
-    // To not replace the user choise, let's force the Setup.Settings.export.format to use the existing element value or webp
-    Setup.Settings.export.format = exportFormatSelectElement.value || 'webp';
-    Setup.Settings.export.jpegQuality = jpegQualityElement.value || 0.95;
-  }    // Load images from ZIP
-    toastMessage('Reading project data...', { position: 'bottomCenter', type: 'info' });
-    const imageFiles = [];
-    contents.folder('images').forEach((relativePath, file) => {
-      const match = relativePath.match(imageRegex);
-      if (match) {
-        const slotIndex = parseInt(match[1]);
-        imageFiles.push({ slotIndex, file });
-      }
-    });
+  const zip = new JSZip();
+  const contents = await zip.loadAsync(file);
 
-    // Sort by slot index
-    imageFiles.sort((a, b) => a.slotIndex - b.slotIndex);
-
-    // Set up slots
-    const maxSlotIndex = imageFiles.length > 0 ? Math.max(...imageFiles.map(f => f.slotIndex)) : 0;
-    setSlots(maxSlotIndex + 1);
-
-    // Load each image
-    toastMessage(`Loading ${imageFiles.length} images...`, { position: 'bottomCenter', type: 'info' });
-    for (const { slotIndex, file } of imageFiles) {
-      try {
-        const blob = await file.async('blob');
-        const img = await loadImage(blob);
-        slotsImages[slotIndex] = img;
-        setSlotImage(slotIndex, img);
-      } catch (err) {
-        console.error(`Failed to load image ${slotIndex}:`, err);
-      }
-    }
-
-    // Finalize
-    toastMessage('Finalizing...', { position: 'bottomCenter', type: 'info' });
-    window.memoryLoaded = true;
-    updateImageSettings();
-    updateTextSettings();
-    saveSetup();
-    saveTextLayersToStorage();
-    saveFieldsToStorage();
-    drawComposite();
-
-    toastMessage('Project imported successfully!', { position: 'bottomCenter', type: 'success' });
-  } catch (error) {
-    console.error('Import failed:', error);
-    toastMessage('Failed to import project: ' + error.message, { position: 'bottomCenter', type: 'danger' });
-  } finally {
-    const btn = document.getElementById('importProjectBtn');
-    btn.classList.remove('disabled');
-    btn.style.pointerEvents = '';
-    btn.style.opacity = '';
+  // 1. Import JSON Configuration
+  const projectJsonFile = contents.file('project.json');
+  if (!projectJsonFile) {
+    throw new Error('Invalid project file: project.json not found');
   }
+
+  const jsonText = await projectJsonFile.async('text');
+  const projectData = JSON.parse(jsonText);
+
+  // Clear existing data and load configuration
+  // loadFullProjectFromJson handles clearing slots and text layers
+  loadFullProjectFromJson(projectData, false);
+
+  // 2. Import Images
+  await importImagesFromZip(contents);
+
+  // Finalize
+  toastMessage('Finalizing...', { position: 'bottomCenter', type: 'info' });
+  window.memoryLoaded = true;
+  updateImageSettings();
+  updateTextSettings();
+  saveprojectConfig();
+  saveFieldsToStorage();
+  drawComposite();
+
+  toastMessage('Project imported successfully!', { position: 'bottomCenter', type: 'success' });
 }
 
 /**
  * Import project from legacy JSON file (without images)
  */
-async function importProjectFromJson(file, isSetupOnly = false) {
-  const btn = document.getElementById('importProjectBtn');
-  btn.classList.add('disabled');
-  btn.style.pointerEvents = 'none';
-  btn.style.opacity = '0.5';
+async function importProjectFromJson(file) {
   
   toastMessage('Importing legacy project...', { position: 'bottomCenter', type: 'info' });
   
-  try {
-    // Store the original filename (without extension) for future exports
-    const fileName = file.name.replace(/\.json$/i, '');
-    window.projectFileName = utils.safeWindowsFileName(fileName);
-    
-    await _importProjectFromJsonCore(file, isSetupOnly);
-    toastMessage('Project imported successfully!', { position: 'bottomCenter', type: 'success' });
-  } catch (error) {
-    console.error('Import failed:', error);
-    toastMessage('Failed to import project', { position: 'bottomCenter', type: 'danger' });
-  } finally {
-    btn.classList.remove('disabled');
-    btn.style.pointerEvents = '';
-    btn.style.opacity = '';
-  }
+  // Store the original filename (without extension) for future exports
+  const fileName = file.name.replace(/\.json$/i, '');
+  window.projectFileName = utils.safeWindowsFileName(fileName);
+  
+  const text = await file.text();
+  const projectData = JSON.parse(text);
+      
+  loadFullProjectFromJson(projectData, true);
+  toastMessage('Project imported (without images)', { position: 'bottomCenter', type: 'warning' });
 }
 
-function _importProjectFromJsonCore(file, isSetupOnly = false) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const contents = e.target.result;
-    try {
-      const importedSetup = JSON.parse(contents);
-      loadFullProjectFromJson(importedSetup, isSetupOnly);
-      toastMessage('Project imported (without images)', { position: 'bottomCenter', type: 'warning' });
-    } catch (err) {
-      alert('Error reading project file: ' + err.message);
-      throw err;
+/**
+ * Helper to extract and load images from ZIP contents
+ */
+async function importImagesFromZip(zipContents) {
+  const imagesExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff'];
+  // create a regex to match the image extensions using /slot_(\d+)\.png/
+  const imageRegex = new RegExp(`slot_(\\d+)\\.(${imagesExtensions.map(ext => ext.slice(1)).join('|')})$`, 'i');
+
+  toastMessage('Reading project data...', { position: 'bottomCenter', type: 'info' });
+  const imageFiles = [];
+  
+  zipContents.folder('images').forEach((relativePath, file) => {
+    const match = relativePath.match(imageRegex);
+    if (match) {
+      const slotIndex = parseInt(match[1]);
+      imageFiles.push({ slotIndex, file });
     }
-  };
-  reader.readAsText(file);
+  });
+
+  // Sort by slot index
+  imageFiles.sort((a, b) => a.slotIndex - b.slotIndex);
+
+  // Set up slots if needed (loadFullProjectFromJson should have set them based on JSON, but we double check)
+  if (imageFiles.length > 0) {
+    const maxSlotIndex = Math.max(...imageFiles.map(f => f.slotIndex));
+    if (slotsImages.length <= maxSlotIndex) {
+      setSlots(maxSlotIndex + 1);
+    }
+  }
+
+  // Load each image
+  toastMessage(`Loading ${imageFiles.length} images...`, { position: 'bottomCenter', type: 'info' });
+  
+  // Use Promise.all for parallel loading
+  const promises = imageFiles.map(async ({ slotIndex, file }) => {
+    try {
+      const blob = await file.async('blob');
+      const img = await loadImage(blob);
+      slotsImages[slotIndex] = img;
+      setSlotImage(slotIndex, img);
+    } catch (err) {
+      console.error(`Failed to load image ${slotIndex}:`, err);
+    }
+  });
+  
+  await Promise.all(promises);
 }
 
 function openInNewTab(source) {
@@ -1775,7 +1801,7 @@ function openInNewTab(source) {
     // Always ensure it's treated as an image
     const fixedBlob = blob.type.startsWith("image/")
       ? blob
-      : new Blob([blob], { type: `image/${Setup.Settings.export.format}` });
+      : new Blob([blob], { type: `image/${Setup.Export.Canvas.format}` });
 
     const url = URL.createObjectURL(fixedBlob);
     const tab = window.open(url, "_blank");
@@ -1791,7 +1817,7 @@ function openInNewTab(source) {
 
     // Enforce image MIME if dataURL was malformed
     if (!blob.type.startsWith("image/")) {
-      return new Blob([await blob.arrayBuffer()], { type: `image/${Setup.Settings.export.format}` });
+      return new Blob([await blob.arrayBuffer()], { type: `image/${Setup.Export.Project.Images.format}` });
     }
 
     return blob;
@@ -1827,9 +1853,9 @@ function openInNewTab(source) {
 
   if (isCanvas) {
     if (targetObj.toBlob) {
-      cropCanvas(targetObj).toBlob(openBlob, `image/${Setup.Settings.export.format}`);
+      cropCanvas(targetObj).toBlob(openBlob, `image/${Setup.Export.Canvas.format}`);
     } else if (targetObj.toDataURL) {
-      const dataURL = cropCanvas(targetObj).toDataURL(`image/${Setup.Settings.export.format}`, Setup.Settings.export.jpegQuality || 0.95);
+      const dataURL = cropCanvas(targetObj).toDataURL(`image/${Setup.Export.Canvas.format}`, Setup.Export.Canvas.quality || 1.0);
       base64ToBlob(dataURL).then(openBlob);
     }
   }
@@ -1966,17 +1992,14 @@ function  makeDetailList(inputTarget, list, sort = false) {
 // ======================
 searchOnLibrary = Controller.wrap(searchOnLibrary, true, 100, 1000);
 // drawComposite now uses unified render with debounce to prevent flicker during rapid parameter changes
-drawComposite = Controller.wrap(drawComposite, true, 500, 200);
-updateTextSettings = Controller.wrap(updateTextSettings, true, 500, 200);
-saveTextLayersToStorage = Controller.wrap(saveTextLayersToStorage, true, 50, 100);
-saveSetup = Controller.wrap(saveSetup, true, 500, 1000);
-onEffectParamChange = Controller.wrap(onEffectParamChange, true, 300, 500);
-onCompositeParamChange = Controller.wrap(onCompositeParamChange, true, 300, 500);
-drawCompositeImage = Controller.wrap(drawCompositeImage, false, 300, 500);
-drawCompositeText = Controller.wrap(drawCompositeText, false, 200, 100);
-setCanvasSize = Controller.wrap(setCanvasSize, true, 300, 200);
-applyImageEffects = Controller.wrap(applyImageEffects, true, 200, 200);
+
+saveSetup = Controller.wrap(saveSetup, true, 100, 100);
+saveprojectConfig = Controller.wrap(saveprojectConfig, true, 100, 100);
+drawComposite = Controller.wrap(drawComposite, true, 100);
 revokeAllBlobUrls = Controller.wrap(revokeAllBlobUrls, false, 200, 200);
+
+updateTextSettings = Controller.wrap(updateTextSettings, true); // debounce to prevent excessive redraws
+updateImageSettings = Controller.wrap(updateImageSettings, true); // debounce to prevent excessive redraws
 
 // ======================
 // Event Listeners
@@ -2058,8 +2081,23 @@ function addSettingListeners() {
   });
   
   // Export settings listeners
-  [exportFormatSelectElement, jpegQualityElement].forEach((el) => {
+  [exportProjectImagesFormatSelectElement, exportProjectImagesQualityElement].forEach((el) => {
     el.addEventListener("input", updateExportSettings);
+  });
+
+
+  document.getElementById("exportConfigBtn")?.addEventListener("click", exportConfigFile);
+  document.getElementById("importConfigBtn")?.addEventListener("click", () => {
+    // Create a hidden file input for config import
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.style.display = 'none';
+    input.addEventListener('change', importConfigFile);
+    document.body.appendChild(input);
+    input.click();
+    // Clean up after selection
+    setTimeout(() => document.body.removeChild(input), 1000);
   });
   
   // Note: The font listeners are removed, as they are now handled by the main 'input' listener
@@ -2079,7 +2117,7 @@ document.getElementById("exportSetupBtn").addEventListener("click", () => {
   btn.style.opacity = '0.5';
 
   try {
-    const json = makeSaveSetupJson();
+    const json = JSON.stringify(projectConfig, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -2152,6 +2190,7 @@ function dummyStart() {
     img.src = src;
   });
 
+  loadTextLayers(Setup.defaults.textLayers)
 }
 
 
@@ -2159,6 +2198,7 @@ function dummyStart() {
 window.addEventListener('load', async () => {
   // Store a deep copy of the default Setup before any modifications
   window.defaultSetup = JSON.parse(JSON.stringify(Setup));
+  window.defaultprojectConfig = JSON.parse(JSON.stringify(projectConfig));
   
   loadFieldsFromStorage();
   document.getElementById("Server").addEventListener("change", saveFieldsToStorage);
@@ -2187,6 +2227,7 @@ window.addEventListener('load', async () => {
   // Initial draw and Jellyfin setup
   // Load setup first so UI picks the saved composite type
   loadSetup();
+  // loadprojectConfig();
   addtypeSelectOptions();
   drawComposite();
   CreateJellyfin();
@@ -2212,15 +2253,11 @@ function loadEssentials() {
   window.memory = new pageMemory();
   window.memory.addEvent('onMemoryIsEmpty', () => dummyStart())
   window.memory.addEvent('onRestoreSucess', () => window.memoryLoaded = true)
+  window.memory.addEvent('onRestoreSucess', loadprojectConfig)
   window.memory.addEvent('onRestoreSucess', updateImageSettings)
-  window.memory.addEvent('onRestoreSucess', () => {
-    window.memoryLoaded = true;
-    loadTextLayersFromStorage();
-  })
   window.memory.addEvent('onRestoreSucess', () => searchOnLibrary(null, true, true))
   window.memory.addEvent('onRestoreError', () =>  window.memoryLoaded = true)
-  window.memory.addEvent('onSaveMemory', saveTextLayersToStorage)
-  window.memory.addEvent('onSaveMemory', saveSetup)
+  window.memory.addEvent('onSaveMemory', saveprojectConfig)
   window.memory.init();
   addSettingListeners();
   
@@ -2252,12 +2289,12 @@ function addtypeSelectOptions() {
   });
   // Ensure composite UI is initialized for the selected type
   // Set the select value based on Setup (fall back to the first option)
-  if (Setup?.Settings?.canvas?.type) typeSelectElement.value = Setup.Settings.canvas.type;
+  if (Setup?.Settings?.canvas?.type) typeSelectElement.value = projectConfig.canvas.type;
   else if (typeSelectElement.options.length) typeSelectElement.value = typeSelectElement.options[0].value;
   // Ensure composite configuration exists and falls back to defaults if empty/missing
   ensureCompositeDefaults();
   // Load options for initial composite type
-  addTypeParamsOptions(typeSettingsContainer, Setup.Settings.canvas.composite.type, Setup.Settings.canvas.composite.params || {});
+  addTypeParamsOptions(typeSettingsContainer, projectConfig.canvas.composite.type, projectConfig.canvas.composite.params || {});
   // Add change listener
   // Replace change handler (avoid adding multiple listeners)
   typeSelectElement.onchange = changeCompositeType;
@@ -2302,13 +2339,13 @@ function onCompositeParamChange(event) {
   const key = slider.dataset.paramKey;
   if (!key) return;
   const parsedValue = getControlValue(slider);
-  Setup.Settings.canvas.composite = Setup.Settings.canvas.composite || { params: {} };
-  Setup.Settings.canvas.composite.params = Setup.Settings.canvas.composite.params || {};
-  Setup.Settings.canvas.composite.params[key] = parsedValue;
+  projectConfig.canvas.composite = projectConfig.canvas.composite || { params: {} };
+  projectConfig.canvas.composite.params = projectConfig.canvas.composite.params || {};
+  projectConfig.canvas.composite.params[key] = parsedValue;
   slider.title = String(parsedValue);
   drawComposite();
   // Persist changes immediately to localStorage
-  saveSetup();
+  saveprojectConfig();
 }
 
 // Change composite type handler
@@ -2320,13 +2357,13 @@ function changeCompositeType(event) {
   if (!newType) return;
 
   // Update global type
-  Setup.Settings.canvas.type = newType;
+  projectConfig.canvas.type = newType;
 
   // Ensure structure exists
   ensureCompositeDefaults();
 
   // Assign composite type
-  Setup.Settings.canvas.composite.type = newType;
+  projectConfig.canvas.composite.type = newType;
 
   // Always use DEFAULTS only (no merging)
   const def = COMPOSITE_REGISTRY[newType] || {};
@@ -2337,7 +2374,7 @@ function changeCompositeType(event) {
   }
 
   // Overwrite everything
-  Setup.Settings.canvas.composite.params = params;
+  projectConfig.canvas.composite.params = params;
 
   // Rebuild UI with fresh defaults
   addTypeParamsOptions(typeSettingsContainer, newType, params);
@@ -2345,7 +2382,7 @@ function changeCompositeType(event) {
   // Sync + redraw
   updateImageSettings();
   drawComposite();
-  saveSetup();
+  saveprojectConfig();
 }
 
 
@@ -2357,19 +2394,20 @@ function cleanMemory() {
   memory.reset().then(() => {
     jellyfin.cleanDb();
     clearSavedSetup();
+    clearSavedprojectConfig();
     clearTextLayersMemory();
   });
 }
 
 // ✅ Dev helper: validate the composite default fallback (call from console)
 window.validateCompositeFallback = function() {
-  const orig = JSON.parse(JSON.stringify(Setup.Settings.canvas.composite));
+  const orig = JSON.parse(JSON.stringify(projectConfig.canvas.composite));
   console.log('Before ensureCompositeDefaults:', orig);
-  Setup.Settings.canvas.composite = {};
+  projectConfig.canvas.composite = {};
   ensureCompositeDefaults();
-  console.log('After ensureCompositeDefaults:', JSON.parse(JSON.stringify(Setup.Settings.canvas.composite)));
+  console.log('After ensureCompositeDefaults:', JSON.parse(JSON.stringify(projectConfig.canvas.composite)));
   // Restore
-  Setup.Settings.canvas.composite = orig;
+  projectConfig.canvas.composite = orig;
 }
 
 
@@ -2429,7 +2467,7 @@ function onEffectDrop(event) {
     if (fromIndex === toIndex) return;
 
     // Move in Data Array
-    moveInArray(Setup.Settings.canvas.effects, fromIndex, toIndex);
+    moveInArray(projectConfig.canvas.effects, fromIndex, toIndex);
 
     // Re-render UI
     renderEffectLayers();
@@ -2489,7 +2527,7 @@ function onTextLayerDrop(event) {
     }
 
     // Force update settings to match new DOM order
-    // This will rebuild Setup.Settings.textLayers in the correct order
+    // This will rebuild projectConfig.textLayers in the correct order
     updateTextSettings();
     
     // Optional: Re-number layers visually if you use "Layer 1, Layer 2" labels
@@ -2533,7 +2571,7 @@ function onTextEffectDrop(event) {
     if (!targetItem) return;
 
     const targetLayerIndex   = Number(targetItem.getAttribute('layerIndex'));
-    const targetEffectIndex  = putAtEnd ? Setup.Settings.textLayers[targetLayerIndex].effects.length : Number(targetItem.getAttribute('effectIndex'));
+    const targetEffectIndex  = putAtEnd ? projectConfig.textLayers[targetLayerIndex].effects.length : Number(targetItem.getAttribute('effectIndex'));
 
 
     console.log("Reached here 3", targetItem);
@@ -2549,17 +2587,17 @@ function onTextEffectDrop(event) {
       // If is the same effect, do nothing
       if(data.effectIndex === targetEffectIndex) return;
       // First we move the effect in the array
-      moveInArray(Setup.Settings.textLayers[data.layerIndex].effects, data.effectIndex, targetEffectIndex);
+      moveInArray(projectConfig.textLayers[data.layerIndex].effects, data.effectIndex, targetEffectIndex);
       
       // Then we re-render the effect layers for that text layer only
       renderTextEffectLayersFor(data.layerIndex);
     } else {
       // Different layers: we need to move between layers
-      const effectToMove = Setup.Settings.textLayers[data.layerIndex].effects[data.effectIndex];
+      const effectToMove = projectConfig.textLayers[data.layerIndex].effects[data.effectIndex];
       // Remove from original layer
-      Setup.Settings.textLayers[data.layerIndex].effects.splice(data.effectIndex, 1);
+      projectConfig.textLayers[data.layerIndex].effects.splice(data.effectIndex, 1);
       // Add to target layer
-      Setup.Settings.textLayers[targetLayerIndex].effects.splice(targetEffectIndex, 0, effectToMove);
+      projectConfig.textLayers[targetLayerIndex].effects.splice(targetEffectIndex, 0, effectToMove);
       // Re-render both affected layers
       renderTextEffectLayersFor(data.layerIndex);
       renderTextEffectLayersFor(targetLayerIndex);

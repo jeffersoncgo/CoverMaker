@@ -56,7 +56,7 @@ const TEXT_EFFECTS = {
     params: [
       { key: 'amount', label: 'Amount', type: 'range', min: 0, max: 1, step: 0.01, default: 1 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const amount = clamp(params.amount ?? 1, 0, 1);
       const w = canvas.width, h = canvas.height;
       const tempCanvas = createCanvas(w, h);
@@ -65,7 +65,7 @@ const TEXT_EFFECTS = {
       tCtx.drawImage(canvas, 0, 0);
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(tempCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -76,7 +76,7 @@ const TEXT_EFFECTS = {
       { key: 'strength', label: 'Reach', type: 'range', min: 0, max: 1, step: 0.01, default: 0.6 },
       { key: 'endsAt', label: 'End Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       // Strength now controls "How far into the text the fade reaches"
       // 1.0 = Fades across the entire text (very smooth, invisible edge).
       // 0.2 = Only fades the very tip.
@@ -117,7 +117,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(fadeCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -133,7 +133,7 @@ const TEXT_EFFECTS = {
       { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 360, step: 1, default: 0 },
       { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 1 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       // 1. Criar o canvas temporário para o gradiente
       const gradCanvas = createCanvas(canvas.width, canvas.height);
       const gCtx = gradCanvas.getContext('2d');
@@ -168,7 +168,7 @@ const TEXT_EFFECTS = {
       // (Não usamos clearRect aqui, pois queremos misturar com a base se opacity < 1)
       ctx.drawImage(gradCanvas, 0, 0);
       ctx.restore();
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -180,7 +180,7 @@ const TEXT_EFFECTS = {
       { key: 'size', label: 'Spread', type: 'range', min: 0, max: 50, step: 1, default: 15 }
     ],
 
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const glowColor = params.color ?? '#00ff00';
       const intensity = params.intensity ?? 2;
       const blurSize = params.size ?? 15;
@@ -226,7 +226,7 @@ const TEXT_EFFECTS = {
       // --- 4. Replace final output ---
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(glowCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -237,7 +237,7 @@ const TEXT_EFFECTS = {
       { key: 'intensity', label: 'Intensity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.8 },
       { key: 'color', label: 'Color', type: 'color', default: '#ffffff' }
     ],
-    apply: (textCtx, textCanvas, text, x, y, params = {}) => {
+    apply: (textCtx, textCanvas, text, x, y, params = {}, abortSignal) => {
       const rad = Math.max(1, Math.round(params.radius ?? 8));
       const intensity = clamp(params.intensity ?? 0.8, 0, 1);
       const color = params.color ?? '#fff';
@@ -283,7 +283,7 @@ const TEXT_EFFECTS = {
       textCtx.globalCompositeOperation = 'destination-over'; // Draw BEHIND text
       textCtx.drawImage(glow, 0, 0);
       textCtx.restore();
-      return { canvas: textCanvas, ctx: textCtx };
+      return { canvas: textCanvas, ctx: textCtx, abortSignal };
     }
   },
 
@@ -297,7 +297,7 @@ const TEXT_EFFECTS = {
       { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.5 }
     ],
 
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const length = params.length ?? 20;
       const maxBlur = params.blur ?? 5;
       const userOpacity = params.opacity ?? 0.5;
@@ -351,7 +351,7 @@ const TEXT_EFFECTS = {
       // Output final composite
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(shadowCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -363,7 +363,7 @@ const TEXT_EFFECTS = {
       { key: 'color', label: 'Color', type: 'color', default: '#000000' },
       { key: 'thickness', label: 'Thickness', type: 'range', min: 1, max: 100, step: 0.5, default: 3 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const thickness = params.thickness ?? 3;
       const color = params.color ?? '#000000';
       const tempCanvas = createCanvas(canvas.width, canvas.height);
@@ -384,7 +384,7 @@ const TEXT_EFFECTS = {
       tCtx.drawImage(canvas, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(tempCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -400,7 +400,7 @@ const TEXT_EFFECTS = {
       { key: 'sliceOffset', label: 'Slice Shift', type: 'range', min: 0, max: 50, step: 1, default: 10, group: 'Slicing' },
       { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, step: 1, default: 0, group: 'Random' }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const offset = params.offset ?? 5;
       const sliceHeight = params.sliceHeight ?? 10;
       const sliceOffset = params.sliceOffset ?? 10;
@@ -444,7 +444,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(slicedCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -454,7 +454,7 @@ const TEXT_EFFECTS = {
       { key: 'amount', label: 'Amount', type: 'range', min: 0, max: 20, step: 1, default: 4 },
       { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 360, step: 1, default: 45 }
     ],
-    apply: (textCtx, textCanvas, text, x, y, params = {}) => {
+    apply: (textCtx, textCanvas, text, x, y, params = {}, abortSignal) => {
       const amt = params.amount ?? 4;
       const ang = ((params.angle ?? 45) * Math.PI) / 180;
       const dx = Math.round(Math.cos(ang) * amt);
@@ -487,7 +487,7 @@ const TEXT_EFFECTS = {
       textCtx.drawImage(tmpG, 0, 0);
       textCtx.drawImage(tmpB, -dx, -dy);
       textCtx.globalCompositeOperation = 'source-over';
-      return { canvas: textCanvas, ctx: textCtx };
+      return { canvas: textCanvas, ctx: textCtx, abortSignal };
     }
   },
 
@@ -499,7 +499,7 @@ const TEXT_EFFECTS = {
       { key: 'axis', label: 'Axis', type: 'select', options: ['x', 'y'], default: 'y' },
       { key: 'seed', label: 'Seed', type: 'range', min: -2147483648, max: 2147483647, step: 1, default: 0 }
     ],
-    apply: (textCtx, textCanvas, text, x, y, params = {}) => {
+    apply: (textCtx, textCanvas, text, x, y, params = {}, abortSignal) => {
       const amplitude = params.amplitude ?? 8;
       const freq = params.frequency ?? 2.5;
       const axis = params.axis ?? 'y';
@@ -529,7 +529,7 @@ const TEXT_EFFECTS = {
       }
       tctx.putImageData(new ImageData(out, w, h), 0, 0);
       textCtx.clearRect(0, 0, w, h); textCtx.drawImage(tmp, 0, 0);
-      return { canvas: textCanvas, ctx: textCtx };
+      return { canvas: textCanvas, ctx: textCtx, abortSignal };
     }
   },
   waves: {
@@ -540,7 +540,7 @@ const TEXT_EFFECTS = {
       { key: 'axis', label: 'Axis', type: 'select', options: ['x', 'y'], default: 'y' },
       { key: 'seed', label: 'Seed', type: 'range', min: -2147483648, max: 2147483647, step: 1, default: 0 }
     ],
-    apply: (textCtx, textCanvas, text, x, y, params = {}) => {
+    apply: (textCtx, textCanvas, text, x, y, params = {}, abortSignal) => {
       const w = textCanvas.width;
       const h = textCanvas.height;
 
@@ -611,7 +611,7 @@ const TEXT_EFFECTS = {
       imgData.data.set(new Uint8ClampedArray(outBuffer.buffer));
       textCtx.putImageData(imgData, 0, 0);
 
-      return { canvas: textCanvas, ctx: textCtx };
+      return { canvas: textCanvas, ctx: textCtx, abortSignal };
     }
   },
 
@@ -621,7 +621,7 @@ const TEXT_EFFECTS = {
       { key: 'pixelSize', label: 'Size', type: 'range', min: 1, max: 64, step: 1, default: 8 }
     ],
     // We ignore 'text', 'x', and 'y' since we are manipulating existing pixels
-    apply: (textCtx, textCanvas, text, x, y, params = {}) => {
+    apply: (textCtx, textCanvas, text, x, y, params = {}, abortSignal) => {
       const psize = Math.max(1, Math.round(params.pixelSize ?? 8));
 
       // FIX 1: Access dimensions via the canvas object, not the context
@@ -650,7 +650,7 @@ const TEXT_EFFECTS = {
       // Draw the pixelated version back up (Upscaling)
       textCtx.drawImage(smallCanvas, 0, 0, sw, sh, 0, 0, w, h);
 
-      return { canvas: textCanvas, ctx: textCtx };
+      return { canvas: textCanvas, ctx: textCtx, abortSignal };
     }
   },
 
@@ -660,7 +660,7 @@ const TEXT_EFFECTS = {
       { key: 'x', label: 'Skew X', type: 'range', min: -1, max: 1, step: 0.05, default: -0.2 },
       { key: 'y', label: 'Skew Y', type: 'range', min: -1, max: 1, step: 0.05, default: 0 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const sx = params.x ?? -0.2;
       const sy = params.y ?? 0;
       const tempCanvas = createCanvas(canvas.width, canvas.height);
@@ -675,7 +675,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(tempCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -684,7 +684,7 @@ const TEXT_EFFECTS = {
     params: [
       { key: 'axis', label: 'Axis', type: 'select', options: ['Horizontal', 'Vertical'], default: 'Horizontal' }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const isVert = params.axis === 'Vertical';
       const tempCanvas = createCanvas(canvas.width, canvas.height);
       const tCtx = tempCanvas.getContext('2d');
@@ -703,7 +703,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(tempCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -730,7 +730,7 @@ const TEXT_EFFECTS = {
       { key: 'amount', label: 'Amount', type: 'range', min: 0, max: 1, step: 0.01, default: 0.5, group: 'Intensity' },
       { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, default: 1, group: 'Random' }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const amount = params.amount ?? 0.5;
       const mode = params.mode ?? 'decay';
 
@@ -852,7 +852,7 @@ const TEXT_EFFECTS = {
       }
 
       ctx.putImageData(imageData, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -863,7 +863,7 @@ const TEXT_EFFECTS = {
       { key: 'chaos', label: 'Chaos', type: 'range', min: 0, max: 1, step: 0.05, default: 0.5 },
       { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, default: 1 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const strength = params.strength ?? 20;
       const chaos = params.chaos ?? 0.5;
       const seeded = createSeededRandom(params.seed);
@@ -907,7 +907,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(gooCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -919,7 +919,7 @@ const TEXT_EFFECTS = {
       { key: 'iterations', label: 'Passes', type: 'range', min: 1, max: 20, step: 1, default: 6 },
       { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, step: 1, default: 0 }
     ],
-    apply: (textCtx, textCanvas, text, x, y, params = {}) => {
+    apply: (textCtx, textCanvas, text, x, y, params = {}, abortSignal) => {
       const bsize = Math.max(1, (params.brushSize ?? 12) | 0);
       // Intensity: higher = more opaque smear
       const intensity = clamp(params.intensity ?? 0.6, 0, 1);
@@ -1002,7 +1002,7 @@ const TEXT_EFFECTS = {
       textCtx.clearRect(0, 0, w, h);
       textCtx.drawImage(tmp, 0, 0);
 
-      return { canvas: textCanvas, ctx: textCtx };
+      return { canvas: textCanvas, ctx: textCtx, abortSignal };
     }
   },
 
@@ -1018,7 +1018,7 @@ const TEXT_EFFECTS = {
       // Use a wide range for the seed so you can scroll through many variations
       { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 1000, step: 1, default: 123 }
     ],
-    apply: (ctx, canvas, text, x, y, params = {}) => {
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
       // 3. Parameters
       const intensity = clamp(params.intensity ?? 0.6, 0, 1);
       const color = params.color ?? '#ffffff';
@@ -1074,7 +1074,7 @@ const TEXT_EFFECTS = {
       ctx.globalCompositeOperation = 'lighter';
       ctx.drawImage(tmp, 0, 0);
       ctx.restore();
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
   /**
@@ -1087,7 +1087,7 @@ const TEXT_EFFECTS = {
       { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 },
       { key: 'density', label: 'Density', type: 'range', min: 1, max: 10, step: 1, default: 8 }
     ],
-    apply: (ctx, canvas, text, x, y, params = {}) => {
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
       // 1. Parse parameters with fallbacks
       const val = params.opacity ?? 0.2;
       const opacity = Math.min(Math.max(val, 0), 1);
@@ -1117,7 +1117,7 @@ const TEXT_EFFECTS = {
       }
 
       ctx.restore();
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1128,7 +1128,7 @@ const TEXT_EFFECTS = {
       { key: 'scale', label: 'Distortion Scale', type: 'range', min: 1, max: 10, step: 0.1, default: 3 },
       { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, step: 1, default: 42 }
     ],
-    apply: (ctx, canvas, text, x, y, params = {}) => {
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
       const w = canvas.width, h = canvas.height;
       const intensity = params.intensity ?? 6;
       const scale = params.scale ?? 3;
@@ -1162,7 +1162,7 @@ const TEXT_EFFECTS = {
       c.putImageData(new ImageData(out, w, h), 0, 0);
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(t, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1173,7 +1173,7 @@ const TEXT_EFFECTS = {
       { key: 'direction', label: 'Direction', type: 'select', options: ['left', 'right', 'up', 'down'], default: 'right' },
       { key: 'frequency', label: 'Frequency', type: 'range', min: 0.1, max: 10, step: 0.1, default: 3 }
     ],
-    apply: (ctx, canvas, text, x, y, params = {}) => {
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
       const w = canvas.width, h = canvas.height;
       const amt = params.amount ?? 12;
       const freq = params.frequency ?? 3;
@@ -1216,7 +1216,7 @@ const TEXT_EFFECTS = {
       tc.putImageData(new ImageData(out, w, h), 0, 0);
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(t, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1227,7 +1227,7 @@ const TEXT_EFFECTS = {
       { key: 'opacity', label: 'Start Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.5 },
       { key: 'scale', label: 'Height Scale', type: 'range', min: 0.1, max: 1, step: 0.1, default: 0.8 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const offset = params.offset ?? 0;
       const opacity = clamp(params.opacity ?? 0.5, 0, 1);
       const scaleY = params.scale ?? 0.8;
@@ -1255,7 +1255,7 @@ const TEXT_EFFECTS = {
       ctx.drawImage(refCanvas, 0, offset);
       ctx.restore();
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1265,7 +1265,7 @@ const TEXT_EFFECTS = {
       { key: 'offset', label: 'Separation', type: 'range', min: 0, max: 30, step: 1, default: 6 },
       { key: 'mode', label: 'Mode', type: 'select', options: ['Red/Cyan', 'Green/Magenta'], default: 'Red/Cyan' }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const offset = params.offset ?? 6;
       const mode = params.mode ?? 'Red/Cyan';
       const w = canvas.width, h = canvas.height;
@@ -1304,7 +1304,7 @@ const TEXT_EFFECTS = {
       // Restore standard composite
       ctx.globalCompositeOperation = 'source-over';
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1316,7 +1316,7 @@ const TEXT_EFFECTS = {
       { key: 'color', label: 'Thread Color', type: 'color', default: '#ffffff' },
       { key: 'shadow', label: 'Shadow', type: 'range', min: 0, max: 1, step: 0.1, default: 0.5 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       // Prevent 0 or very small size causing infinite loops or memory crashes
       const size = Math.max(2.5, params.size ?? 4);
       const density = params.density ?? 2;
@@ -1400,7 +1400,7 @@ const TEXT_EFFECTS = {
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(stitchCanvas, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1412,7 +1412,7 @@ const TEXT_EFFECTS = {
       { key: 'color', label: 'Pattern Color', type: 'color', default: '#000000' },
       { key: 'bg', label: 'Keep Base', type: 'select', options: ['Yes', 'No'], default: 'Yes' } // If no, transparent holes
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const type = params.type ?? 'Stripes';
       const size = params.size ?? 6;
       const color = params.color ?? '#000000';
@@ -1466,7 +1466,7 @@ const TEXT_EFFECTS = {
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(temp, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1476,7 +1476,7 @@ const TEXT_EFFECTS = {
       { key: 'size', label: 'Shard Size', type: 'range', min: 5, max: 100, step: 1, default: 20 },
       { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, default: 1 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const size = params.size ?? 20;
       const w = canvas.width, h = canvas.height;
 
@@ -1548,7 +1548,7 @@ const TEXT_EFFECTS = {
       outData.data.set(new Uint8ClampedArray(out.buffer));
       ctx.putImageData(outData, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1559,7 +1559,7 @@ const TEXT_EFFECTS = {
       { key: 'randomness', label: 'Randomness', type: 'range', min: 0, max: 1, step: 0.01, default: 0.3 },
       { key: 'colorVariation', label: 'Color Variation', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const tileSize = Math.max(2, params.tileSize ?? 16);
       const randomness = params.randomness ?? 0.3;
       const colorVariation = params.colorVariation ?? 0.2;
@@ -1620,7 +1620,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(mosaicCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1630,7 +1630,7 @@ const TEXT_EFFECTS = {
       { key: 'curve', label: 'Curve Amount', type: 'range', min: -1920, max: 1920, step: 1, default: 50 },
       { key: 'offsetY', label: 'Vertical Offset', type: 'range', min: -100, max: 100, step: 1, default: 0 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const curve = params.curve ?? 50;
       const offsetY = params.offsetY ?? 0;
       const w = canvas.width, h = canvas.height;
@@ -1654,7 +1654,7 @@ const TEXT_EFFECTS = {
       }
 
       // If canvas is empty, do nothing
-      if (!found) return { canvas, ctx };
+      if (!found) return { canvas, ctx, abortSignal};
 
       // Add a little padding to the bounds so the curve doesn't cut off hard
       const textWidth = (maxX - minX);
@@ -1685,7 +1685,7 @@ const TEXT_EFFECTS = {
         ctx.drawImage(tempCanvas, ix, 0, 1, h, ix, shift, 1, h);
       }
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1698,7 +1698,7 @@ const TEXT_EFFECTS = {
       { key: 'padding', label: 'Size (Padding)', type: 'range', min: 0, max: 100, step: 1, default: 15 },
       { key: 'radius', label: 'Roundness', type: 'range', min: 0, max: 50, step: 1, default: 0 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const color = params.color ?? '#ec1d24';
       const padding = params.padding ?? 15;
       const radius = params.radius ?? 0;
@@ -1724,7 +1724,7 @@ const TEXT_EFFECTS = {
       }
 
       // If empty, just return
-      if (!found) return { canvas, ctx };
+      if (!found) return { canvas, ctx, abortSignal};
 
       // 2. Calculate Box Dimensions
       const boxX = minX - padding;
@@ -1754,7 +1754,7 @@ const TEXT_EFFECTS = {
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(tempCanvas, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1766,7 +1766,7 @@ const TEXT_EFFECTS = {
       { key: 'color', label: 'Side Color', type: 'color', default: '#555555' },
       { key: 'shading', label: 'Darken Depth', type: 'range', min: 0, max: 1, step: 0.1, default: 0.5 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const depth = params.depth ?? 10;
       const angle = (params.angle ?? 45) * (Math.PI / 180);
       const color = params.color ?? '#555555';
@@ -1825,7 +1825,7 @@ const TEXT_EFFECTS = {
       // text stays anchored and 3d goes back.
       ctx.drawImage(canvas, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1836,7 +1836,7 @@ const TEXT_EFFECTS = {
       { key: 'offset', label: 'Separation', type: 'range', min: 0, max: 50, step: 1, default: 15 },
       { key: 'yPos', label: 'Cut Position', type: 'range', min: 0, max: 100, step: 1, default: 50 } // Percent height
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const angleDeg = params.angle ?? -20;
       const offset = params.offset ?? 15;
       const yPerc = (params.yPos ?? 50) / 100;
@@ -1898,7 +1898,7 @@ const TEXT_EFFECTS = {
       // Move Bottom Right/Down
       ctx.drawImage(botC, dx / 2, dy / 2);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1908,7 +1908,7 @@ const TEXT_EFFECTS = {
       { key: 'depth', label: 'Tilt Strength', type: 'range', min: -1, max: 1, step: 0.05, default: 0.5 },
       { key: 'direction', label: 'Side', type: 'select', options: ['Horizontal', 'Vertical'], default: 'Horizontal' }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const depth = params.depth ?? 0.5;
       const isVert = params.direction === 'Vertical';
       const w = canvas.width, h = canvas.height;
@@ -1956,7 +1956,7 @@ const TEXT_EFFECTS = {
           ctx.drawImage(tempCanvas, 0, iy, w, 1, destX, iy, destW, 1);
         }
       }
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -1969,7 +1969,7 @@ const TEXT_EFFECTS = {
       { key: 'offsetY', label: 'Offset Y', type: 'range', min: -20, max: 20, step: 1, default: 3 },
       { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.1, default: 0.8 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const color = params.color ?? '#000000';
       const blur = params.blur ?? 5;
       const offX = params.offsetX ?? 3;
@@ -2059,38 +2059,9 @@ const TEXT_EFFECTS = {
 
       ctx.restore();
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // ===========================================
   // KINETIC & MATERIAL (NEW)
@@ -2103,7 +2074,7 @@ const TEXT_EFFECTS = {
       { key: 'distance', label: 'Speed', type: 'range', min: 0, max: 100, step: 1, default: 30 },
       { key: 'opacity', label: 'Trail Opacity', type: 'range', min: 0, max: 1, step: 0.1, default: 0.5 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const angle = (params.angle ?? 0) * (Math.PI / 180);
       const dist = params.distance ?? 30;
       const opacity = params.opacity ?? 0.5;
@@ -2138,7 +2109,7 @@ const TEXT_EFFECTS = {
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(tempCanvas, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2150,7 +2121,7 @@ const TEXT_EFFECTS = {
       { key: 'horizon', label: 'Horizon Y', type: 'range', min: 0, max: 100, step: 1, default: 50 },
       { key: 'edge', label: 'Edge Shine', type: 'range', min: 0, max: 10, step: 0.5, default: 2 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const sky = params.sky ?? '#33ccff';
       const ground = params.ground ?? '#333333';
       const horizonPerc = (params.horizon ?? 50) / 100;
@@ -2210,7 +2181,7 @@ const TEXT_EFFECTS = {
       // Draw Chrome
       ctx.drawImage(gradCanvas, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2222,7 +2193,7 @@ const TEXT_EFFECTS = {
       { key: 'fade', label: 'Fade Out', type: 'range', min: 0, max: 1, step: 0.1, default: 0.2 },
       { key: 'color', label: 'Tint', type: 'color', default: '' } // Optional tint
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const count = params.count ?? 3;
       const offset = params.offset ?? 20;
       const fade = params.fade ?? 0.2;
@@ -2267,7 +2238,7 @@ const TEXT_EFFECTS = {
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(resultCanvas, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2279,7 +2250,7 @@ const TEXT_EFFECTS = {
       { key: 'offsetX', label: 'Center X', type: 'range', min: -500, max: 500, step: 10, default: 0 }, // New
       { key: 'offsetY', label: 'Center Y', type: 'range', min: -500, max: 500, step: 10, default: 0 }  // New
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const strength = params.strength ?? 0.5;
       const radius = params.radius ?? 200;
       const offX = params.offsetX ?? 0;
@@ -2346,7 +2317,7 @@ const TEXT_EFFECTS = {
       outData.data.set(new Uint8ClampedArray(out.buffer));
       ctx.putImageData(outData, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2358,7 +2329,7 @@ const TEXT_EFFECTS = {
       { key: 'rotate', label: 'Rotation', type: 'range', min: 0, max: 360, step: 1, default: 0 },
       { key: 'inward', label: 'Facing', type: 'select', options: ['Inward', 'Outward'], default: 'Inward' }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const radius = params.radius ?? 200;
       const arc = (params.angle ?? 360) * (Math.PI / 180);
       const startRot = (params.rotate ?? 0) * (Math.PI / 180);
@@ -2379,7 +2350,7 @@ const TEXT_EFFECTS = {
           }
         }
       }
-      if (minX > maxX) return { canvas, ctx }; // Empty
+      if (minX > maxX) return { canvas, ctx, abortSignal}; // Empty
 
       const textWidth = maxX - minX;
       const textCenterX = minX + (textWidth/2);
@@ -2501,7 +2472,7 @@ const TEXT_EFFECTS = {
         ctx.restore();
       }
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2512,7 +2483,7 @@ const TEXT_EFFECTS = {
       { key: 'scale', label: 'Detail', type: 'range', min: 1, max: 20, step: 1, default: 10 },
       { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 999, default: 1 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const strength = params.strength ?? 5;
       const scale = params.scale ?? 10;
       const seeded = createSeededRandom(params.seed);
@@ -2573,7 +2544,7 @@ const TEXT_EFFECTS = {
       outData.data.set(new Uint8ClampedArray(out.buffer));
       ctx.putImageData(outData, 0, 0);
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2583,7 +2554,7 @@ const TEXT_EFFECTS = {
       { key: 'w', label: 'Width Scale', type: 'range', min: 0.1, max: 3, step: 0.05, default: 1 },
       { key: 'h', label: 'Height Scale', type: 'range', min: 0.1, max: 3, step: 0.05, default: 1 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const sx = params.w ?? 1;
       const sy = params.h ?? 1;
       const w = canvas.width, h = canvas.height;
@@ -2608,7 +2579,7 @@ const TEXT_EFFECTS = {
       
       ctx.restore();
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2621,9 +2592,9 @@ const TEXT_EFFECTS = {
     params: [
       { key: 'amount', label: 'Amount', type: 'range', min: 0, max: 20, step: 0.5, default: 0 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const amount = params.amount ?? 0;
-      if (amount <= 0) return { canvas, ctx };
+      if (amount <= 0) return { canvas, ctx, abortSignal};
 
       const w = canvas.width, h = canvas.height;
       const tempCanvas = createCanvas(w, h);
@@ -2636,7 +2607,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(tempCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2645,9 +2616,9 @@ const TEXT_EFFECTS = {
     params: [
       { key: 'angle', label: 'Angle', type: 'range', min: -180, max: 180, step: 1, default: 0 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const angle = (params.angle ?? 0) * (Math.PI / 180);
-      if (angle === 0) return { canvas, ctx };
+      if (angle === 0) return { canvas, ctx, abortSignal};
 
       const w = canvas.width, h = canvas.height;
       const tempCanvas = createCanvas(w, h);
@@ -2662,7 +2633,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(tempCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2674,7 +2645,7 @@ const TEXT_EFFECTS = {
       { key: 'bright', label: 'Brightness', type: 'range', min: 0, max: 200, step: 1, default: 100 },
       { key: 'contrast', label: 'Contrast', type: 'range', min: 0, max: 200, step: 1, default: 100 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const hVal = params.hue ?? 0;
       const sVal = params.sat ?? 100;
       const bVal = params.bright ?? 100;
@@ -2691,7 +2662,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(tempCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 
@@ -2700,7 +2671,7 @@ const TEXT_EFFECTS = {
     params: [
       { key: 'amount', label: 'Amount', type: 'range', min: 0, max: 1, step: 0.01, default: 1 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const val = params.amount ?? 1;
       const w = canvas.width, h = canvas.height;
       
@@ -2713,7 +2684,7 @@ const TEXT_EFFECTS = {
 
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(tempCanvas, 0, 0);
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
   splatter: {
@@ -2727,7 +2698,7 @@ const TEXT_EFFECTS = {
       { key: 'distortion', label: 'Distortion', type: 'range', min: 0, max: 1, step: 0.05, default: 0.6 }, // New param
       { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
     ],
-    apply: (ctx, canvas, text, x, y, params) => {
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const mode = params.mode ?? 'Erode';
       const isErode = mode.startsWith('Erode');
       const color = params.color ?? '#cc0000';
@@ -2861,7 +2832,7 @@ const TEXT_EFFECTS = {
          ctx.drawImage(splashCanvas, 0, 0);
       }
 
-      return { canvas, ctx };
+      return { canvas, ctx, abortSignal};
     }
   },
 

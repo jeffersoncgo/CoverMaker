@@ -58,63 +58,208 @@ var Setup = {
     error: "images/error.png",
   },
   loadingType: 'lazy',
-  Settings: {
-    textLayers: [],
-    canvas: {
-      composite: {},
-      format: "cover",
-      effects: []
-    },
-    export: {
-      format: "png",
-      jpegQuality: 0.95
-    }
-  },
   defaults: {
-    composite: {
+    "composite": {
       "type": "line",
-      "params": {}
-    },
-    shadow: {
-      color: "#000000",
-      blur: 5,
-      offsetX: 5,
-      offsetY: 5,
-      enabled: true // ⭐️ ADDED enabled property
-    },
-    stroke: {
-      color: "#000000",
-      width: 2,
-      opacity: 1,
-      style: "rgba(0, 0, 0, 1)", // Will be built by updateTextSettings
-      enabled: true // ⭐️ ADDED enabled property
-    },
-    effects: {}, 
-    TextLayer: {
-      overlayText: "Movies",
-      font: {
-        family: 'Arial',
-        size: 327,
-        color: '#ffffff',
-        opacity: 0.8
+      "params": {
+        "salt": 76
       },
-      fontStyle: "", // Will be built by updateTextSettings
-      fillStyle: "", // Will be built by updateTextSettings
-      position: {
-        x: 0,
-        y: 0,
-        textAlign: "center",
-        textBaseline: "middle",
-        rotation: 0 // ⭐️ ADDED rotation property
-      },
-      strokes: [], // ⭐️ CHANGED to an array
-      shadows: [], // ⭐️ CHANGED to an array
-      effects: [],
-      enabled: true // ⭐️ ADDED enabled property
+      "enabled": true
+    },
+    effects: {},
+    textLayers: [
+      {
+        "font": {
+          "family": "Bangers",
+          "weight": "lighter",
+          "style": "normal",
+          "size": 362,
+          "color": "#ffffff",
+          "opacity": 1
+        },
+        "position": {
+          "textAlign": "center",
+          "textBaseline": "middle",
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        "id": "layer_1",
+        "overlayText": "MOVIES",
+        "enabled": true,
+        "fontStyle": "normal lighter 362px \"Bangers\"",
+        "fillStyle": "rgba(255, 255, 255, 1)",
+        "effects": [
+          {
+            "type": "outline",
+            "enabled": true,
+            "params": {
+              "color": "#000000",
+              "thickness": 10.5
+            }
+          },
+          {
+            "type": "longShadow",
+            "enabled": true,
+            "params": {
+              "color": "#000000",
+              "blur": 2,
+              "length": 48,
+              "angle": 43,
+              "opacity": 1
+            }
+          },
+          {
+            "type": "outline",
+            "enabled": true,
+            "params": {
+              "color": "#ffffff",
+              "thickness": 12
+            }
+          }
+        ]
+      }
+    ]
+  },
+  Export: {
+    Project: {
+      Images: {
+        format: "webp",
+        quality: 0.95
+      }
+    },
+    Canvas: {
+      format: "png",
+      quality: 1.0
     }
   }
 }
 
-Setup.Settings.textLayers = [
-  JSON.parse(JSON.stringify(Setup.defaults.TextLayer))
+var projectConfig = {
+  textLayers: [
+    {
+      "font": {
+        "family": "Bangers",
+        "weight": "lighter",
+        "style": "normal",
+        "size": 362,
+        "color": "#ffffff",
+        "opacity": 1
+      },
+      "position": {
+        "textAlign": "center",
+        "textBaseline": "middle",
+        "x": 0,
+        "y": 0,
+        "rotation": 0
+      },
+      "id": "layer_1",
+      "overlayText": "MOVIES",
+      "enabled": true,
+      "fontStyle": "normal lighter 362px \"Bangers\"",
+      "fillStyle": "rgba(255, 255, 255, 1)",
+      "effects": [
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "thickness": 10.5
+          }
+        },
+        {
+          "type": "longShadow",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "blur": 2,
+            "length": 48,
+            "angle": 43,
+            "opacity": 1
+          }
+        },
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#ffffff",
+            "thickness": 12
+          }
+        }
+      ]
+    }
+  ],
+  canvas: {
+    "type": "line",
+    "format": "cover",
+    "opacity": 0,
+    "overlayColorStart": "#000000",
+    "overlayColorStartRGB": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+    },
+    "overlayColorEnd": "#000000",
+    "overlayColorEndRGB": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+    },
+    "overlayOpacityStart": 0.1,
+    "overlayOpacityEnd": 0.4,
+    "reflectionDistance": 0.7,
+    "reflectionScale": 0.8,
+    "baseScale": 1.4,
+    "blurAmount": 5,
+    "spacing": 1,
+    "salt": 3,
+    "composite": {
+        "type": "line",
+        "params": {
+            "enableReflection": true,
+            "baseScale": 1.35,
+            "spacing": 3,
+            "salt": 0,
+            "reflectionDistance": 0.68,
+            "reflectionScale": 0.87,
+            "blurAmount": 3.5,
+            "startColor": "#000000",
+            "endColor": "#000000",
+            "startOpacity": 0.1,
+            "endOpacity": 1
+        },
+        "enabled": true
+    },
+    "effects": [
+        {
+            "type": "vignette",
+            "params": {
+                "intensity": 0.78
+            },
+            "enabled": true
+        },
+        {
+            "type": "overlay",
+            "params": {
+                "startColor": "#000000",
+                "startOpacity": 0.05,
+                "endColor": "#000000",
+                "endOpacity": 0.14
+            },
+            "enabled": true
+        },
+        {
+            "type": "scanLines",
+            "params": {
+                "opacity": 0.53,
+                "density": 10
+            },
+            "enabled": true
+        }
+    ]
+}
+};
+
+projectConfig.textLayers = [
+  JSON.parse(JSON.stringify(Setup.defaults.textLayers))
 ]

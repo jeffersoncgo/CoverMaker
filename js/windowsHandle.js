@@ -71,7 +71,7 @@ function showWindow(windowId) {
   windowEl.style.left = '50%';
   windowEl.style.top = '50%';
   windowEl.style.transform = 'translate(-50%, -50%)';
-  windowEl.style.zIndex = Date.now();
+  windowEl.style.zIndex = Date.now(); // bring to front
   windowEl.style.display = 'block';
 }
 
