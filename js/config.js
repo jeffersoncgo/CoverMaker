@@ -67,59 +67,56 @@ var Setup = {
       "enabled": true
     },
     effects: {},
-    textLayers: [
-      {
-        "font": {
-          "family": "Bangers",
-          "weight": "lighter",
-          "style": "normal",
-          "size": 362,
-          "color": "#ffffff",
-          "opacity": 1
-        },
-        "position": {
-          "textAlign": "center",
-          "textBaseline": "middle",
-          "x": 0,
-          "y": 0,
-          "rotation": 0
-        },
-        "id": "layer_1",
-        "overlayText": "MOVIES",
-        "enabled": true,
-        "fontStyle": "normal lighter 362px \"Bangers\"",
-        "fillStyle": "rgba(255, 255, 255, 1)",
-        "effects": [
-          {
-            "type": "outline",
-            "enabled": true,
-            "params": {
-              "color": "#000000",
-              "thickness": 10.5
-            }
-          },
-          {
-            "type": "longShadow",
-            "enabled": true,
-            "params": {
-              "color": "#000000",
-              "blur": 2,
-              "length": 48,
-              "angle": 43,
-              "opacity": 1
-            }
-          },
-          {
-            "type": "outline",
-            "enabled": true,
-            "params": {
-              "color": "#ffffff",
-              "thickness": 12
-            }
+    textLayers: {
+      "font": {
+        "family": "Bangers",
+        "weight": "lighter",
+        "style": "normal",
+        "size": 362,
+        "color": "#ffffff",
+        "opacity": 1
+      },
+      "position": {
+        "textAlign": "center",
+        "textBaseline": "middle",
+        "x": 0,
+        "y": 0,
+        "rotation": 0
+      },
+      "overlayText": "MOVIES",
+      "enabled": true,
+      "fontStyle": "normal lighter 362px \"Bangers\"",
+      "fillStyle": "rgba(255, 255, 255, 1)",
+      "effects": [
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "thickness": 10.5
           }
-        ]
-      }
-    ]
+        },
+        {
+          "type": "longShadow",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "blur": 2,
+            "length": 48,
+            "angle": 43,
+            "opacity": 1
+          }
+        },
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#ffffff",
+            "thickness": 12
+          }
+        }
+      ]
+    }
   },
   Export: {
     Project: {
