@@ -1741,6 +1741,9 @@ async function importImagesFromZip(zipContents) {
 
   toastMessage('Reading project data...', { position: 'bottomCenter', type: 'info' });
   const imageFiles = [];
+
+  // Cleaning existing slots
+  setSlots(0);
   
   zipContents.folder('images').forEach((relativePath, file) => {
     const match = relativePath.match(imageRegex);
