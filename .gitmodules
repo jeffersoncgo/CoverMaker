@@ -1,3 +1,0 @@
-[submodule "cdn"]
-	path = cdn
-	url = https://github.com/jeffersoncgo/cdn.git
