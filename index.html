@@ -428,7 +428,7 @@
                         <div class="field Export">
                           <div>
                             <label for="exportProjectImagesFormatSelect">Image Format:</label>
-                            <select id="exportProjectImagesFormatSelect">
+                            <select id="exportProjectImagesFormatSelect" onchange="updateExportSettings()">
                               <option value="webp">WEBP</option>
                               <option value="png">PNG</option>
                               <option value="jpeg">JPEG</option>
@@ -436,7 +436,7 @@
                           </div>
                           <div>
                             <label for="exportProjectImagesQuality">Export Quality:</label>
-                            <input type="number" id="exportProjectImagesQuality" value="0.95" step="0.01" min="0" max="1">
+                            <input type="number" id="exportProjectImagesQuality" value="0.95" step="0.01" min="0" max="1" onchange="updateExportSettings()">
                           </div>
                         </div>
                       </div>
@@ -448,15 +448,15 @@
                         <div class="field Export">
                           <div>
                             <label for="exportImageImagesFormatSelect">Image Format:</label>
-                            <select id="exportImageImagesFormatSelect">
+                            <select id="exportImageImagesFormatSelect" onchange="updateExportSettings()">
                               <option value="png">PNG</option>
                               <option value="webp">WEBP</option>
                               <option value="jpeg">JPEG</option>
                             </select>
                           </div>
                           <div>
-                            <label for="exportImageQuality">Export Quality:</label>
-                            <input type="number" id="exportImageQuality" value="1" step="0.01" min="0" max="1">
+                            <label for="exportImageImagesQuality">Export Quality:</label>
+                            <input type="number" id="exportImageImagesQuality" value="1" step="0.01" min="0" max="1" onchange="updateExportSettings()">
                           </div>
                         </div>
                       </div>

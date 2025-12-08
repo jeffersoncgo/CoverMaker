@@ -838,9 +838,9 @@ function loadSetup() {
       exportProjectImagesFormatSelectElement.value = Setup.Export.Project.Images.format || 'webp';
       exportProjectImagesQualityElement.value = Setup.Export.Project.Images.jpegQuality || 0.95;
     }
-    if (Setup?.Export?.Image?.Images) {
-      exportImageImagesFormatSelectElement.value = Setup.Export.Image.Images.format || 'webp';
-      exportImageImagesQualityElement.value = Setup.Export.Image.Images.jpegQuality || 0.95;
+    if (Setup?.Export?.Canvas) {
+      exportImageImagesFormatSelectElement.value = Setup.Export.Canvas.format || 'webp';
+      exportImageImagesQualityElement.value = Setup.Export.Canvas.quality || 0.95;
     }
   }
 }
@@ -849,10 +849,7 @@ function loadprojectConfig() {
   const savedprojectConfig = localStorage.getItem("projectConfig");
   if (savedprojectConfig) {
     const defaultprojectConfig = window.defaultprojectConfig || projectConfig;
-    console.log({effects: JSON.parse(savedprojectConfig)?.canvas?.effects});
-
     projectConfig = deepMerge(JSON.parse(savedprojectConfig), defaultprojectConfig);
-    console.log({effects: projectConfig.canvas.effects});
     normalizeEffectParams(projectConfig.canvas.effects);
     try { (projectConfig.canvas.effects || []).forEach(e => delete e.params_enabled); } catch (err) {}
     try {
@@ -1103,14 +1100,14 @@ function updateImageSettings(skipEffectsRerender = false) {
 function updateExportSettings() {
   Setup.Export.Project.Images.format = exportProjectImagesFormatSelectElement.value || 'png';
   Setup.Export.Project.Images.quality = parseFloat(exportProjectImagesQualityElement.value) || 0.95;
-  Setup.Export.Image.Images.format = exportImageImagesFormatSelectElement.value || 'png';
-  Setup.Export.Image.Images.quality = parseFloat(exportImageImagesQualityElement.value) || 0.95;
+  Setup.Export.Canvas.format = exportImageImagesFormatSelectElement.value || 'png';
+  Setup.Export.Canvas.quality = parseFloat(exportImageImagesQualityElement.value) || 0.95;
   
   // Clamp quality between 0 and 1
   if (Setup.Export.Project.Images.quality < 0) Setup.Export.Project.Images.quality = 0;
   if (Setup.Export.Project.Images.quality > 1) Setup.Export.Project.Images.quality = 1;
-  if (Setup.Export.Image.Images.quality < 0) Setup.Export.Image.Images.quality = 0;
-  if (Setup.Export.Image.Images.quality > 1) Setup.Export.Image.Images.quality = 1;
+  if (Setup.Export.Canvas.quality < 0) Setup.Export.Canvas.quality = 0;
+  if (Setup.Export.Canvas.quality > 1) Setup.Export.Canvas.quality = 1;
   
   saveSetup();
 }
@@ -1790,7 +1787,7 @@ function openInNewTab(source) {
     // Always ensure it's treated as an image
     const fixedBlob = blob.type.startsWith("image/")
       ? blob
-      : new Blob([blob], { type: `image/${Setup.Export.Canvas.format}` });
+      : new Blob([blob], { type: `image/${Setup.Export.Canvas.format}` }, Setup.Export.Canvas.quality || 1.0);
 
     const url = URL.createObjectURL(fixedBlob);
     const tab = window.open(url, "_blank");
@@ -1806,7 +1803,7 @@ function openInNewTab(source) {
 
     // Enforce image MIME if dataURL was malformed
     if (!blob.type.startsWith("image/")) {
-      return new Blob([await blob.arrayBuffer()], { type: `image/${Setup.Export.Project.Images.format}` });
+      return new Blob([await blob.arrayBuffer()], { type: `image/${Setup.Export.Project.Images.format}` }, Setup.Export.Project.Images.quality || 1.0);
     }
 
     return blob;
@@ -1842,7 +1839,7 @@ function openInNewTab(source) {
 
   if (isCanvas) {
     if (targetObj.toBlob) {
-      cropCanvas(targetObj).toBlob(openBlob, `image/${Setup.Export.Canvas.format}`);
+      cropCanvas(targetObj).toBlob(openBlob, `image/${Setup.Export.Canvas.format}`, Setup.Export.Canvas.quality || 1.0);
     } else if (targetObj.toDataURL) {
       const dataURL = cropCanvas(targetObj).toDataURL(`image/${Setup.Export.Canvas.format}`, Setup.Export.Canvas.quality || 1.0);
       base64ToBlob(dataURL).then(openBlob);
