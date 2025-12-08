@@ -576,6 +576,7 @@ i.delete:hover { background: var(--c-danger); }
    Gallery Contribute Banner
    ============================ */
 .gallery-contribute {
+  position: absolute;
   display: block;
   margin-bottom: 0.75rem;
 }
