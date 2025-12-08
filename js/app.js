@@ -331,6 +331,88 @@ function addTextEffectLayer(e) {
   addTextEffectToLayer(layerIndex);
 }
 
+function copyTextEffectLayersFromLayer(e) {
+  if (e) {
+      e.preventDefault(); // Stop default browser behavior (like form submissions)
+      e.stopPropagation(); // Stop event from bubbling to parents
+      e.stopImmediatePropagation(); // Stop other listeners on this same element
+  }
+  // event handler on button inside layer
+  const layerItem = e.target.closest('.text-layer-item');
+  const allLayers = Array.from(textLayersContainer.querySelectorAll('.text-layer-item'));
+  const layerIndex = allLayers.indexOf(layerItem);
+  if (layerIndex < 0) return;
+  const effectsToCopy = projectConfig.textLayers?.[layerIndex]?.effects;
+  if (!Array.isArray(effectsToCopy) || effectsToCopy.length === 0) {
+    toastMessage('No effects to copy from this layer', { position: 'bottomCenter', type: 'warning' });
+    return;
+  }
+  const effectsJson = JSON.stringify(effectsToCopy);
+  navigator.clipboard.writeText(effectsJson).then(() => {
+    toastMessage('Text effects copied to clipboard', { position: 'bottomCenter', type: 'success' });
+  }).catch((err) => {
+    console.error('Failed to copy text effects: ', err);
+    toastMessage('Failed to copy text effects', { position: 'bottomCenter', type: 'error' });
+  });
+}
+
+function pasteTextEffectLayersToLayer(e) {
+  if (e) {
+      e.preventDefault(); // Stop default browser behavior (like form submissions)
+      e.stopPropagation(); // Stop event from bubbling to parents
+      e.stopImmediatePropagation(); // Stop other listeners on this same element
+  }
+  // event handler on button inside layer
+  const layerItem = e.target.closest('.text-layer-item');
+  const allLayers = Array.from(textLayersContainer.querySelectorAll('.text-layer-item'));
+  const layerIndex = allLayers.indexOf(layerItem);
+  if (layerIndex < 0) return;
+  navigator.clipboard.readText().then((text) => {
+    let effectsArray;
+    try {
+      effectsArray = JSON.parse(text);
+    } catch (err) {
+      toastMessage('Clipboard does not contain valid text effects data', { position: 'bottomCenter', type: 'error' });
+      return;
+    }
+    if (!Array.isArray(effectsArray) || effectsArray.length === 0) {
+      toastMessage('No valid text effects data found in clipboard', { position: 'bottomCenter', type: 'error' });
+      return;
+    }
+    // Validate each effect object minimally
+    const validEffects = effectsArray.filter(eff => eff && typeof eff.type === 'string' && TEXT_EFFECTS[eff.type]);
+    if (validEffects.length === 0) {
+      toastMessage('No valid text effects found in clipboard data', { position: 'bottomCenter', type: 'error' });
+      return;
+    }
+    // Add each valid effect to the target layer
+    validEffects.forEach((eff) => {
+      addTextEffectToLayer(layerIndex, eff);
+    });
+    toastMessage('Text effects pasted from clipboard', { position: 'bottomCenter', type: 'success' });
+  }).catch((err) => {
+    console.error('Failed to read clipboard for text effects: ', err);
+    toastMessage('Failed to read clipboard for text effects', { position: 'bottomCenter', type: 'error' });
+  });
+}
+
+function toggleTextEffectsVisibility(e) {
+  if (e) {
+      e.preventDefault(); // Stop default browser behavior (like form submissions)
+      e.stopPropagation(); // Stop event from bubbling to parents
+      e.stopImmediatePropagation(); // Stop other listeners on this same element
+  }
+  const layerItem = e.target.closest('.text-layer-item');
+  const allToggleBtns = layerItem.querySelectorAll('.text-effects-container .toggle-checkbox');
+  if(!allToggleBtns) return;
+  let state = null;
+  allToggleBtns.forEach(btn => {
+    if (state === null) state = !btn.checked;
+    btn.checked = state;
+    btn.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+
 function deleteTextEffectLayer(e) {
   if (e) {
       e.preventDefault(); // Stop default browser behavior (like form submissions)
@@ -644,12 +726,12 @@ function deepMerge(target, defaults) {
 }
 
 function deprecatedProjectConfigFixes(jsonData) {
-    delete jsonData.Setup.Sizes;
-    delete jsonData.Setup.Library;
-    delete jsonData.Setup.Images;
-    delete jsonData.Setup.loadingType;
-    delete jsonData.Setup.defaults;
-    delete jsonData.Setup.Settings.export;
+    delete jsonData?.Setup?.Sizes;
+    delete jsonData?.Setup?.Library;
+    delete jsonData?.Setup?.Images;
+    delete jsonData?.Setup?.loadingType;
+    delete jsonData?.Setup?.defaults;
+    delete jsonData?.Setup?.Settings?.export;
 
     // on the jsonData.Setup.Settings.textLayers array, remove strokes and shadows keys
     if (jsonData.Setup && jsonData.Setup.Settings && Array.isArray(jsonData.Setup.Settings.textLayers)) {
@@ -671,6 +753,10 @@ function loadFullProjectFromJson(jsonData, isSetupOnly = false) {
   // then clear the images using the existing function
 
   jsonData = deprecatedProjectConfigFixes(jsonData);
+  if(!jsonData.Setup || !jsonData.Setup?.Settings) {
+    const temp = { Setup: { Settings: jsonData } };
+    jsonData = temp;
+  }
 
   projectConfig = jsonData.Setup.Settings;
 
@@ -1209,6 +1295,9 @@ function addTextLayer(layerIndex) {
   clone.querySelector(".duplicate-layer-btn").addEventListener("click", duplicateTextLayer);
   clone.querySelector(".delete-layer-btn").addEventListener("click", deleteTextLayer);
   clone.querySelector('.add-text-effect-btn')?.addEventListener('click', addTextEffectLayer);
+  clone.querySelector('.copy-text-effect-btn')?.addEventListener('click', copyTextEffectLayersFromLayer);
+  clone.querySelector('.paste-text-effect-btn')?.addEventListener('click', pasteTextEffectLayersToLayer);
+  clone.querySelector(".toggle-text-effects").addEventListener("click", toggleTextEffectsVisibility);
 
   // if done loading, set and all the default layers needed
   // it must use the addStroke and addShadow, because only they will add and run the necessary commands
