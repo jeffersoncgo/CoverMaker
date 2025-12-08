@@ -555,7 +555,9 @@ async function createBackgroundCanvas(abortSignal) {
 async function drawCompositeImage(canvasHash, abortSignal) {
   try {
     const canvas = await runStep(canvasHash, createBackgroundCanvas, abortSignal);
-    const imageCanvas = await applyComposite(canvas.canvas, canvas.ctx, {}, slotsImages, canvasHash, abortSignal);
+    const imageCanvas = await runStep(canvas.hash, applyComposite, canvas.canvas, canvas.ctx, {}, slotsImages, canvasHash, abortSignal);
+    
+    // await applyComposite(canvas.canvas, canvas.ctx, {}, slotsImages, canvasHash, abortSignal);
 
     return await applyImageEffects( imageCanvas.canvas, imageCanvas.ctx, imageCanvas.hash, abortSignal);
   } catch (err) {

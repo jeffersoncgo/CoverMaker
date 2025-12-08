@@ -860,7 +860,10 @@ function loadprojectConfig() {
   const savedprojectConfig = localStorage.getItem("projectConfig");
   if (savedprojectConfig) {
     const defaultprojectConfig = window.defaultprojectConfig || projectConfig;
+    console.log({effects: JSON.parse(savedprojectConfig)?.canvas?.effects});
+
     projectConfig = deepMerge(JSON.parse(savedprojectConfig), defaultprojectConfig);
+    console.log({effects: projectConfig.canvas.effects});
     normalizeEffectParams(projectConfig.canvas.effects);
     try { (projectConfig.canvas.effects || []).forEach(e => delete e.params_enabled); } catch (err) {}
     try {
@@ -1370,20 +1373,20 @@ function importConfigFile(event) {
     try {
       const jsonData = JSON.parse(e.target.result);
       
-      if (!jsonData.Config) {
+      if (!jsonData.Setup || typeof jsonData.Setup !== 'object') {
         toastMessage('Invalid config file: missing Config object', { position: 'bottomCenter', type: 'danger' });
         return;
       }
 
       // Merge imported Config with defaults to ensure all keys exist
-      const defaultConfig = window.defaultConfig || Config;
-      Config = deepMerge(jsonData.Config, defaultConfig);
+      const defaultSetup = window.defaultSetup || Setup;
+      Setup = deepMerge(jsonData.Setup, defaultSetup);
       
       // Update UI with imported Config values
-      loadConfig();
+      loadSetup();
       
       // Save to localStorage
-      saveConfig();
+      saveSetup();
       
       toastMessage('Config imported successfully!', { position: 'bottomCenter', type: 'success' });
     } catch (err) {
@@ -2255,6 +2258,7 @@ function loadEssentials() {
   window.memory.addEvent('onRestoreSucess', () => window.memoryLoaded = true)
   window.memory.addEvent('onRestoreSucess', loadprojectConfig)
   window.memory.addEvent('onRestoreSucess', updateImageSettings)
+  window.memory.addEvent('onRestoreSucess', renderEffectLayers)
   window.memory.addEvent('onRestoreSucess', () => searchOnLibrary(null, true, true))
   window.memory.addEvent('onRestoreError', () =>  window.memoryLoaded = true)
   window.memory.addEvent('onSaveMemory', saveprojectConfig)
