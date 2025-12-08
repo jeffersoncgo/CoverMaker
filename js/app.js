@@ -1216,20 +1216,20 @@ function addTextLayer(layerIndex) {
   if(window.memoryLoaded) {
     if (Setup.defaults.textLayers) {
       // Populate basic font settings
-      clone.querySelector(".overlayText-input").value = Setup.defaults.textLayers.overlayText;
-      clone.querySelector(".fontSelect-input").value = Setup.defaults.textLayers.font.family;
-      clone.querySelector(".fontWeightSelect-input").value = Setup.defaults.textLayers.font.weight;
-      clone.querySelector(".fontStyleSelect-input").value = Setup.defaults.textLayers.font.style;
-      clone.querySelector(".fontSize-input").value = Setup.defaults.textLayers.font.size;
-      clone.querySelector(".fontColor-input").value = Setup.defaults.textLayers.font.color;
-      clone.querySelector(".fontOpacity-input").value = Setup.defaults.textLayers.font.opacity;
+      clone.querySelector(".overlayText-input").value = Setup?.defaults?.textLayers[0]?.overlayText;
+      clone.querySelector(".fontSelect-input").value = Setup?.defaults?.textLayers[0]?.font?.family;
+      clone.querySelector(".fontWeightSelect-input").value = Setup?.defaults?.textLayers[0]?.font?.weight;
+      clone.querySelector(".fontStyleSelect-input").value = Setup?.defaults?.textLayers[0]?.font?.style;
+      clone.querySelector(".fontSize-input").value = Setup?.defaults?.textLayers[0]?.font?.size;
+      clone.querySelector(".fontColor-input").value = Setup?.defaults?.textLayers[0]?.font?.color;
+      clone.querySelector(".fontOpacity-input").value = Setup?.defaults?.textLayers[0]?.font?.opacity;
 
       // Populate position settings
-      clone.querySelector(".textAlign-input").value = Setup.defaults.textLayers.position.textAlign;
-      clone.querySelector(".textBaseline-input").value = Setup.defaults.textLayers.position.textBaseline;
-      clone.querySelector(".positionX-input").value = Setup.defaults.textLayers.position.x;
-      clone.querySelector(".positionY-input").value = Setup.defaults.textLayers.position.y;
-      clone.querySelector(".rotation-input").value = Setup.defaults.textLayers.position.rotation || 0;
+      clone.querySelector(".textAlign-input").value = Setup?.defaults?.textLayers[0]?.position?.textAlign;
+      clone.querySelector(".textBaseline-input").value = Setup?.defaults?.textLayers[0]?.position?.textBaseline;
+      clone.querySelector(".positionX-input").value = Setup?.defaults?.textLayers[0]?.position?.x;
+      clone.querySelector(".positionY-input").value = Setup?.defaults?.textLayers[0]?.position?.y;
+      clone.querySelector(".rotation-input").value = Setup?.defaults?.textLayers[0]?.position?.rotation || 0;
     }
   }
 
