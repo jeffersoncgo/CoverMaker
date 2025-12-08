@@ -663,6 +663,7 @@ function deprecatedProjectConfigFixes(jsonData) {
 }
 
 function loadFullProjectFromJson(jsonData, isSetupOnly = false) {
+  toastMessage('Loading Setup from JSON...', { position: 'bottomCenter', type: 'info', duration: 2000 });
   // set the memory as not loaded
   window.memoryLoaded = false;
   // first, we need to clear all the text layers
@@ -686,26 +687,12 @@ function loadFullProjectFromJson(jsonData, isSetupOnly = false) {
     try { (projectConfig.canvas.effects || []).forEach(e => delete e.params_enabled); } catch(err) {}
     loadTextLayers(projectConfig.textLayers);
   }
-  // Normalize composite params after merge (applied after ensureCompositeDefaults below)
-  // restore also the fields from the expandImageSettings element
+
   RatioSelectElement.value = projectConfig.canvas.format;
   typeSelectElement.value = projectConfig.canvas.type;
-  // Ensure composite object exists and UI is in sync
-  // ensureCompositeDefaults();
+
   addTypeParamsOptions(typeSettingsContainer, projectConfig.canvas.composite.type, projectConfig.canvas.composite.params || {});
-  // Make sure any registry params/defaults are applied to the composite
-  // try { normalizeCompositeParams(projectConfig.canvas.composite); } catch(err) {}
-  
-  // Restore export settings 
-  // This will not restore the export settings UI because it's not part of the setup-only flow
-  // if (Setup.Export.Project.Images) {
-  //   exportProjectImagesFormatSelectElement.value = Setup.Export.Project.Images.format || 'webp';
-  //   exportProjectImagesQualityElement.value = Setup.Export.Project.Images.jpegQuality || 0.95;
-  // }
-  
-  // Note: Images are no longer loaded from JSON for performance reasons.
-  // Images should be exported/imported using ZIP files.
-  // If loading from legacy JSON with image URLs, try to load them
+
   if(!isSetupOnly) {
     if (jsonData.imageSlots && Array.isArray(jsonData.imageSlots)) {
       const hasImageUrls = jsonData.imageSlots.some(slot => slot && typeof slot === 'string' && slot !== 'placeholder');
@@ -741,6 +728,8 @@ function loadFullProjectFromJson(jsonData, isSetupOnly = false) {
   saveprojectConfig();
   saveFieldsToStorage();
   drawComposite();
+  renderEffectLayers();
+  renderTextEffectLayers();
 }
 
 // Normalize composite params to registry keys and defaults
@@ -1702,7 +1691,12 @@ async function importProjectFromZip(file) {
   const zip = new JSZip();
   const contents = await zip.loadAsync(file);
 
-  // 1. Import JSON Configuration
+
+  // Lets 1º Import Images
+  await importImagesFromZip(contents);
+  
+
+  // 2. Import JSON Configuration
   const projectJsonFile = contents.file('project.json');
   if (!projectJsonFile) {
     throw new Error('Invalid project file: project.json not found');
@@ -1711,22 +1705,11 @@ async function importProjectFromZip(file) {
   const jsonText = await projectJsonFile.async('text');
   const projectData = JSON.parse(jsonText);
 
-  // Clear existing data and load configuration
   // loadFullProjectFromJson handles clearing slots and text layers
-  loadFullProjectFromJson(projectData, false);
-
-  // 2. Import Images
-  await importImagesFromZip(contents);
+  loadFullProjectFromJson(projectData, true);
 
   // Finalize
   toastMessage('Finalizing...', { position: 'bottomCenter', type: 'info' });
-  window.memoryLoaded = true;
-  updateImageSettings();
-  updateTextSettings();
-  saveprojectConfig();
-  saveFieldsToStorage();
-  drawComposite();
-
   toastMessage('Project imported successfully!', { position: 'bottomCenter', type: 'success' });
 }
 
