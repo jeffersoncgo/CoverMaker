@@ -403,6 +403,10 @@ i.delete:hover { background: var(--c-danger); }
   overflow: hidden;
   transition: max-height 0.1s cubic-bezier(0, 1, 0, 1);
   padding: 0 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 2%;
+  background: var(--c-surface);
+  overflow: hidden;
 }
 
 .expand-checkbox:checked ~ .expand-content {
