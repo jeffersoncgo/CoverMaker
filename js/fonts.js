@@ -10,7 +10,7 @@ const WEB_SAFE_FONTS = new Set([
 
 const fontSources = {
   Google: {
-    listFile: "/fonts/google-fonts.json",
+    listFile: "fonts/google-fonts.json",
     cssUrl: "https://fonts.googleapis.com/css2?family="
   }
 };
