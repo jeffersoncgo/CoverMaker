@@ -547,8 +547,6 @@ async function createBackgroundCanvas(abortSignal) {
   ctx.fillStyle = projectConfig.canvas.backgroundColor || '#000000';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  window.temp1 = canvas;
-  window.temp1Ctx = ctx;
   return { canvas, ctx, abortSignal };
 }
 

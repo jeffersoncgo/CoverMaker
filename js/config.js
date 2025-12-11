@@ -5,13 +5,6 @@ const slotsImages = []; // Global array to store slotsImages for each slot
 
 const dataLists = {};
 
-let FONT_DATABASE = null;
-
-const webSafeFonts = [
-  "Arial", "Verdana", "Times New Roman", "Helvetica",
-  "Georgia", "Courier New", "Brush Script MT"
-]
-
 window.Tabs = {}; // Will store tab elements
 
 window.composite = {
@@ -116,7 +109,8 @@ var Setup = {
           }
         }
       ]
-    }
+    },
+    customFonts: {}
   },
   Export: {
     Project: {

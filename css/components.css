@@ -509,6 +509,18 @@ i.delete:hover { background: var(--c-danger); }
   border-radius: 0;  
 }
 
+/* if fontSelect-input value is "Add New Font..." then font-custom-options-container display block */
+.font-custom-options-container {
+  display: none;
+}
+
+.font-custom-options-container.show {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+
+
 /* ============================
    Search & Misc
    ============================ */

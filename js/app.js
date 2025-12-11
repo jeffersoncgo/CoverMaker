@@ -78,7 +78,7 @@ function addTextEffectParamsOptions(paramsContainer, effectType, paramsObj, laye
 function onEffectParamChange(event) {
   const slider = event.target;
   if (!slider) return;
-  const idx = parseInt(slider.closest('.effect-layer-item').id.replace('effect_', ''), 10);
+  const idx = parseInt(slider.dataset.effectIndex);
   const key = slider.dataset.paramKey;
   if (isNaN(idx) || !key) return;
   const parsedValue = getControlValue(slider);
@@ -128,7 +128,7 @@ function changeEffectLayerType(event) {
   const field = event.target.closest('.effect-layer-item');
   const newType = event.target.value;
   // When we change the info of one layer only, we use it to update only that layer
-  const idx = parseInt(field.closest('.effect-layer-item').id.replace('effect_', ''), 10);
+  const idx = parseInt(field.dataset.effectIndex);
   let eff = projectConfig.canvas.effects[idx];
   const newTypeDef = EFFECTS_REGISTRY[newType];
 
@@ -220,6 +220,7 @@ function renderImageEffectLayer(idx) {
     const clone = effectLayerTemplate.content.cloneNode(true);
     node = clone.querySelector('.effect-layer-item');
     node.id = `effect_${idx}`;
+    node.setAttribute('data-effect-index', String(idx));
     effectLayersContainer.appendChild(clone);
     created = true;
   }
@@ -419,20 +420,11 @@ function deleteTextEffectLayer(e) {
       e.stopPropagation(); // Stop event from bubbling to parents
       e.stopImmediatePropagation(); // Stop other listeners on this same element
   }
-  // 1. PREVENT DOUBLE FIRING
-  if (e) {
-      e.preventDefault(); // Stop default browser behavior (like form submissions)
-      e.stopPropagation(); // Stop event from bubbling to parents
-      e.stopImmediatePropagation(); // Stop other listeners on this same element
-  }
-
   // id = text_effect_{layer}_{idx}
-  const indexId = e.target.parentElement.id || e.target.closest('.text-effect-layer-item')?.id; 
-  if (!indexId) return;
+  const target = e.target.parentElement;
 
-  const parts = indexId.replace('text_effect_', '').split('_');
-  const layerIndex = parseInt(parts[0]);
-  const effectIndex = parseInt(parts[1]);
+  const layerIndex = parseInt(target.dataset.layerIndex);
+  const effectIndex = parseInt(target.dataset.effectIndex);
 
   if (isNaN(layerIndex) || isNaN(effectIndex)) return;
   if (!projectConfig.textLayers[layerIndex] || !Array.isArray(projectConfig.textLayers[layerIndex].effects)) return;
@@ -448,11 +440,10 @@ function duplicateTextEffectLayer(e) {
       e.stopPropagation(); // Stop event from bubbling to parents
       e.stopImmediatePropagation(); // Stop other listeners on this same element
   }
-  const indexId = e.target.parentElement.id || e.target.closest('.text-effect-layer-item')?.id; // fallback
-  if (!indexId) return;
-  const parts = indexId.replace('text_effect_', '').split('_');
-  const layerIndex = parseInt(parts[0]);
-  const effectIndex = parseInt(parts[1]);
+  const target = e.target.closest('.text-effect-layer-item');
+  if (!target) return;
+  const layerIndex = parseInt(target.dataset.layerIndex);
+  const effectIndex = parseInt(target.dataset.effectIndex);
   if (isNaN(layerIndex) || isNaN(effectIndex)) return;
   const effectCopy = JSON.parse(JSON.stringify(projectConfig.textLayers[layerIndex].effects[effectIndex]));
   projectConfig.textLayers[layerIndex].effects.splice(effectIndex + 1, 0, effectCopy);
@@ -465,11 +456,10 @@ function setTextEffectLayerDefault(e) {
       e.stopPropagation(); // Stop event from bubbling to parents
       e.stopImmediatePropagation(); // Stop other listeners on this same element
   }
-  const indexId = e.target.parentElement.id || e.target.closest('.text-effect-layer-item')?.id; // fallback
-  if (!indexId) return;
-  const parts = indexId.replace('text_effect_', '').split('_');
-  const layerIndex = parseInt(parts[0]);
-  const effectIndex = parseInt(parts[1]);
+  const target = e.target.closest('.text-effect-layer-item');
+  if (!target) return;
+  const layerIndex = parseInt(target.dataset.layerIndex);
+  const effectIndex = parseInt(target.dataset.effectIndex);
   if (isNaN(layerIndex) || isNaN(effectIndex)) return;
   Setup.defaults.textEffect = {...projectConfig.textLayers[layerIndex].effects[effectIndex]};
   saveprojectConfig();
@@ -507,6 +497,10 @@ function renderTextEffectLayersFor(layerIndex) {
     const last = existing[j];
     container.removeChild(last);
   }
+
+  if (effects.length === 0) {
+    updateTextSettings();
+  }
 }
 
 function renderTextEffectLayers() {
@@ -518,9 +512,8 @@ function renderTextEffectLayers() {
 function changeTextEffectLayerType(event) {
   const field = event.target.closest('.text-effect-layer-item');
   const newType = event.target.value;
-  const idxParts = field.id.replace('text_effect_', '').split('_');
-  const layerIndex = parseInt(idxParts[0]);
-  const effIndex = parseInt(idxParts[1]);
+  const layerIndex = parseInt(field.dataset.layerIndex);
+  const effIndex = parseInt(field.dataset.effectIndex);
   if (!projectConfig.textLayers[layerIndex]) return;
   const eff = projectConfig.textLayers[layerIndex].effects[effIndex];
   const newTypeDef = TEXT_EFFECTS[newType];
@@ -548,7 +541,13 @@ function renderTextEffectLayer(layerIndex, effIndex) {
     const clone = textEffectLayerTemplate.content.cloneNode(true);
     field = clone.querySelector('.text-effect-layer-item');
     field.id = fieldId;
+    field.dataset.layerIndex = layerIndex;
+    field.dataset.effectIndex = effIndex;
     container.appendChild(clone);
+  } else {
+    // Ensure dataset is up to date even if element exists
+    field.dataset.layerIndex = layerIndex;
+    field.dataset.effectIndex = effIndex;
   }
 
   // Enabled checkbox
@@ -649,9 +648,6 @@ const textLayersContainer = document.getElementById("text-layers-container");
 
 // Slots
 const imageSlots = document.getElementById('image-slots');
-
-// This is the hidden <select> we use to populate new layer clones
-const fontSelectElement = document.getElementById("fontSelect");
 
 // Canvas Settings
 const RatioSelectElement = document.getElementById("RatioSelect");
@@ -1019,6 +1015,8 @@ function loadTextLayers(layersData) {
           const clone = textEffectLayerTemplate.content.cloneNode(true);
           const field = clone.querySelector('.text-effect-layer-item');
           field.id = `text_effect_${currentLayerIndex}_${idxEf}`;
+          field.dataset.layerIndex = currentLayerIndex;
+          field.dataset.effectIndex = idxEf;
             const enabledCheckbox = field.querySelector('.text-effect-enabled-checkbox');
             enabledCheckbox.checked = effData.enabled !== false;
             // Ensure the enabled checkbox has a stable id so associated labels/logic target the correct control
@@ -1090,6 +1088,7 @@ async function updateTextSettings() {
     // 1. Read Basic Font Settings
     newLayer.overlayText = layerEl.querySelector(".overlayText-input").value || "";
     newLayer.font.family = layerEl.querySelector(".fontSelect-input").value;
+    newLayer.font.source = layerEl.querySelector(".fontSelect-input").selectedOptions[0]?.dataset.source || "Local";
     newLayer.font.weight = layerEl.querySelector(".fontWeightSelect-input").value;
     newLayer.font.style = layerEl.querySelector(".fontStyleSelect-input").value;
     newLayer.font.size = parseFloat(layerEl.querySelector(".fontSize-input").value) || 36;
@@ -1105,7 +1104,7 @@ async function updateTextSettings() {
       `${newLayer.font.style} ${newLayer.font.weight} ${newLayer.font.size}px "${newLayer.font.family}"`;
     
     // Await font loading
-    await loadFont(newLayer.font.family);
+    await loadFont(newLayer.font.source, newLayer.font.family);
 
     // Build main fillStyle
     let r = parseInt(newLayer.font.color.slice(1, 3), 16);
@@ -1119,11 +1118,11 @@ async function updateTextSettings() {
     newLayer.position.x = parseFloat(layerEl.querySelector(".positionX-input").value) || 0;
     newLayer.position.y = parseFloat(layerEl.querySelector(".positionY-input").value) || 0;
     newLayer.position.rotation = parseFloat(layerEl.querySelector(".rotation-input").value) || 0;
-    layerEl.parentElement.parentElement.setAttribute('layerIndex', layerIndex);
+    layerEl.parentElement.parentElement.dataset.layerIndex = layerIndex;
 
     // 5. Read Text Effect Layers (per-layer)
     const labelEl = layerEl.querySelector('.add-text-effect-btn').parentElement.querySelector('label');
-    labelEl.setAttribute('layerIndex', layerIndex);
+    labelEl.dataset.layerIndex = layerIndex;
     newLayer.effects = [];
     const textEffectElements = layerEl.querySelectorAll('.text-effect-layer-item');
     let textEffIndex = 0;
@@ -1140,8 +1139,8 @@ async function updateTextSettings() {
         if (!pKey) continue;
         newEff.params[pKey] = getControlValue(control);
       }
-      effEl.setAttribute('layerIndex', layerIndex);
-      effEl.setAttribute('effectIndex', textEffIndex);
+      effEl.dataset.layerIndex = layerIndex;
+      effEl.dataset.effectIndex = textEffIndex;
       newLayer.effects.push(newEff);
       textEffIndex++;
     }
@@ -1304,9 +1303,12 @@ function addTextLayer(layerIndex) {
   // Then this here will update their info with the default ones
   if(window.memoryLoaded) {
     if (Setup.defaults.textLayers) {
+      const selectInput = clone.querySelector(".fontSelect-input");
+      selectInput.value = Setup.defaults.textLayers.font.family;
+      attachFontSelectListeners(selectInput);
       // Populate basic font settings
       clone.querySelector(".overlayText-input").value = Setup.defaults.textLayers.overlayText;
-      clone.querySelector(".fontSelect-input").value = Setup.defaults.textLayers.font.family;
+      // clone.querySelector(".fontSelect-input").value = Setup.defaults.textLayers.font.family;
       clone.querySelector(".fontWeightSelect-input").value = Setup.defaults.textLayers.font.weight;
       clone.querySelector(".fontStyleSelect-input").value = Setup.defaults.textLayers.font.style;
       clone.querySelector(".fontSize-input").value = Setup.defaults.textLayers.font.size;
@@ -1328,12 +1330,12 @@ function addTextLayer(layerIndex) {
 }
 
 function duplicateTextLayer(e) {
-  const layerIndex = parseInt(e.target.parentElement.getAttribute('layerIndex'));
+  const layerIndex = parseInt(e.target.parentElement.dataset.layerIndex);
   loadTextLayers([projectConfig.textLayers[layerIndex]]);
 }
 
 function setTextLayerDefault(e) {
-  const layerIndex = parseInt(e.target.parentElement.getAttribute('layerIndex'));
+  const layerIndex = parseInt(e.target.parentElement.dataset.layerIndex);
   Setup.defaults.textLayers = {...projectConfig.textLayers[layerIndex]}
   saveSetup();
   toastMessage('Text Layer default set', { position: 'bottomCenter', type: 'success' });
@@ -1374,20 +1376,26 @@ function addImageEffectLayer() {
 }
 
 function deleteImageEffectLayer(e) {
-  const index = parseInt(e.target.parentElement.id.replace('effect_', ''));
+  const item = e.target.closest('.effect-layer-item');
+  const index = item ? parseInt(item.dataset.effectIndex) : NaN;
+  if (isNaN(index)) return;
   projectConfig.canvas.effects.splice(index, 1);
   renderEffectLayers();
 }
 
 function duplicateImageEffectLayer(e) {
-  const index = parseInt(e.target.parentElement.id.replace('effect_', ''));
+  const item = e.target.closest('.effect-layer-item');
+  const index = item ? parseInt(item.dataset.effectIndex) : NaN;
+  if (isNaN(index)) return;
   const effectCopy = JSON.parse(JSON.stringify(projectConfig.canvas.effects[index]));
   projectConfig.canvas.effects.splice(index + 1, 0, effectCopy);
   renderEffectLayers();
 }
 
 function setImageEffectLayerDefault(e) {
-  const index = parseInt(e.target.parentElement.id.replace('effect_', ''));
+  const item = e.target.closest('.effect-layer-item');
+  const index = item ? parseInt(item.dataset.effectIndex) : NaN;
+  if (isNaN(index)) return;
   Setup.defaults.effects = {...projectConfig.canvas.effects[index]};
   saveSetup();
   toastMessage('Effect Layer default set', { position: 'bottomCenter', type: 'success' });
@@ -1950,89 +1958,6 @@ function openInNewTab(source) {
   }
 }
 
-
-
-// =====================================================
-// Font Loading
-// =====================================================
-async function loadFontMetadata() {
-  const response = await fetch("./fonts.json");
-  FONT_DATABASE = await response.json();
-}
-
-async function populateFontSelect() {
-  await loadFontMetadata();
-
-  const categories = {
-    "Web Safe": webSafeFonts,
-    "Sans Serif": [],
-    "Serif": [],
-    "Display": [],
-    "Handwriting": [],
-    "Monospace": []
-  };
-
-  FONT_DATABASE.familyMetadataList.forEach(font => {
-    if (!categories[font.category]) categories[font.category] = [];
-    categories[font.category].push(font.family);
-  });
-
-  fontSelectElement.innerHTML = "";
-
-  // Create optgroup blocks
-  for (const category in categories) {
-    const group = document.createElement("optgroup");
-    group.label = category;
-
-    categories[category].sort().forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      group.appendChild(opt);
-    });
-
-    fontSelectElement.appendChild(group);
-  }
-
-  if (fontSelectElement.selectedIndex == -1)
-    fontSelectElement.selectedIndex = 0;
-}
-
-async function loadFont(fontName) {
-  if (!fontName) return;
-  if(webSafeFonts.includes(fontName))
-    return true;
-
-  const normalized = fontName.trim().toLowerCase().replace(/\s+/g, '-');
-  if (!document.querySelector(`link[data-font="${normalized}"]`)) {
-    
-    const cssLoadPromise = new Promise((resolve, reject) => {
-      const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}`;
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = url;
-      link.dataset.font = normalized;
-      
-      link.onload = () => resolve(); 
-      
-      link.onerror = () => reject(new Error(`Failed to load CSS for font: ${fontName}`));
-      
-      document.head.appendChild(link);
-    });
-
-    await cssLoadPromise;
-  }
-  try {
-    await document.fonts.load(`1em "${fontName}"`);
-    await document.fonts.ready;
-    return true;
-    
-  } catch (err) {
-    console.error(`Failed to load font file for: ${fontName}`, err);
-    return false;
-  }
-}
-
 // ======================
 // Utilities
 // ======================
@@ -2516,8 +2441,9 @@ function moveInArray(arr, fromIndex, toIndex) {
 
 function onEffectDragStart(event) {
   const item = event.target.parentElement.closest('.effect-layer-item');
-  // Extract index from ID (format: effect_0, effect_1...)
-  const index = parseInt(item.id.replace('effect_', ''));
+  // Extract index from dataset
+  const index = item ? parseInt(item.dataset.effectIndex) : NaN;
+  if (isNaN(index)) return;
   
   event.dataTransfer.effectAllowed = 'move';
   event.dataTransfer.setData('application/json', JSON.stringify({
@@ -2538,7 +2464,7 @@ function onEffectDrop(event) {
     const targetItem = event.target.closest('.effect-layer-item');
     if (!targetItem) return;
     
-    const toIndex = parseInt(targetItem.id.replace('effect_', ''));
+    const toIndex = parseInt(targetItem.dataset.effectIndex);
 
     if (fromIndex === toIndex) return;
 
@@ -2620,8 +2546,8 @@ function onTextLayerDrop(event) {
 
 function onTextEffectDragStart(event) {
   const item = event.target.parentElement.closest('.text-effect-layer-item');
-  const layerIndex = parseInt(item.getAttribute('layerIndex'));
-  const effectIndex = parseInt(item.getAttribute('effectIndex'));
+  const layerIndex = parseInt(item.dataset.layerIndex);
+  const effectIndex = parseInt(item.dataset.effectIndex);
   
   event.dataTransfer.effectAllowed = 'move';
   event.dataTransfer.setData('application/json', JSON.stringify({
@@ -2636,27 +2562,17 @@ function onTextEffectDrop(event) {
   event.preventDefault();
 
   try {
-    console.log("Reached here 1", event);
     const data = JSON.parse(event.dataTransfer.getData('application/json'));
     if (data.type !== 'textEffect') return;
-    console.log("Reached here 2", data);
 
     const putAtEnd = !event.target.parentElement.classList.contains('text-effect-layer-item');
     const targetItem = putAtEnd ? event.target : event.target.closest('.text-effect-layer-item');
 
     if (!targetItem) return;
 
-    const targetLayerIndex   = Number(targetItem.getAttribute('layerIndex'));
-    const targetEffectIndex  = putAtEnd ? projectConfig.textLayers[targetLayerIndex].effects.length : Number(targetItem.getAttribute('effectIndex'));
+    const targetLayerIndex   = Number(targetItem.dataset.layerIndex);
+    const targetEffectIndex  = putAtEnd ? projectConfig.textLayers[targetLayerIndex].effects.length : Number(targetItem.dataset.effectIndex);
 
-
-    console.log("Reached here 3", targetItem);
-
-    console.log("Reached here 4", {
-      data,
-      targetLayerIndex,
-      targetEffectIndex
-    })
 
     // If Same Layer, we just need to move within that layer
     if(data.layerIndex == targetLayerIndex) {
