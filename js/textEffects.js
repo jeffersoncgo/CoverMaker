@@ -2414,8 +2414,8 @@ const TEXT_EFFECTS = {
     params: [
       { key: 'strength', label: 'Strength', type: 'range', min: -5, max: 5, step: 0.1, default: 0.5 },
       { key: 'radius', label: 'Radius', type: 'range', min: 10, max: 1000, step: 10, default: 200 },
-      { key: 'offsetX', label: 'Center X', type: 'range', min: -500, max: 500, step: 10, default: 0 }, // New
-      { key: 'offsetY', label: 'Center Y', type: 'range', min: -500, max: 500, step: 10, default: 0 }  // New
+      { key: 'offsetX', label: 'Center X', type: 'range', min: -1000, max: 1000, step: 10, default: 0 }, // New
+      { key: 'offsetY', label: 'Center Y', type: 'range', min: -1000, max: 1000, step: 10, default: 0 }  // New
     ],
     apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const strength = params.strength ?? 0.5;
