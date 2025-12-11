@@ -53,6 +53,14 @@
           "type": "outline",
           "enabled": true,
           "params": {
+            "color": "#acabaa",
+            "thickness": 5
+          }
+        },
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
             "color": "#ffffff",
             "thickness": 5
           }
@@ -73,10 +81,10 @@
           "enabled": true,
           "params": {
             "color": "#000000",
-            "blur": 11,
-            "length": 37,
-            "angle": 45,
-            "opacity": 1
+            "blur": 14,
+            "length": 32,
+            "angle": 53,
+            "opacity": 0.71
           }
         }
       ]
