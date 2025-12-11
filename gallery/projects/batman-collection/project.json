@@ -1,452 +1,256 @@
 {
-  "Setup": {
-    "Sizes": {
-      "cover": {
-        "width": 1920,
-        "height": 1080,
-        "quality": 80
+  "textLayers": [
+    {
+      "font": {
+        "family": "Carrois Gothic SC",
+        "source": "Google",
+        "weight": "bold",
+        "style": "normal",
+        "size": 756,
+        "color": "#ababab",
+        "opacity": 1
       },
-      "poster": {
-        "width": 1080,
-        "height": 1920,
-        "quality": 60
+      "position": {
+        "textAlign": "center",
+        "textBaseline": "middle",
+        "x": -37,
+        "y": -150,
+        "rotation": 45
       },
-      "square": {
-        "width": 1,
-        "height": 1,
-        "quality": 100
-      },
-      "custom": {
-        "width": 1,
-        "height": 1,
-        "quality": 100
-      }
-    },
-    "Library": {
-      "loadedLibrary": ""
-    },
-    "Images": {
-      "loading": "images/loading.gif",
-      "error": "images/error.png"
-    },
-    "loadingType": "eager",
-    "Settings": {
-      "textLayers": [
+      "id": "layer_2",
+      "overlayText": "🦇",
+      "enabled": true,
+      "fontStyle": "normal bold 756px \"Carrois Gothic SC\"",
+      "fillStyle": "rgba(171, 171, 171, 1)",
+      "effects": [
         {
-          "font": {
-            "family": "Carrois Gothic SC",
-            "weight": "bold",
-            "style": "normal",
-            "size": 756,
-            "color": "#ababab",
-            "opacity": 1
-          },
-          "position": {
-            "textAlign": "center",
-            "textBaseline": "middle",
-            "x": -50,
-            "y": -222,
-            "rotation": 45
-          },
-          "strokes": [],
-          "shadows": [],
-          "id": "layer_2",
-          "overlayText": "🦇",
+          "type": "arch",
           "enabled": true,
-          "fontStyle": "normal bold 756px \"Carrois Gothic SC\"",
-          "fillStyle": "rgba(171, 171, 171, 1)",
-          "effects": [
-            {
-              "type": "arch",
-              "enabled": true,
-              "params": {
-                "curve": -119,
-                "offsetY": -97
-              }
-            },
-            {
-              "type": "gradient",
-              "enabled": true,
-              "params": {
-                "color1": "#0a0a0a",
-                "color2": "#0d0d0d",
-                "angle": 308,
-                "opacity": 1
-              }
-            },
-            {
-              "type": "outline",
-              "enabled": true,
-              "params": {
-                "color": "#6b6b6b",
-                "thickness": 2.5
-              }
-            },
-            {
-              "type": "outline",
-              "enabled": true,
-              "params": {
-                "color": "#ffffff",
-                "thickness": 5
-              }
-            },
-            {
-              "type": "innerShadow",
-              "enabled": true,
-              "params": {
-                "color": "#000000",
-                "blur": 11,
-                "offsetX": 9,
-                "offsetY": -1,
-                "opacity": 1
-              }
-            },
-            {
-              "type": "longShadow",
-              "enabled": true,
-              "params": {
-                "color": "#000000",
-                "blur": 11,
-                "length": 37,
-                "angle": 45,
-                "opacity": 1
-              }
-            },
-            {
-              "type": "fade",
-              "enabled": true,
-              "params": {
-                "direction": "top",
-                "strength": 0.47,
-                "endsAt": 0.13
-              }
-            }
-          ]
-        },
-        {
-          "font": {
-            "family": "Bangers",
-            "weight": "lighter",
-            "style": "normal",
-            "size": 308,
-            "color": "#ffd500",
-            "opacity": 1
-          },
-          "position": {
-            "textAlign": "center",
-            "textBaseline": "middle",
-            "x": -5,
-            "y": 99,
-            "rotation": 0
-          },
-          "strokes": [],
-          "shadows": [],
-          "id": "layer_0",
-          "overlayText": "BATMAN",
-          "enabled": true,
-          "fontStyle": "normal lighter 308px \"Bangers\"",
-          "fillStyle": "rgba(255, 213, 0, 1)",
-          "effects": [
-            {
-              "type": "outline",
-              "enabled": true,
-              "params": {
-                "color": "#000000",
-                "thickness": 7
-              }
-            },
-            {
-              "type": "longShadow",
-              "enabled": true,
-              "params": {
-                "color": "#000000",
-                "blur": 2,
-                "length": 33,
-                "angle": 43,
-                "opacity": 1
-              }
-            },
-            {
-              "type": "outline",
-              "enabled": true,
-              "params": {
-                "color": "#ffffff",
-                "thickness": 7
-              }
-            },
-            {
-              "type": "scale",
-              "enabled": false,
-              "params": {
-                "w": 1,
-                "h": 0.5
-              }
-            }
-          ]
-        },
-        {
-          "font": {
-            "family": "Bangers",
-            "weight": "lighter",
-            "style": "normal",
-            "size": 136,
-            "color": "#ffffff",
-            "opacity": 1
-          },
-          "position": {
-            "textAlign": "center",
-            "textBaseline": "middle",
-            "x": -5,
-            "y": 264,
-            "rotation": 0
-          },
-          "strokes": [],
-          "shadows": [],
-          "id": "layer_1",
-          "overlayText": "COLLECTION",
-          "enabled": true,
-          "fontStyle": "normal lighter 136px \"Bangers\"",
-          "fillStyle": "rgba(255, 255, 255, 1)",
-          "effects": [
-            {
-              "type": "outline",
-              "enabled": true,
-              "params": {
-                "color": "#000000",
-                "thickness": 2
-              }
-            },
-            {
-              "type": "longShadow",
-              "enabled": true,
-              "params": {
-                "color": "#000000",
-                "blur": 2,
-                "length": 22,
-                "angle": 43,
-                "opacity": 1
-              }
-            },
-            {
-              "type": "outline",
-              "enabled": true,
-              "params": {
-                "color": "#ffffff",
-                "thickness": 3.5
-              }
-            }
-          ]
-        }
-      ],
-      "canvas": {
-        "type": "scatteredPhotos",
-        "format": "poster",
-        "opacity": 0,
-        "overlayColorStart": "#000000",
-        "overlayColorStartRGB": {
-          "r": 0,
-          "g": 0,
-          "b": 0
-        },
-        "overlayColorEnd": "#000000",
-        "overlayColorEndRGB": {
-          "r": 0,
-          "g": 0,
-          "b": 0
-        },
-        "overlayOpacityStart": 0.1,
-        "overlayOpacityEnd": 0.4,
-        "reflectionDistance": 0.7,
-        "reflectionScale": 0.8,
-        "baseScale": 1.4,
-        "blurAmount": 5,
-        "spacing": 1,
-        "salt": 3,
-        "composite": {
-          "type": "scatteredPhotos",
           "params": {
-            "salt": 76
-          },
-          "enabled": true
-        },
-        "effects": [
-          {
-            "type": "vignette",
-            "params": {
-              "intensity": 0.78
-            },
-            "enabled": true
-          },
-          {
-            "type": "overlay",
-            "params": {
-              "startColor": "#000000",
-              "startOpacity": 0.05,
-              "endColor": "#000000",
-              "endOpacity": 0.14
-            },
-            "enabled": true
-          },
-          {
-            "type": "scanLines",
-            "params": {
-              "opacity": 0.53,
-              "density": 10
-            },
-            "enabled": true
+            "curve": -119,
+            "offsetY": -97
           }
-        ]
-      },
-      "export": {
-        "format": "webp",
-        "jpegQuality": 0.95
-      }
+        },
+        {
+          "type": "gradient",
+          "enabled": true,
+          "params": {
+            "color1": "#0a0a0a",
+            "color2": "#0d0d0d",
+            "angle": 308,
+            "opacity": 1
+          }
+        },
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#6b6b6b",
+            "thickness": 2.5
+          }
+        },
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#ffffff",
+            "thickness": 5
+          }
+        },
+        {
+          "type": "innerShadow",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "blur": 11,
+            "offsetX": 9,
+            "offsetY": -1,
+            "opacity": 1
+          }
+        },
+        {
+          "type": "longShadow",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "blur": 11,
+            "length": 37,
+            "angle": 45,
+            "opacity": 1
+          }
+        }
+      ]
     },
-    "defaults": {
-      "shadow": {
+    {
+      "font": {
+        "family": "Bangers",
+        "source": "Google",
+        "weight": "lighter",
+        "style": "normal",
+        "size": 308,
+        "color": "#ffd500",
+        "opacity": 1
+      },
+      "position": {
+        "textAlign": "center",
+        "textBaseline": "middle",
+        "x": -26,
+        "y": 99,
+        "rotation": 0
+      },
+      "id": "layer_0",
+      "overlayText": "BATMAN",
+      "enabled": true,
+      "fontStyle": "normal lighter 308px \"Bangers\"",
+      "fillStyle": "rgba(255, 213, 0, 1)",
+      "effects": [
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "thickness": 7
+          }
+        },
+        {
+          "type": "longShadow",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "blur": 2,
+            "length": 33,
+            "angle": 43,
+            "opacity": 1
+          }
+        },
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#ffffff",
+            "thickness": 7
+          }
+        },
+        {
+          "type": "scale",
+          "enabled": false,
+          "params": {
+            "w": 1,
+            "h": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "font": {
+        "family": "Bangers",
+        "source": "Google",
+        "weight": "lighter",
+        "style": "normal",
+        "size": 136,
         "color": "#ffffff",
-        "blur": 45,
-        "offsetX": 12,
-        "offsetY": 12,
+        "opacity": 1
+      },
+      "position": {
+        "textAlign": "center",
+        "textBaseline": "middle",
+        "x": -25,
+        "y": 264,
+        "rotation": 0
+      },
+      "id": "layer_1",
+      "overlayText": "COLLECTION",
+      "enabled": true,
+      "fontStyle": "normal lighter 136px \"Bangers\"",
+      "fillStyle": "rgba(255, 255, 255, 1)",
+      "effects": [
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "thickness": 2
+          }
+        },
+        {
+          "type": "longShadow",
+          "enabled": true,
+          "params": {
+            "color": "#000000",
+            "blur": 2,
+            "length": 22,
+            "angle": 43,
+            "opacity": 1
+          }
+        },
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#ffffff",
+            "thickness": 3.5
+          }
+        }
+      ]
+    }
+  ],
+  "canvas": {
+    "type": "scatteredPhotos",
+    "format": "poster",
+    "opacity": 0,
+    "overlayColorStart": "#000000",
+    "overlayColorStartRGB": {
+      "r": 0,
+      "g": 0,
+      "b": 0
+    },
+    "overlayColorEnd": "#000000",
+    "overlayColorEndRGB": {
+      "r": 0,
+      "g": 0,
+      "b": 0
+    },
+    "overlayOpacityStart": 0.1,
+    "overlayOpacityEnd": 0.4,
+    "reflectionDistance": 0.7,
+    "reflectionScale": 0.8,
+    "baseScale": 1.4,
+    "blurAmount": 5,
+    "spacing": 1,
+    "salt": 3,
+    "composite": {
+      "type": "scatteredPhotos",
+      "params": {
+        "salt": 76
+      },
+      "enabled": true
+    },
+    "effects": [
+      {
+        "type": "vignette",
+        "params": {
+          "intensity": 0.78
+        },
         "enabled": true
       },
-      "stroke": {
-        "color": "#4f4f4f",
-        "width": 32,
-        "opacity": 1,
-        "enabled": true,
-        "style": "rgba(79, 79, 79, 1)"
-      },
-      "TextLayer": {
-        "font": {
-          "family": "Carrois Gothic SC",
-          "weight": "bold",
-          "style": "normal",
-          "size": 462,
-          "color": "#ababab",
-          "opacity": 1
-        },
-        "position": {
-          "textAlign": "center",
-          "textBaseline": "middle",
-          "x": 0,
-          "y": 0,
-          "rotation": 0
-        },
-        "strokes": [],
-        "shadows": [],
-        "id": "layer_0",
-        "overlayText": "MOVIES",
-        "enabled": true,
-        "fontStyle": "normal bold 462px \"Carrois Gothic SC\"",
-        "fillStyle": "rgba(171, 171, 171, 1)",
-        "effects": [
-          {
-            "type": "outline",
-            "enabled": true,
-            "params": {
-              "color": "#c2c2c2",
-              "thickness": 4
-            }
-          },
-          {
-            "type": "outline",
-            "enabled": true,
-            "params": {
-              "color": "#878787",
-              "thickness": 8.5
-            }
-          },
-          {
-            "type": "outline",
-            "enabled": true,
-            "params": {
-              "color": "#878787",
-              "thickness": 4.5
-            }
-          },
-          {
-            "type": "outline",
-            "enabled": true,
-            "params": {
-              "color": "#616161",
-              "thickness": 2.5
-            }
-          },
-          {
-            "type": "longShadow",
-            "enabled": true,
-            "params": {
-              "color": "#616161",
-              "blur": 0,
-              "length": 6,
-              "angle": 29,
-              "opacity": 1
-            }
-          },
-          {
-            "type": "longShadow",
-            "enabled": true,
-            "params": {
-              "color": "#4f4f4f",
-              "blur": 0,
-              "length": 10,
-              "angle": 29,
-              "opacity": 1
-            }
-          },
-          {
-            "type": "outline",
-            "enabled": true,
-            "params": {
-              "color": "#c2c2c2",
-              "thickness": 1
-            }
-          },
-          {
-            "type": "longShadow",
-            "enabled": true,
-            "params": {
-              "color": "#000000",
-              "blur": 15,
-              "length": 60,
-              "angle": 29,
-              "opacity": 0.11
-            }
-          },
-          {
-            "type": "distress",
-            "enabled": true,
-            "params": {
-              "mode": "wave",
-              "amount": 1,
-              "seed": 0
-            }
-          }
-        ]
-      },
-      "composite": {
-        "type": "line",
-        "params": {}
-      },
-      "effects": {
+      {
         "type": "overlay",
         "params": {
           "startColor": "#000000",
-          "startOpacity": 0,
+          "startOpacity": 0.05,
           "endColor": "#000000",
-          "endOpacity": 0.9
+          "endOpacity": 0.14
         },
         "enabled": true
       },
-      "textEffect": {
-        "type": "outline",
-        "enabled": true,
+      {
+        "type": "scanLines",
         "params": {
-          "color": "#c2c2c2",
-          "thickness": 4
-        }
+          "opacity": 0.53,
+          "density": 10
+        },
+        "enabled": true
       }
-    }
+    ]
   }
 }
