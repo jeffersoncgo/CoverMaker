@@ -447,6 +447,10 @@ class Jellyfin {
 
     for (let index = 0; index < data.Items.length; index++) {
       const library = data.Items[index];
+      if(!this.IncludeItemsTypes.includes(library.CollectionType)) {
+        continue;
+      }
+
       const Count = await this.getLibrarySize(library.Id);
 
 
@@ -477,6 +481,7 @@ class Jellyfin {
           this.Libraries[library.Name].Status = 'Loaded'; 
           continue;
         }
+
         this.Libraries[library.Name] = {
           Id: library.Id,
           Name: library.Name,
