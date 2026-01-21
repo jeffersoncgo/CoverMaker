@@ -68,6 +68,8 @@ class Jellyfin {
       result: []
     }
 
+    this.IncludeItemsTypes = ["Audio", "Video", "BoxSet", "Book", "Channel", "Movie", "LiveTvChannel", "Playlist", "Series", "TvChannel"]
+
     this.currentSearchFilter = null;
 
     this.Libraries = {}
@@ -917,7 +919,7 @@ class Jellyfin {
     if (!this.isAuthenticated) return [];
 
     const Fields = ["OriginalTitle"];
-    const IncludeItemsTypes = ["Audio", "Video", "BoxSet", "Book", "Channel", "Movie", "LiveTvChannel", "Playlist", "Series", "TvChannel"]
+    // const IncludeItemsTypes = ["Audio", "Video", "BoxSet", "Book", "Channel", "Movie", "LiveTvChannel", "Playlist", "Series", "TvChannel"]
 
     if (!fastLoading)
       Fields.push(...[ "Overview", "Genres", "Studios", "Tags","ParentId", "Path" ])
@@ -927,7 +929,7 @@ class Jellyfin {
     const librarySize = this.Libraries[libraryName].Count;
     const loadLimit = fastLoading ? librarySize : Math.min(this.searchParams.loadLimit, librarySize);
     const FieldsText = encodeURIComponent(Fields.join(","));
-    const IncludeItemsTypesText = encodeURIComponent(IncludeItemsTypes.join(","));
+    const IncludeItemsTypesText = encodeURIComponent(this.IncludeItemsTypes.join(","));
     const headers = this.headers;
 
     this.Libraries[libraryName].Items ??= [];
