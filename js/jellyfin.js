@@ -72,13 +72,6 @@ class Jellyfin {
 
     this.LibrariesTypes = [];
 
-                // CollectionType.movies,
-                // CollectionType.tvshows,
-                // CollectionType.playlists
-
-
-
-
     this.currentSearchFilter = null;
 
     this.Libraries = {}
@@ -431,7 +424,7 @@ class Jellyfin {
   mapEnabledLibrarie() {
     const typeMapping = {
         "Audio": "music",
-        "Video": "homevideos", // Ou 'movies', dependendo do seu uso
+        "Video": "homevideos", 
         "BoxSet": "boxsets",
         "Book": "books",
         "Channel": "livetv",
@@ -442,11 +435,7 @@ class Jellyfin {
         "TvChannel": "livetv"
     };
 
-    this.LibrariesTypes = [...new Set(
-    this.IncludeItemsTypes
-        .map(type => typeMapping[type])
-        .filter(Boolean) // Remove valores undefined caso algum tipo não esteja no mapa
-)];
+    this.LibrariesTypes = [...new Set(this.IncludeItemsTypes.map(type => typeMapping[type]).filter(Boolean))];
   }
 
   async getLibraries() {
@@ -479,11 +468,6 @@ class Jellyfin {
 
     for (let index = 0; index < data.Items.length; index++) {
       const library = data.Items[index];
-      console.log({
-        library,
-        CollectionType: library.CollectionType,
-        LibrariesTypes: this.LibrariesTypes
-      })
       if(!this.LibrariesTypes.includes(library.CollectionType)) {
         continue;
       }
