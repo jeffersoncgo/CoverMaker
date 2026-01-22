@@ -70,6 +70,15 @@ class Jellyfin {
 
     this.IncludeItemsTypes = ["Audio", "Video", "BoxSet", "Book", "Channel", "Movie", "LiveTvChannel", "Playlist", "Series", "TvChannel"]
 
+    this.LibrariesTypes = [];
+
+                // CollectionType.movies,
+                // CollectionType.tvshows,
+                // CollectionType.playlists
+
+
+
+
     this.currentSearchFilter = null;
 
     this.Libraries = {}
@@ -419,6 +428,27 @@ class Jellyfin {
     return null;
   }
 
+  mapEnabledLibrarie() {
+    const typeMapping = {
+        "Audio": "music",
+        "Video": "homevideos", // Ou 'movies', dependendo do seu uso
+        "BoxSet": "boxsets",
+        "Book": "books",
+        "Channel": "livetv",
+        "Movie": "movies",
+        "LiveTvChannel": "livetv",
+        "Playlist": "playlists",
+        "Series": "tvshows",
+        "TvChannel": "livetv"
+    };
+
+    this.LibrariesTypes = [...new Set(
+    this.IncludeItemsTypes
+        .map(type => typeMapping[type])
+        .filter(Boolean) // Remove valores undefined caso algum tipo não esteja no mapa
+)];
+  }
+
   async getLibraries() {
     if (!this.isAuthenticated) return;
 
@@ -440,6 +470,8 @@ class Jellyfin {
     this.Libraries = {};
     let toReagroupd = [];
 
+    this.mapEnabledLibrarie();
+
 
     this.searchParams.Tags = await this.loadData(this.Server.Id, "Tags", "result") || [];
     this.searchParams.Genres = await this.loadData(this.Server.Id, "Genres", "result") || [];
@@ -447,9 +479,14 @@ class Jellyfin {
 
     for (let index = 0; index < data.Items.length; index++) {
       const library = data.Items[index];
-      // if(!this.IncludeItemsTypes.includes(library.CollectionType)) {
-      //   continue;
-      // }
+      console.log({
+        library,
+        CollectionType: library.CollectionType,
+        LibrariesTypes: this.LibrariesTypes
+      })
+      if(!this.LibrariesTypes.includes(library.CollectionType)) {
+        continue;
+      }
 
       const Count = await this.getLibrarySize(library.Id);
 
