@@ -4932,7 +4932,2788 @@ const TEXT_EFFECTS = {
       return { canvas, ctx };
     }
   },
-};
+  infernoForge: {
+    name: 'Inferno Forge',
+    params: [
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 9999, step: 1, default: 1337 },
+
+      { key: 'coreColor', label: 'Core', type: 'color', default: '#fff4d6' },
+      { key: 'hotColor', label: 'Hot', type: 'color', default: '#ffb14a' },
+      { key: 'midColor', label: 'Mid', type: 'color', default: '#ff5a00' },
+      { key: 'darkColor', label: 'Dark', type: 'color', default: '#551100' },
+      { key: 'emberColor', label: 'Embers', type: 'color', default: '#ff6a00' },
+      { key: 'smokeColor', label: 'Smoke', type: 'color', default: '#3a0904' },
+
+      { key: 'glowSize', label: 'Glow Size', type: 'range', min: 0, max: 120, step: 1, default: 34 },
+      { key: 'glowIntensity', label: 'Glow Intensity', type: 'range', min: 0, max: 8, step: 0.1, default: 3.2 },
+      { key: 'outerGlowSize', label: 'Outer Glow', type: 'range', min: 0, max: 180, step: 1, default: 78 },
+      { key: 'crackAmount', label: 'Cracks', type: 'range', min: 0, max: 1, step: 0.01, default: 0.42 },
+      { key: 'textureScale', label: 'Texture Scale', type: 'range', min: 0.5, max: 8, step: 0.1, default: 2.4 },
+      { key: 'smokeAmount', label: 'Smoke Amount', type: 'range', min: 0, max: 1, step: 0.01, default: 0.58 },
+      { key: 'embers', label: 'Embers', type: 'range', min: 0, max: 600, step: 1, default: 180 },
+      { key: 'showBase', label: 'Show Base', type: 'checkbox', default: true }
+    ],
+
+    apply: (ctx, canvas, text, x, y, params = {}) => {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      const seed = params.seed ?? 1337;
+      const rnd = (typeof createSeededRandom === 'function' ? createSeededRandom(seed) : null) ?? Math.random;
+
+      const coreColor = params.coreColor ?? '#fff4d6';
+      const hotColor = params.hotColor ?? '#ffb14a';
+      const midColor = params.midColor ?? '#ff5a00';
+      const darkColor = params.darkColor ?? '#551100';
+      const emberColor = params.emberColor ?? '#ff6a00';
+      const smokeColor = params.smokeColor ?? '#3a0904';
+
+      const glowSize = params.glowSize ?? 34;
+      const glowIntensity = params.glowIntensity ?? 3.2;
+      const outerGlowSize = params.outerGlowSize ?? 78;
+      const crackAmount = Math.max(0, Math.min(1, params.crackAmount ?? 0.42));
+      const textureScale = Math.max(0.1, params.textureScale ?? 2.4);
+      const smokeAmount = Math.max(0, Math.min(1, params.smokeAmount ?? 0.58));
+      const emberCount = Math.max(0, params.embers ?? 180);
+      const showBase = params.showBase ?? true;
+
+      const hexToRgbSafe = (hex) => {
+        const clean = String(hex).replace('#', '').trim();
+        const full = clean.length === 3
+          ? clean.split('').map(c => c + c).join('')
+          : clean.padEnd(6, '0').slice(0, 6);
+        return {
+          r: parseInt(full.slice(0, 2), 16),
+          g: parseInt(full.slice(2, 4), 16),
+          b: parseInt(full.slice(4, 6), 16)
+        };
+      };
+
+      const lerpSafe = (a, b, t) => a + (b - a) * t;
+      const clampSafe = (v, a, b) => Math.max(a, Math.min(b, v));
+      const smoothstep = (a, b, x) => {
+        const t = clampSafe((x - a) / (b - a), 0, 1);
+        return t * t * (3 - 2 * t);
+      };
+
+      const cCore = hexToRgbSafe(coreColor);
+      const cHot = hexToRgbSafe(hotColor);
+      const cMid = hexToRgbSafe(midColor);
+      const cDark = hexToRgbSafe(darkColor);
+      const cEmber = hexToRgbSafe(emberColor);
+      const cSmoke = hexToRgbSafe(smokeColor);
+
+      // Keep original text mask
+      const textMask = document.createElement('canvas');
+      textMask.width = w;
+      textMask.height = h;
+      const mCtx = textMask.getContext('2d');
+      mCtx.drawImage(canvas, 0, 0);
+
+      const src = mCtx.getImageData(0, 0, w, h);
+      const srcData = src.data;
+
+      // Bounds
+      let minX = w, minY = h, maxX = 0, maxY = 0, found = false;
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const a = srcData[(py * w + px) * 4 + 3];
+          if (a > 10) {
+            found = true;
+            if (px < minX) minX = px;
+            if (py < minY) minY = py;
+            if (px > maxX) maxX = px;
+            if (py > maxY) maxY = py;
+          }
+        }
+      }
+      if (!found) return { canvas, ctx };
+
+      const cx = (minX + maxX) * 0.5;
+      const cy = (minY + maxY) * 0.5;
+      const textW = Math.max(1, maxX - minX);
+      const textH = Math.max(1, maxY - minY);
+
+      // Distance-ish field from alpha using blur passes
+      const fieldCanvas = document.createElement('canvas');
+      fieldCanvas.width = w;
+      fieldCanvas.height = h;
+      const fCtx = fieldCanvas.getContext('2d');
+
+      fCtx.drawImage(textMask, 0, 0);
+      for (let i = 0; i < 4; i++) {
+        const pass = document.createElement('canvas');
+        pass.width = w;
+        pass.height = h;
+        const pCtx = pass.getContext('2d');
+        pCtx.filter = `blur(${6 + i * 4}px)`;
+        pCtx.drawImage(fieldCanvas, 0, 0);
+        fCtx.clearRect(0, 0, w, h);
+        fCtx.drawImage(pass, 0, 0);
+      }
+
+      const fieldData = fCtx.getImageData(0, 0, w, h).data;
+
+      // Fractal noise helpers
+      const hash2 = (x, y) => {
+        const n = Math.sin((x * 127.1 + y * 311.7 + seed * 17.13)) * 43758.5453123;
+        return n - Math.floor(n);
+      };
+
+      const valueNoise = (x, y) => {
+        const xi = Math.floor(x), yi = Math.floor(y);
+        const xf = x - xi, yf = y - yi;
+
+        const h00 = hash2(xi, yi);
+        const h10 = hash2(xi + 1, yi);
+        const h01 = hash2(xi, yi + 1);
+        const h11 = hash2(xi + 1, yi + 1);
+
+        const ux = xf * xf * (3 - 2 * xf);
+        const uy = yf * yf * (3 - 2 * yf);
+
+        const nx0 = lerpSafe(h00, h10, ux);
+        const nx1 = lerpSafe(h01, h11, ux);
+        return lerpSafe(nx0, nx1, uy);
+      };
+
+      const fbm = (x, y, octaves = 4) => {
+        let value = 0;
+        let amp = 0.5;
+        let freq = 1;
+        let norm = 0;
+        for (let i = 0; i < octaves; i++) {
+          value += valueNoise(x * freq, y * freq) * amp;
+          norm += amp;
+          amp *= 0.5;
+          freq *= 2.0;
+        }
+        return value / norm;
+      };
+
+      // Fire fill
+      const fireCanvas = document.createElement('canvas');
+      fireCanvas.width = w;
+      fireCanvas.height = h;
+      const fireCtx = fireCanvas.getContext('2d');
+      const fireImg = fireCtx.createImageData(w, h);
+      const out = fireImg.data;
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const idx = (py * w + px) * 4;
+          const alpha = srcData[idx + 3];
+          if (alpha < 8) continue;
+
+          const field = fieldData[idx + 3] / 255; // blurred alpha = interior/edge gradient
+          const nx = (px - minX) / Math.max(1, textW);
+          const ny = (py - minY) / Math.max(1, textH);
+
+          const n1 = fbm(px * 0.03 * textureScale, py * 0.04 * textureScale, 5);
+          const n2 = fbm(px * 0.09 * textureScale, py * 0.11 * textureScale, 3);
+          const n3 = fbm((px + seed) * 0.22, (py - seed) * 0.18, 2);
+
+          const edgeHeat = smoothstep(0.18, 0.95, field);
+          const verticalHeat = 1.0 - Math.abs(ny - 0.55) * 1.15;
+          const centerBias = 1.0 - Math.abs(nx - 0.5) * 0.65;
+
+          // crack network
+          const crackNoise = Math.abs(n1 - 0.5) + Math.abs(n2 - 0.5) * 0.6;
+          const crackMask = smoothstep(0.44 - crackAmount * 0.18, 0.56 - crackAmount * 0.15, crackNoise);
+
+          // glowing fissures
+          const fissureNoise = 1.0 - Math.abs(n3 - 0.5) * 2.0;
+          const fissure = Math.pow(smoothstep(0.68, 0.98, fissureNoise), 2.4);
+
+          let heat = edgeHeat * 0.9 + verticalHeat * 0.35 + centerBias * 0.18 + fissure * 0.9;
+          heat = clampSafe(heat, 0, 1);
+
+          // darken interior with crack texture but keep glowing crevices
+          let coolMask = crackMask * 0.95 - fissure * 0.55;
+          coolMask = clampSafe(coolMask, 0, 1);
+
+          let r, g, b;
+
+          if (heat > 0.82) {
+            const t = smoothstep(0.82, 1.0, heat);
+            r = lerpSafe(cHot.r, cCore.r, t);
+            g = lerpSafe(cHot.g, cCore.g, t);
+            b = lerpSafe(cHot.b, cCore.b, t);
+          } else if (heat > 0.45) {
+            const t = smoothstep(0.45, 0.82, heat);
+            r = lerpSafe(cMid.r, cHot.r, t);
+            g = lerpSafe(cMid.g, cHot.g, t);
+            b = lerpSafe(cMid.b, cHot.b, t);
+          } else {
+            const t = smoothstep(0.0, 0.45, heat);
+            r = lerpSafe(cDark.r, cMid.r, t);
+            g = lerpSafe(cDark.g, cMid.g, t);
+            b = lerpSafe(cDark.b, cMid.b, t);
+          }
+
+          // cracks / metal-like fractured texture
+          r = lerpSafe(r, cDark.r, coolMask * 0.85);
+          g = lerpSafe(g, cDark.g, coolMask * 0.85);
+          b = lerpSafe(b, cDark.b, coolMask * 0.85);
+
+          // brighten fissures
+          r = lerpSafe(r, cCore.r, fissure * 0.9);
+          g = lerpSafe(g, cHot.g, fissure * 0.75);
+          b = lerpSafe(b, cHot.b, fissure * 0.3);
+
+          out[idx] = clampSafe(r, 0, 255);
+          out[idx + 1] = clampSafe(g, 0, 255);
+          out[idx + 2] = clampSafe(b, 0, 255);
+          out[idx + 3] = alpha;
+        }
+      }
+
+      fireCtx.putImageData(fireImg, 0, 0);
+
+      // Mask fire to text
+      fireCtx.globalCompositeOperation = 'destination-in';
+      fireCtx.drawImage(textMask, 0, 0);
+      fireCtx.globalCompositeOperation = 'source-over';
+
+      // Background smoke
+      const smokeCanvas = document.createElement('canvas');
+      smokeCanvas.width = w;
+      smokeCanvas.height = h;
+      const sCtx = smokeCanvas.getContext('2d');
+
+      for (let i = 0; i < Math.floor(120 * smokeAmount); i++) {
+        const px = minX - 60 + rnd() * (textW + 120);
+        const py = minY - 120 + rnd() * (textH * 0.9);
+        const rx = 30 + rnd() * 120;
+        const ry = 18 + rnd() * 70;
+
+        const grad = sCtx.createRadialGradient(px, py, 0, px, py, rx);
+        const a0 = (0.05 + rnd() * 0.09) * smokeAmount;
+        grad.addColorStop(0, `rgba(${cSmoke.r},${cSmoke.g},${cSmoke.b},${a0})`);
+        grad.addColorStop(0.45, `rgba(${cSmoke.r},${cSmoke.g},${cSmoke.b},${a0 * 0.45})`);
+        grad.addColorStop(1, `rgba(${cSmoke.r},${cSmoke.g},${cSmoke.b},0)`);
+
+        sCtx.save();
+        sCtx.translate(px, py);
+        sCtx.rotate((rnd() - 0.5) * 1.2);
+        sCtx.translate(-px, -py);
+        sCtx.fillStyle = grad;
+        sCtx.beginPath();
+        sCtx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
+        sCtx.fill();
+        sCtx.restore();
+      }
+
+      sCtx.filter = 'blur(18px)';
+      sCtx.drawImage(smokeCanvas, 0, 0);
+      sCtx.filter = 'none';
+
+      // Outer inferno glow
+      const glowMask = document.createElement('canvas');
+      glowMask.width = w;
+      glowMask.height = h;
+      const gCtx = glowMask.getContext('2d');
+      gCtx.drawImage(textMask, 0, 0);
+      gCtx.globalCompositeOperation = 'source-in';
+      gCtx.fillStyle = `rgb(${cEmber.r},${cEmber.g},${cEmber.b})`;
+      gCtx.fillRect(0, 0, w, h);
+
+      // Embers
+      const embersCanvas = document.createElement('canvas');
+      embersCanvas.width = w;
+      embersCanvas.height = h;
+      const eCtx = embersCanvas.getContext('2d');
+
+      for (let i = 0; i < emberCount; i++) {
+        const px = minX - 80 + rnd() * (textW + 160);
+        const py = minY - 80 + rnd() * (textH + 120);
+        const size = 0.5 + rnd() * 2.4;
+        const alpha = 0.08 + rnd() * 0.55;
+        const stretch = 1 + rnd() * 2.5;
+
+        eCtx.save();
+        eCtx.translate(px, py);
+        eCtx.rotate((rnd() - 0.5) * 1.6);
+        eCtx.fillStyle = `rgba(${cEmber.r},${cEmber.g},${cEmber.b},${alpha})`;
+        eCtx.beginPath();
+        eCtx.ellipse(0, 0, size, size * stretch, 0, 0, Math.PI * 2);
+        eCtx.fill();
+        eCtx.restore();
+      }
+
+      eCtx.filter = 'blur(1.2px)';
+      eCtx.drawImage(embersCanvas, 0, 0);
+      eCtx.filter = 'none';
+
+      // Final composite
+      ctx.clearRect(0, 0, w, h);
+
+      // dark smoky surround
+      ctx.drawImage(smokeCanvas, 0, 0);
+
+      // broad outer glow
+      if (outerGlowSize > 0) {
+        ctx.save();
+        ctx.shadowColor = `rgba(${cEmber.r},${cEmber.g},${cEmber.b},0.95)`;
+        ctx.shadowBlur = outerGlowSize;
+        ctx.globalAlpha = 0.28;
+        ctx.drawImage(glowMask, 0, 0);
+        ctx.restore();
+      }
+
+      // tighter glow
+      if (glowSize > 0 && glowIntensity > 0) {
+        ctx.save();
+        ctx.shadowColor = `rgba(${cHot.r},${cHot.g},${cHot.b},1)`;
+        ctx.shadowBlur = glowSize;
+        const passes = Math.max(1, Math.ceil(glowIntensity));
+        for (let i = 0; i < passes; i++) {
+          ctx.globalAlpha = 0.20 + (glowIntensity / passes) * 0.16;
+          ctx.drawImage(glowMask, 0, 0);
+        }
+        ctx.restore();
+      }
+
+      // optional faint base
+      if (showBase) {
+        ctx.save();
+        ctx.globalAlpha = 0.18;
+        ctx.drawImage(textMask, 0, 0);
+        ctx.restore();
+      }
+
+      // main molten letters
+      ctx.drawImage(fireCanvas, 0, 0);
+
+      // bright edge kiss
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.shadowColor = '#ffd7a0';
+      ctx.shadowBlur = 10;
+      ctx.globalAlpha = 0.18;
+      ctx.drawImage(textMask, 0, 0);
+      ctx.restore();
+
+      // embers on top
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(embersCanvas, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx };
+    }
+  },
+  nordicRuneforge: {
+    name: 'Nordic Runeforge',
+    params: [
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 9999, step: 1, default: 7331 },
+
+      { key: 'metalLight', label: 'Metal Light', type: 'color', default: '#b8a79a' },
+      { key: 'metalMid', label: 'Metal Mid', type: 'color', default: '#7c665b' },
+      { key: 'metalDark', label: 'Metal Dark', type: 'color', default: '#2c2522' },
+
+      { key: 'patinaA', label: 'Patina A', type: 'color', default: '#4d8b88' },
+      { key: 'patinaB', label: 'Patina B', type: 'color', default: '#7aa7a0' },
+      { key: 'emberColor', label: 'Ember', type: 'color', default: '#8e1c14' },
+
+      { key: 'bevelStrength', label: 'Bevel', type: 'range', min: 0, max: 1, step: 0.01, default: 0.72 },
+      { key: 'textureScale', label: 'Texture Scale', type: 'range', min: 0.5, max: 8, step: 0.1, default: 2.4 },
+      { key: 'textureStrength', label: 'Texture Strength', type: 'range', min: 0, max: 1, step: 0.01, default: 0.68 },
+      { key: 'patinaAmount', label: 'Patina', type: 'range', min: 0, max: 1, step: 0.01, default: 0.38 },
+      { key: 'engraveDepth', label: 'Rune Depth', type: 'range', min: 0, max: 1, step: 0.01, default: 0.62 },
+      { key: 'emberAmount', label: 'Inner Ember', type: 'range', min: 0, max: 1, step: 0.01, default: 0.22 },
+      { key: 'rimLight', label: 'Rim Light', type: 'range', min: 0, max: 1, step: 0.01, default: 0.58 }
+    ],
+
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      const seed = Number(params.seed ?? 7331);
+      const rnd = createSeededRandom(seed) || Math.random;
+
+      const bevelStrength = clamp(Number(params.bevelStrength ?? 0.72), 0, 1);
+      const textureScale = Math.max(0.1, Number(params.textureScale ?? 2.4));
+      const textureStrength = clamp(Number(params.textureStrength ?? 0.68), 0, 1);
+      const patinaAmount = clamp(Number(params.patinaAmount ?? 0.38), 0, 1);
+      const engraveDepth = clamp(Number(params.engraveDepth ?? 0.62), 0, 1);
+      const emberAmount = clamp(Number(params.emberAmount ?? 0.22), 0, 1);
+      const rimLight = clamp(Number(params.rimLight ?? 0.58), 0, 1);
+
+      const hexToRgb = (hex) => {
+        const clean = String(hex).replace('#', '').trim();
+        const full = clean.length === 3
+          ? clean.split('').map(c => c + c).join('')
+          : clean.padEnd(6, '0').slice(0, 6);
+        return {
+          r: parseInt(full.slice(0, 2), 16),
+          g: parseInt(full.slice(2, 4), 16),
+          b: parseInt(full.slice(4, 6), 16)
+        };
+      };
+
+      const smoothstep = (a, b, x) => {
+        const t = clamp((x - a) / (b - a), 0, 1);
+        return t * t * (3 - 2 * t);
+      };
+
+      const mixRgb = (a, b, t) => ({
+        r: lerp(a.r, b.r, t),
+        g: lerp(a.g, b.g, t),
+        b: lerp(a.b, b.b, t)
+      });
+
+      const metalLight = hexToRgb(params.metalLight ?? '#b8a79a');
+      const metalMid = hexToRgb(params.metalMid ?? '#7c665b');
+      const metalDark = hexToRgb(params.metalDark ?? '#2c2522');
+      const patinaA = hexToRgb(params.patinaA ?? '#4d8b88');
+      const patinaB = hexToRgb(params.patinaB ?? '#7aa7a0');
+      const emberColor = hexToRgb(params.emberColor ?? '#8e1c14');
+
+      const maskCanvas = createCanvas(w, h);
+      const maskCtx = maskCanvas.getContext('2d');
+      maskCtx.drawImage(canvas, 0, 0);
+
+      const maskImg = getImageDataSafe(maskCtx, 0, 0, w, h);
+      const src = maskImg.data;
+
+      let minX = w, minY = h, maxX = 0, maxY = 0, found = false;
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const a = src[(py * w + px) * 4 + 3];
+          if (a > 10) {
+            found = true;
+            if (px < minX) minX = px;
+            if (py < minY) minY = py;
+            if (px > maxX) maxX = px;
+            if (py > maxY) maxY = py;
+          }
+        }
+      }
+      if (!found) return { canvas, ctx, abortSignal };
+
+      const textW = Math.max(1, maxX - minX);
+      const textH = Math.max(1, maxY - minY);
+
+      const fieldCanvas = createCanvas(w, h);
+      const fieldCtx = fieldCanvas.getContext('2d');
+      fieldCtx.drawImage(maskCanvas, 0, 0);
+
+      for (let i = 0; i < 4; i++) {
+        const pass = createCanvas(w, h);
+        const pctx = pass.getContext('2d');
+        pctx.filter = `blur(${4 + i * 3}px)`;
+        pctx.drawImage(fieldCanvas, 0, 0);
+        fieldCtx.clearRect(0, 0, w, h);
+        fieldCtx.drawImage(pass, 0, 0);
+      }
+
+      const fieldData = getImageDataSafe(fieldCtx, 0, 0, w, h).data;
+
+      const fieldAlpha = (px, py) => {
+        px = clamp(px, 0, w - 1);
+        py = clamp(py, 0, h - 1);
+        return fieldData[(py * w + px) * 4 + 3] / 255;
+      };
+
+      const hash2 = (x, y) => {
+        const n = Math.sin(x * 127.1 + y * 311.7 + seed * 17.13) * 43758.5453123;
+        return n - Math.floor(n);
+      };
+
+      const valueNoise = (x, y) => {
+        const xi = Math.floor(x), yi = Math.floor(y);
+        const xf = x - xi, yf = y - yi;
+
+        const h00 = hash2(xi, yi);
+        const h10 = hash2(xi + 1, yi);
+        const h01 = hash2(xi, yi + 1);
+        const h11 = hash2(xi + 1, yi + 1);
+
+        const ux = xf * xf * (3 - 2 * xf);
+        const uy = yf * yf * (3 - 2 * yf);
+
+        return lerp(
+          lerp(h00, h10, ux),
+          lerp(h01, h11, ux),
+          uy
+        );
+      };
+
+      const fbm = (x, y, octaves = 4) => {
+        let value = 0;
+        let amp = 0.5;
+        let freq = 1;
+        let norm = 0;
+        for (let i = 0; i < octaves; i++) {
+          value += valueNoise(x * freq, y * freq) * amp;
+          norm += amp;
+          amp *= 0.5;
+          freq *= 2;
+        }
+        return value / norm;
+      };
+
+      const ridge = (x, y, scale = 1) => {
+        const n = fbm(x * scale, y * scale, 4);
+        return 1 - Math.abs(n - 0.5) * 2;
+      };
+
+      const renderCanvas = createCanvas(w, h);
+      const renderCtx = renderCanvas.getContext('2d');
+      const renderImg = renderCtx.createImageData(w, h);
+      const out = renderImg.data;
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const idx = (py * w + px) * 4;
+          const alpha = src[idx + 3];
+          if (alpha < 8) continue;
+
+          const nx = (px - minX) / textW;
+          const ny = (py - minY) / textH;
+          const edge = fieldData[idx + 3] / 255;
+
+          const nLarge = fbm(px * 0.018 * textureScale, py * 0.018 * textureScale, 5);
+          const nMid = fbm(px * 0.065 * textureScale, py * 0.065 * textureScale, 4);
+          const nFine = fbm(px * 0.18 * textureScale, py * 0.18 * textureScale, 3);
+
+          const hammered = ridge(px * 0.055 * textureScale, py * 0.055 * textureScale, 1.0);
+          const grain = ridge(px * 0.23 * textureScale + 11.7, py * 0.19 * textureScale + 3.1, 1.0);
+          const crack = smoothstep(0.62, 0.90, nMid * 0.65 + nFine * 0.35);
+
+          const gx = fieldAlpha(px + 1, py) - fieldAlpha(px - 1, py);
+          const gy = fieldAlpha(px, py + 1) - fieldAlpha(px, py - 1);
+
+          const bevel = clamp((-gx * 0.85 - gy * 0.55) * 2.2, -1, 1);
+          const edgeRim = smoothstep(0.25, 0.95, edge);
+
+          let metal = mixRgb(metalDark, metalMid, 0.52 + (hammered - 0.5) * 0.38);
+          metal = mixRgb(metal, metalLight, smoothstep(0.52, 0.95, edgeRim) * 0.22);
+
+          const texLift = ((hammered - 0.5) * 0.7 + (grain - 0.5) * 0.45 + (nLarge - 0.5) * 0.28) * textureStrength;
+          metal.r += texLift * 110;
+          metal.g += texLift * 95;
+          metal.b += texLift * 85;
+
+          metal.r += bevel * bevelStrength * 85;
+          metal.g += bevel * bevelStrength * 72;
+          metal.b += bevel * bevelStrength * 58;
+
+          const innerShadow = (1 - edgeRim) * 0.34;
+          metal.r = lerp(metal.r, metalDark.r, innerShadow);
+          metal.g = lerp(metal.g, metalDark.g, innerShadow);
+          metal.b = lerp(metal.b, metalDark.b, innerShadow);
+
+          const patinaNoise = fbm(px * 0.030 * textureScale + 80.1, py * 0.030 * textureScale + 12.4, 5);
+          const patinaMask = smoothstep(0.66, 0.88, patinaNoise) * patinaAmount * (0.35 + (1 - edgeRim) * 0.85);
+          const patinaColor = mixRgb(patinaA, patinaB, nFine);
+
+          metal.r = lerp(metal.r, patinaColor.r, patinaMask);
+          metal.g = lerp(metal.g, patinaColor.g, patinaMask);
+          metal.b = lerp(metal.b, patinaColor.b, patinaMask);
+
+          const emberNoise = fbm(px * 0.05 + 120.4, py * 0.07 + 77.8, 4);
+          const emberMask = smoothstep(0.74, 0.94, emberNoise) * emberAmount * (1 - edgeRim) * 0.9;
+          metal.r = lerp(metal.r, emberColor.r, emberMask);
+          metal.g = lerp(metal.g, emberColor.g, emberMask * 0.35);
+          metal.b = lerp(metal.b, emberColor.b, emberMask * 0.18);
+
+          const crackDark = crack * 0.22;
+          metal.r = lerp(metal.r, metalDark.r, crackDark);
+          metal.g = lerp(metal.g, metalDark.g, crackDark);
+          metal.b = lerp(metal.b, metalDark.b, crackDark);
+
+          const rim = smoothstep(0.55, 1.0, edgeRim) * rimLight;
+          metal.r = lerp(metal.r, metalLight.r, rim * 0.68);
+          metal.g = lerp(metal.g, metalLight.g, rim * 0.60);
+          metal.b = lerp(metal.b, metalLight.b, rim * 0.52);
+
+          out[idx] = clamp(Math.round(metal.r), 0, 255);
+          out[idx + 1] = clamp(Math.round(metal.g), 0, 255);
+          out[idx + 2] = clamp(Math.round(metal.b), 0, 255);
+          out[idx + 3] = alpha;
+        }
+      }
+
+      renderCtx.putImageData(renderImg, 0, 0);
+      renderCtx.globalCompositeOperation = 'destination-in';
+      renderCtx.drawImage(maskCanvas, 0, 0);
+      renderCtx.globalCompositeOperation = 'source-over';
+
+      const runeLayer = createCanvas(w, h);
+      const runeCtx = runeLayer.getContext('2d');
+      runeCtx.clearRect(0, 0, w, h);
+      runeCtx.textAlign = 'center';
+      runeCtx.textBaseline = 'middle';
+
+      const runeChars = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ', 'ᛇ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ', 'ᛜ', 'ᛟ'];
+
+      const placeRuneChain = (x0, y0, x1, y1, count) => {
+        for (let i = 0; i < count; i++) {
+          const t = (i + 1) / (count + 1);
+          const px = lerp(x0, x1, t) + (rnd() - 0.5) * 2;
+          const py = lerp(y0, y1, t) + (rnd() - 0.5) * 2;
+          const angle = Math.atan2(y1 - y0, x1 - x0);
+
+          runeCtx.save();
+          runeCtx.translate(px, py);
+          runeCtx.rotate(angle);
+          runeCtx.font = `600 ${Math.max(12, Math.round(Math.min(textW, textH) * 0.08))}px serif`;
+          runeCtx.fillStyle = 'rgba(255,255,255,0.92)';
+          runeCtx.fillText(runeChars[Math.floor(rnd() * runeChars.length)], 0, 0);
+          runeCtx.restore();
+        }
+      };
+
+      const runeGuide = [
+        [minX + textW * 0.08, minY + textH * 0.34, minX + textW * 0.14, minY + textH * 0.58, 4],
+        [minX + textW * 0.23, minY + textH * 0.23, minX + textW * 0.23, minY + textH * 0.76, 5],
+        [minX + textW * 0.43, minY + textH * 0.20, minX + textW * 0.43, minY + textH * 0.72, 4],
+        [minX + textW * 0.62, minY + textH * 0.18, minX + textW * 0.62, minY + textH * 0.74, 4],
+        [minX + textW * 0.76, minY + textH * 0.20, minX + textW * 0.76, minY + textH * 0.70, 4],
+        [minX + textW * 0.90, minY + textH * 0.34, minX + textW * 0.84, minY + textH * 0.58, 4]
+      ];
+
+      for (const g of runeGuide) {
+        placeRuneChain(g[0], g[1], g[2], g[3], g[4]);
+      }
+
+      runeCtx.globalCompositeOperation = 'destination-in';
+      runeCtx.drawImage(maskCanvas, 0, 0);
+      runeCtx.globalCompositeOperation = 'source-over';
+
+      const runeImg = getImageDataSafe(runeCtx, 0, 0, w, h);
+      const runeData = runeImg.data;
+
+      const engravedCanvas = createCanvas(w, h);
+      const engravedCtx = engravedCanvas.getContext('2d');
+      engravedCtx.drawImage(renderCanvas, 0, 0);
+
+      const engravedImg = getImageDataSafe(engravedCtx, 0, 0, w, h);
+      const engravedData = engravedImg.data;
+
+      const runeAlphaAt = (px, py) => {
+        px = clamp(px, 0, w - 1);
+        py = clamp(py, 0, h - 1);
+        return runeData[(py * w + px) * 4 + 3] / 255;
+      };
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const idx = (py * w + px) * 4;
+          const ra = runeData[idx + 3] / 255;
+          if (ra <= 0.01) continue;
+
+          const rgx = runeAlphaAt(px + 1, py) - runeAlphaAt(px - 1, py);
+          const rgy = runeAlphaAt(px, py + 1) - runeAlphaAt(px, py - 1);
+
+          const engrave = clamp((rgx * -0.9 + rgy * -0.65) * 1.8, -1, 1) * engraveDepth;
+
+          let r = engravedData[idx];
+          let g = engravedData[idx + 1];
+          let b = engravedData[idx + 2];
+
+          r = lerp(r, metalDark.r, ra * 0.72);
+          g = lerp(g, metalDark.g, ra * 0.72);
+          b = lerp(b, metalDark.b, ra * 0.72);
+
+          r += engrave * 60;
+          g += engrave * 52;
+          b += engrave * 42;
+
+          const emberInRune = ra * emberAmount * 0.55;
+          r = lerp(r, emberColor.r, emberInRune);
+          g = lerp(g, emberColor.g, emberInRune * 0.25);
+          b = lerp(b, emberColor.b, emberInRune * 0.12);
+
+          engravedData[idx] = clamp(Math.round(r), 0, 255);
+          engravedData[idx + 1] = clamp(Math.round(g), 0, 255);
+          engravedData[idx + 2] = clamp(Math.round(b), 0, 255);
+        }
+      }
+
+      engravedCtx.putImageData(engravedImg, 0, 0);
+
+      const shadowCanvas = createCanvas(w, h);
+      const shadowCtx = shadowCanvas.getContext('2d');
+      shadowCtx.clearRect(0, 0, w, h);
+      shadowCtx.save();
+      shadowCtx.shadowColor = 'rgba(0,0,0,0.9)';
+      shadowCtx.shadowBlur = 18;
+      shadowCtx.shadowOffsetX = 0;
+      shadowCtx.shadowOffsetY = 8;
+      shadowCtx.drawImage(maskCanvas, 0, 0);
+      shadowCtx.restore();
+
+      const redGlowCanvas = createCanvas(w, h);
+      const redGlowCtx = redGlowCanvas.getContext('2d');
+      redGlowCtx.clearRect(0, 0, w, h);
+      redGlowCtx.save();
+      redGlowCtx.shadowColor = `rgba(${emberColor.r},${emberColor.g},${emberColor.b},0.9)`;
+      redGlowCtx.shadowBlur = 18;
+      redGlowCtx.globalAlpha = 0.22 + emberAmount * 0.18;
+      redGlowCtx.drawImage(maskCanvas, 0, 0);
+      redGlowCtx.restore();
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(shadowCanvas, 0, 0);
+      ctx.drawImage(redGlowCanvas, 0, 0);
+      ctx.drawImage(engravedCanvas, 0, 0);
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+
+  innerShadow: {
+    name: 'Inner Shadow',
+    params: [
+      { key: 'color', label: 'Color', type: 'color', default: '#000000' },
+      { key: 'distance', label: 'Distance', type: 'range', min: 0, max: 80, step: 1, default: 8 },
+      { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 360, step: 1, default: 135 },
+      { key: 'blur', label: 'Blur', type: 'range', min: 0, max: 40, step: 1, default: 10 },
+      { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.65 }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+      const w = canvas.width, h = canvas.height;
+      const color = params.color ?? '#000000';
+      const distance = Math.max(0, params.distance ?? 8);
+      const blur = Math.max(0, params.blur ?? 10);
+      const opacity = clamp(params.opacity ?? 0.65, 0, 1);
+      const angle = ((params.angle ?? 135) * Math.PI) / 180;
+      const dx = Math.round(Math.cos(angle) * distance);
+      const dy = Math.round(Math.sin(angle) * distance);
+
+      const original = createCanvas(w, h);
+      const octx = original.getContext('2d');
+      octx.drawImage(canvas, 0, 0);
+
+      const colored = createCanvas(w, h);
+      const cctx = colored.getContext('2d');
+      cctx.drawImage(original, 0, 0);
+      cctx.globalCompositeOperation = 'source-in';
+      cctx.fillStyle = color;
+      cctx.fillRect(0, 0, w, h);
+
+      const shadow = createCanvas(w, h);
+      const sctx = shadow.getContext('2d');
+      sctx.filter = `blur(${blur}px)`;
+      sctx.globalAlpha = opacity;
+      sctx.drawImage(colored, dx, dy);
+      sctx.filter = 'none';
+      sctx.globalAlpha = 1;
+
+      // keep only the part of the blurred shape that falls INSIDE the original text
+      sctx.globalCompositeOperation = 'destination-in';
+      sctx.drawImage(original, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(original, 0, 0);
+      ctx.drawImage(shadow, 0, 0);
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+
+  bevelEmboss: {
+    name: 'Bevel Emboss',
+    params: [
+      { key: 'size', label: 'Size', type: 'range', min: 1, max: 20, step: 1, default: 4 },
+      { key: 'softness', label: 'Softness', type: 'range', min: 0, max: 20, step: 1, default: 2 },
+      { key: 'angle', label: 'Light Angle', type: 'range', min: 0, max: 360, step: 1, default: 135 },
+      { key: 'highlight', label: 'Highlight', type: 'color', default: '#ffffff' },
+      { key: 'shadow', label: 'Shadow', type: 'color', default: '#000000' },
+      { key: 'strength', label: 'Strength', type: 'range', min: 0, max: 1, step: 0.01, default: 0.65 }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+      const w = canvas.width, h = canvas.height;
+      const size = Math.max(1, Math.round(params.size ?? 4));
+      const softness = Math.max(0, Math.round(params.softness ?? 2));
+      const angle = ((params.angle ?? 135) * Math.PI) / 180;
+      const strength = clamp(params.strength ?? 0.65, 0, 1);
+      const hi = params.highlight ?? '#ffffff';
+      const sh = params.shadow ?? '#000000';
+
+      const dx = Math.round(Math.cos(angle) * size);
+      const dy = Math.round(Math.sin(angle) * size);
+
+      const original = createCanvas(w, h);
+      const octx = original.getContext('2d');
+      octx.drawImage(canvas, 0, 0);
+
+      const makeTint = (color, ox, oy) => {
+        const t = createCanvas(w, h);
+        const tctx = t.getContext('2d');
+        tctx.drawImage(original, ox, oy);
+        tctx.globalCompositeOperation = 'source-in';
+        tctx.fillStyle = color;
+        tctx.fillRect(0, 0, w, h);
+        if (softness > 0) {
+          const b = createCanvas(w, h);
+          const bctx = b.getContext('2d');
+          bctx.filter = `blur(${softness}px)`;
+          bctx.drawImage(t, 0, 0);
+          bctx.filter = 'none';
+          return b;
+        }
+        return t;
+      };
+
+      const highlightLayer = makeTint(hi, -dx, -dy);
+      const shadowLayer = makeTint(sh, dx, dy);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(original, 0, 0);
+
+      ctx.save();
+      ctx.globalAlpha = strength;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(highlightLayer, 0, 0);
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(shadowLayer, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+
+  extrude: {
+    name: 'Extrude',
+    params: [
+      { key: 'depth', label: 'Depth', type: 'range', min: 1, max: 120, step: 1, default: 18 },
+      { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 360, step: 1, default: 45 },
+      { key: 'color', label: 'Side Color', type: 'color', default: '#202020' },
+      { key: 'fade', label: 'Fade', type: 'range', min: 0, max: 1, step: 0.01, default: 0.15 }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+      const w = canvas.width, h = canvas.height;
+      const depth = Math.max(1, Math.round(params.depth ?? 18));
+      const angle = ((params.angle ?? 45) * Math.PI) / 180;
+      const color = params.color ?? '#202020';
+      const fade = clamp(params.fade ?? 0.15, 0, 1);
+
+      const stepX = Math.cos(angle);
+      const stepY = Math.sin(angle);
+
+      const original = createCanvas(w, h);
+      const octx = original.getContext('2d');
+      octx.drawImage(canvas, 0, 0);
+
+      const side = createCanvas(w, h);
+      const sctx = side.getContext('2d');
+      sctx.drawImage(original, 0, 0);
+      sctx.globalCompositeOperation = 'source-in';
+      sctx.fillStyle = color;
+      sctx.fillRect(0, 0, w, h);
+
+      const out = createCanvas(w, h);
+      const outCtx = out.getContext('2d');
+
+      for (let i = depth; i >= 1; i--) {
+        const t = i / depth;
+        outCtx.globalAlpha = 1 - (fade * t);
+        outCtx.drawImage(side, Math.round(stepX * i), Math.round(stepY * i));
+      }
+
+      outCtx.globalAlpha = 1;
+      outCtx.drawImage(original, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(out, 0, 0);
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+
+  inlineCut: {
+    name: 'Inline Cut',
+    params: [
+      { key: 'thickness', label: 'Thickness', type: 'range', min: 1, max: 30, step: 1, default: 4 },
+      { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.35 },
+      { key: 'color', label: 'Color', type: 'color', default: '#000000' }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+      const w = canvas.width, h = canvas.height;
+      const thickness = Math.max(1, Math.round(params.thickness ?? 4));
+      const opacity = clamp(params.opacity ?? 0.35, 0, 1);
+      const color = params.color ?? '#000000';
+
+      const original = createCanvas(w, h);
+      const octx = original.getContext('2d');
+      octx.drawImage(canvas, 0, 0);
+
+      const inner = createCanvas(w, h);
+      const ictx = inner.getContext('2d');
+      ictx.drawImage(original, 0, 0);
+
+      // shrink text inward by drawing many inward copies and intersecting
+      const mask = createCanvas(w, h);
+      const mctx = mask.getContext('2d');
+      mctx.fillStyle = '#000';
+      mctx.fillRect(0, 0, w, h);
+      mctx.clearRect(0, 0, w, h);
+
+      let first = true;
+      for (let a = 0; a < 360; a += 15) {
+        const rad = a * Math.PI / 180;
+        const dx = Math.cos(rad) * thickness;
+        const dy = Math.sin(rad) * thickness;
+
+        const pass = createCanvas(w, h);
+        const pctx = pass.getContext('2d');
+        pctx.drawImage(original, dx, dy);
+
+        if (first) {
+          mctx.drawImage(pass, 0, 0);
+          first = false;
+        } else {
+          mctx.globalCompositeOperation = 'destination-in';
+          mctx.drawImage(pass, 0, 0);
+          mctx.globalCompositeOperation = 'source-over';
+        }
+      }
+
+      const cut = createCanvas(w, h);
+      const cctx = cut.getContext('2d');
+      cctx.drawImage(original, 0, 0);
+      cctx.globalCompositeOperation = 'destination-out';
+      cctx.drawImage(mask, 0, 0);
+
+      cctx.globalCompositeOperation = 'source-in';
+      cctx.fillStyle = color;
+      cctx.globalAlpha = opacity;
+      cctx.fillRect(0, 0, w, h);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(canvas, 0, 0);
+      ctx.drawImage(cut, 0, 0);
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+
+  specular: {
+    name: 'Specular',
+    params: [
+      { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 360, step: 1, default: 25 },
+      { key: 'width', label: 'Band Width', type: 'range', min: 0.02, max: 1, step: 0.01, default: 0.18 },
+      { key: 'strength', label: 'Strength', type: 'range', min: 0, max: 1, step: 0.01, default: 0.75 },
+      { key: 'color', label: 'Color', type: 'color', default: '#ffffff' }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+      const w = canvas.width, h = canvas.height;
+      const angle = ((params.angle ?? 25) * Math.PI) / 180;
+      const band = clamp(params.width ?? 0.18, 0.02, 1);
+      const strength = clamp(params.strength ?? 0.75, 0, 1);
+      const color = params.color ?? '#ffffff';
+
+      const sheen = createCanvas(w, h);
+      const sctx = sheen.getContext('2d');
+
+      const cx = w / 2, cy = h / 2;
+      const r = Math.max(w, h);
+      const x1 = cx - Math.cos(angle) * r;
+      const y1 = cy - Math.sin(angle) * r;
+      const x2 = cx + Math.cos(angle) * r;
+      const y2 = cy + Math.sin(angle) * r;
+
+      const g = sctx.createLinearGradient(x1, y1, x2, y2);
+      const a = Math.max(0, 0.5 - band / 2);
+      const b = Math.min(1, 0.5 + band / 2);
+      g.addColorStop(0, 'rgba(255,255,255,0)');
+      g.addColorStop(a, 'rgba(255,255,255,0)');
+      g.addColorStop(0.5, color);
+      g.addColorStop(b, 'rgba(255,255,255,0)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+
+      sctx.fillStyle = g;
+      sctx.fillRect(0, 0, w, h);
+      sctx.globalCompositeOperation = 'destination-in';
+      sctx.drawImage(canvas, 0, 0);
+
+      ctx.save();
+      ctx.globalAlpha = strength;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(sheen, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+
+  rimLight: {
+    name: 'Rim Light',
+    params: [
+      { key: 'color', label: 'Color', type: 'color', default: '#7fd6ff' },
+      { key: 'thickness', label: 'Thickness', type: 'range', min: 1, max: 20, step: 1, default: 4 },
+      { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 0.8 },
+      { key: 'side', label: 'Side', type: 'select', options: ['All', 'Left', 'Right', 'Top', 'Bottom'], default: 'All' }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+      const w = canvas.width, h = canvas.height;
+      const thickness = Math.max(1, Math.round(params.thickness ?? 4));
+      const opacity = clamp(params.opacity ?? 0.8, 0, 1);
+      const color = params.color ?? '#7fd6ff';
+      const side = params.side ?? 'All';
+
+      const glow = createCanvas(w, h);
+      const gctx = glow.getContext('2d');
+
+      const tinted = createCanvas(w, h);
+      const tctx = tinted.getContext('2d');
+      tctx.drawImage(canvas, 0, 0);
+      tctx.globalCompositeOperation = 'source-in';
+      tctx.fillStyle = color;
+      tctx.fillRect(0, 0, w, h);
+
+      for (let a = 0; a < 360; a += 10) {
+        const rad = a * Math.PI / 180;
+        const dx = Math.cos(rad) * thickness;
+        const dy = Math.sin(rad) * thickness;
+
+        if (side === 'Left' && dx > 0) continue;
+        if (side === 'Right' && dx < 0) continue;
+        if (side === 'Top' && dy > 0) continue;
+        if (side === 'Bottom' && dy < 0) continue;
+
+        gctx.drawImage(tinted, dx, dy);
+      }
+
+      gctx.globalCompositeOperation = 'destination-out';
+      gctx.drawImage(canvas, 0, 0);
+
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(glow, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+
+  gradientMap: {
+    name: 'Gradient Map',
+    params: [
+      { key: 'shadowColor', label: 'Shadow Color', type: 'color', default: '#1a1a1a' },
+      { key: 'midColor', label: 'Mid Color', type: 'color', default: '#888888' },
+      { key: 'highlightColor', label: 'Highlight Color', type: 'color', default: '#ffffff' },
+      { key: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 1, step: 0.01, default: 1 }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+      const w = canvas.width, h = canvas.height;
+      const opacity = clamp(params.opacity ?? 1, 0, 1);
+
+      const tmp = createCanvas(w, h);
+      const tctx = tmp.getContext('2d');
+      tctx.drawImage(canvas, 0, 0);
+
+      const img = getImageDataSafe(tctx, 0, 0, w, h);
+      const d = img.data;
+
+      const hexToRgb = (hex) => {
+        const n = hex.replace('#', '');
+        const full = n.length === 3 ? n.split('').map(c => c + c).join('') : n;
+        return {
+          r: parseInt(full.slice(0, 2), 16),
+          g: parseInt(full.slice(2, 4), 16),
+          b: parseInt(full.slice(4, 6), 16)
+        };
+      };
+
+      const c1 = hexToRgb(params.shadowColor ?? '#1a1a1a');
+      const c2 = hexToRgb(params.midColor ?? '#888888');
+      const c3 = hexToRgb(params.highlightColor ?? '#ffffff');
+
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] === 0) continue;
+
+        const lum = (d[i] * 0.2126 + d[i + 1] * 0.7152 + d[i + 2] * 0.0722) / 255;
+
+        let a, b, t;
+        if (lum < 0.5) {
+          a = c1; b = c2; t = lum / 0.5;
+        } else {
+          a = c2; b = c3; t = (lum - 0.5) / 0.5;
+        }
+
+        d[i] = lerp(a.r, b.r, t);
+        d[i + 1] = lerp(a.g, b.g, t);
+        d[i + 2] = lerp(a.b, b.b, t);
+      }
+
+      tctx.putImageData(img, 0, 0);
+
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(tmp, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+
+  channelTear: {
+    name: 'Channel Tear',
+    params: [
+      { key: 'maxShift', label: 'Max Shift', type: 'range', min: 1, max: 80, step: 1, default: 16 },
+      { key: 'bandHeight', label: 'Band Height', type: 'range', min: 2, max: 80, step: 1, default: 12 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 0, max: 9999, step: 1, default: 101 },
+      { key: 'alphaLoss', label: 'Alpha Loss', type: 'range', min: 0, max: 1, step: 0.01, default: 0.08 }
+    ],
+    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+      const w = canvas.width, h = canvas.height;
+      const maxShift = Math.max(1, Math.round(params.maxShift ?? 16));
+      const bandHeight = Math.max(1, Math.round(params.bandHeight ?? 12));
+      const alphaLoss = clamp(params.alphaLoss ?? 0.08, 0, 1);
+      const rnd = createSeededRandom(params.seed) ?? Math.random;
+
+      const srcCanvas = createCanvas(w, h);
+      const sctx = srcCanvas.getContext('2d');
+      sctx.drawImage(canvas, 0, 0);
+
+      const out = createCanvas(w, h);
+      const octx = out.getContext('2d');
+      octx.globalCompositeOperation = 'screen';
+
+      const drawBand = (channel, tint) => {
+        for (let y0 = 0; y0 < h; y0 += bandHeight) {
+          const bh = Math.min(bandHeight, h - y0);
+          const shift = Math.round((rnd() * 2 - 1) * maxShift);
+
+          const band = createCanvas(w, bh);
+          const bctx = band.getContext('2d');
+          bctx.drawImage(srcCanvas, 0, y0, w, bh, 0, 0, w, bh);
+
+          const img = bctx.getImageData(0, 0, w, bh);
+          const d = img.data;
+
+          for (let i = 0; i < d.length; i += 4) {
+            if (channel !== 0) d[i] = 0;
+            if (channel !== 1) d[i + 1] = 0;
+            if (channel !== 2) d[i + 2] = 0;
+            d[i + 3] = d[i + 3] * (1 - alphaLoss);
+          }
+
+          bctx.putImageData(img, 0, 0);
+          octx.drawImage(band, shift, y0);
+
+          if (tint) {
+            octx.save();
+            octx.globalCompositeOperation = 'screen';
+            octx.fillStyle = tint;
+            octx.restore();
+          }
+        }
+      };
+
+      drawBand(0);
+      drawBand(1);
+      drawBand(2);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(out, 0, 0);
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  hologram: {
+    name: 'Holographic Foil',
+    params: [
+      { key: 'scale', label: 'Wave Scale', type: 'range', min: 10, max: 200, step: 1, default: 80 },
+      { key: 'complexity', label: 'Complexity', type: 'range', min: 1, max: 5, step: 0.1, default: 2.5 },
+      { key: 'lightness', label: 'Lightness', type: 'range', min: 20, max: 80, step: 1, default: 60 },
+      { key: 'angle', label: 'Light Angle', type: 'range', min: 0, max: 360, step: 1, default: 45 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const scale = params.scale ?? 80;
+      const comp = params.complexity ?? 2.5;
+      const lightness = params.lightness ?? 60;
+      const angle = (params.angle ?? 45) * (Math.PI / 180);
+      const w = canvas.width, h = canvas.height;
+
+      const holoCanvas = document.createElement('canvas');
+      holoCanvas.width = w; holoCanvas.height = h;
+      const hCtx = holoCanvas.getContext('2d');
+      const imgData = hCtx.createImageData(w, h);
+      const data = imgData.data;
+
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+
+      // Função HSL para RGB otimizada
+      const hslToRgb = (h, s, l) => {
+        let r, g, b;
+        if (s === 0) { r = g = b = l; } else {
+          const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1; if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+          };
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          r = hue2rgb(p, q, h + 1 / 3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1 / 3);
+        }
+        return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+      };
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          // Rotaciona as coordenadas para o ângulo da luz
+          const rx = px * cosA - py * sinA;
+          const ry = px * sinA + py * cosA;
+
+          // Cria padrões de interferência
+          const v1 = Math.sin(rx / scale);
+          const v2 = Math.sin((ry / scale) * comp);
+          const v3 = Math.sin((rx + ry) / (scale * 1.5));
+
+          // Mapeia o resultado para o espectro de matiz (Hue 0-1)
+          let hue = (v1 + v2 + v3) / 3;
+          hue = (hue + 1) / 2; // Normaliza para 0-1
+
+          const [r, g, b] = hslToRgb(hue, 0.85, lightness / 100);
+
+          const idx = (py * w + px) * 4;
+          data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = 255;
+        }
+      }
+      hCtx.putImageData(imgData, 0, 0);
+
+      // Aplica o foil apenas onde existe texto
+      hCtx.globalCompositeOperation = 'destination-in';
+      hCtx.drawImage(canvas, 0, 0);
+
+      // Mescla com o texto original para manter sombras e base
+      ctx.clearRect(0, 0, w, h);
+      ctx.save();
+      ctx.globalAlpha = 0.3; // Base escura original
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'color-dodge'; // Faz o foil brilhar
+      ctx.drawImage(holoCanvas, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  topographic: {
+    name: 'Topographic Contour',
+    params: [
+      { key: 'levels', label: 'Line Density', type: 'range', min: 5, max: 50, step: 1, default: 20 },
+      { key: 'thickness', label: 'Line Thickness', type: 'range', min: 1, max: 10, step: 0.5, default: 2 },
+      { key: 'color', label: 'Line Color', type: 'color', default: '#00ffcc' },
+      { key: 'bg', label: 'Fill Background', type: 'checkbox', default: false }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const levels = params.levels ?? 20;
+      const thickness = params.thickness ?? 2;
+      const color = params.color ?? '#00ffcc';
+      const fillBg = params.bg ?? false;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Gera um Distance Field pesado
+      const dfCanvas = document.createElement('canvas');
+      dfCanvas.width = w; dfCanvas.height = h;
+      const dfCtx = dfCanvas.getContext('2d');
+
+      // Múltiplos blurs para criar um gradiente perfeito do centro para fora
+      dfCtx.drawImage(canvas, 0, 0);
+      for (let i = 0; i < 3; i++) {
+        const temp = document.createElement('canvas');
+        temp.width = w; temp.height = h;
+        const tCtx = temp.getContext('2d');
+        tCtx.filter = `blur(${20 + (i * 10)}px)`;
+        tCtx.drawImage(dfCanvas, 0, 0);
+        dfCtx.clearRect(0, 0, w, h);
+        dfCtx.drawImage(temp, 0, 0);
+      }
+
+      const dfData = dfCtx.getImageData(0, 0, w, h).data;
+      const outImg = ctx.createImageData(w, h);
+      const out = outImg.data;
+      const rgb = hexToRgb(color);
+
+      // O valor alfa mapeia de 0 (vazio) a 255 (centro do texto)
+      const spacing = 255 / levels;
+
+      for (let i = 0; i < dfData.length; i += 4) {
+        const val = dfData[i + 3];
+
+        // Operação de módulo para criar os "degraus" do mapa
+        if (val > 2 && (val % spacing) < (thickness * (spacing / 10))) {
+          out[i] = rgb.r; out[i + 1] = rgb.g; out[i + 2] = rgb.b; out[i + 3] = 255;
+        } else if (fillBg && val > 2) {
+          // Preenchimento de fundo leve para não vazar a cor original
+          out[i] = rgb.r * 0.1; out[i + 1] = rgb.g * 0.1; out[i + 2] = rgb.b * 0.1; out[i + 3] = val;
+        }
+      }
+
+      ctx.putImageData(outImg, 0, 0);
+
+      // Limpa fora da forma original se não quiser vazamento (opcional)
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.drawImage(canvas, 0, 0);
+      ctx.globalCompositeOperation = 'source-over';
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  fluffy: {
+    name: 'Flush / Fur',
+    params: [
+      { key: 'color', label: 'Fur Color', type: 'color', default: '#ff88aa' },
+      { key: 'length', label: 'Fur Length', type: 'range', min: 5, max: 60, step: 1, default: 25 },
+      { key: 'density', label: 'Density', type: 'range', min: 0.1, max: 1, step: 0.1, default: 0.5 },
+      { key: 'gravity', label: 'Gravity/Wind', type: 'range', min: -90, max: 90, step: 1, default: 20 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const color = params.color ?? '#ff88aa';
+      const furLength = params.length ?? 25;
+      const density = params.density ?? 0.5;
+      const gravity = (params.gravity ?? 20) * (Math.PI / 180);
+      const seed = params.seed ?? 1;
+      const w = canvas.width, h = canvas.height;
+
+      let _s = seed * 543;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      const furCanvas = document.createElement('canvas');
+      furCanvas.width = w; furCanvas.height = h;
+      const fCtx = furCanvas.getContext('2d');
+
+      // Preenche a base sólida
+      fCtx.globalCompositeOperation = 'source-over';
+      fCtx.drawImage(canvas, 0, 0);
+      fCtx.globalCompositeOperation = 'source-in';
+      fCtx.fillStyle = color;
+      fCtx.fillRect(0, 0, w, h);
+
+      // Pega os dados para saber onde "nasce" o pêlo
+      fCtx.globalCompositeOperation = 'source-over';
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+
+      fCtx.strokeStyle = color;
+      fCtx.lineCap = 'round';
+
+      // Pula pixels para performance, inversamente proporcional à densidade
+      const step = Math.max(1, Math.floor(4 - (density * 3)));
+
+      for (let py = 0; py < h; py += step) {
+        for (let px = 0; px < w; px += step) {
+          const alpha = srcData[(py * w + px) * 4 + 3];
+
+          if (alpha > 50) {
+            // Chance de nascer um pêlo neste pixel
+            if (rng() > density) continue;
+
+            const len = furLength * (0.5 + rng() * 0.5); // Variação de tamanho
+            const angle = gravity + (rng() - 0.5) * 1.5; // Variação de direção
+
+            // Desenha o pêlo usando uma curva Bezier para parecer natural
+            fCtx.beginPath();
+            fCtx.moveTo(px, py);
+
+            // Ponto de controle para curvar o pêlo
+            const cpX = px + Math.cos(angle - 0.5) * (len * 0.5);
+            const cpY = py + Math.sin(angle - 0.5) * (len * 0.5);
+
+            const endX = px + Math.cos(angle) * len;
+            const endY = py + Math.sin(angle) * len;
+
+            fCtx.quadraticCurveTo(cpX, cpY, endX, endY);
+
+            // Pêlos mais finos nas pontas (simulado via opacidade no canvas 2d)
+            fCtx.lineWidth = 1 + rng() * 1.5;
+            fCtx.globalAlpha = 0.6 + rng() * 0.4;
+            fCtx.stroke();
+          }
+        }
+      }
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(furCanvas, 0, 0);
+
+      // Adiciona uma leve sombra interna para volume
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'source-over';
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  balloon: {
+    name: '3D Plastic Balloon',
+    params: [
+      { key: 'color', label: 'Plastic Color', type: 'color', default: '#ff0055' },
+      { key: 'inflation', label: 'Inflation Depth', type: 'range', min: 5, max: 40, step: 1, default: 20 },
+      { key: 'shininess', label: 'Shininess', type: 'range', min: 10, max: 100, step: 1, default: 80 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const color = hexToRgb(params.color ?? '#ff0055');
+      const depth = params.inflation ?? 20;
+      const shininess = params.shininess ?? 80;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Gera o Height Map "Gordo"
+      const mapCanvas = document.createElement('canvas');
+      mapCanvas.width = w; mapCanvas.height = h;
+      const mCtx = mapCanvas.getContext('2d');
+      mCtx.drawImage(canvas, 0, 0);
+      mCtx.globalCompositeOperation = 'source-in';
+      mCtx.fillStyle = '#fff';
+      mCtx.fillRect(0, 0, w, h);
+
+      mCtx.filter = `blur(${depth}px)`;
+      mCtx.globalCompositeOperation = 'source-over';
+      mCtx.drawImage(mapCanvas, 0, 0); // Reforça o centro
+      mCtx.filter = 'none';
+
+      const mapData = mCtx.getImageData(0, 0, w, h).data;
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+      const outImg = ctx.createImageData(w, h);
+      const out = outImg.data;
+
+      // Vetor de luz vindo do topo esquerdo
+      const Lx = -0.6, Ly = -0.6, Lz = 0.52;
+
+      for (let py = 1; py < h - 1; py++) {
+        const offset = py * w;
+        for (let px = 1; px < w - 1; px++) {
+          const idx = (offset + px) * 4;
+          const alpha = srcData[idx + 3];
+          if (alpha < 5) continue;
+
+          // Perfil Arredondado (Seno/Cosseno simulado)
+          const hRaw = mapData[idx + 1] / 255;
+          // Curve ease-out para inflar o meio como um balão
+          const hVal = Math.sin(hRaw * (Math.PI / 2)) * 255;
+
+          const hL = Math.sin((mapData[(offset + px - 1) * 4 + 1] / 255) * (Math.PI / 2)) * 255;
+          const hR = Math.sin((mapData[(offset + px + 1) * 4 + 1] / 255) * (Math.PI / 2)) * 255;
+          const hT = Math.sin((mapData[((py - 1) * w + px) * 4 + 1] / 255) * (Math.PI / 2)) * 255;
+          const hB = Math.sin((mapData[((py + 1) * w + px) * 4 + 1] / 255) * (Math.PI / 2)) * 255;
+
+          const nx = (hL - hR);
+          const ny = (hT - hB);
+          const nz = 4000 / depth; // Constante Z suave para balão
+
+          const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+          const Nnx = nx / len, Nny = ny / len, Nnz = nz / len;
+
+          let diffuse = Math.max(0, -(Nnx * Lx + Nny * Ly + Nnz * Lz));
+
+          // Efeito de Plástico (Highlight Specular muito afiado)
+          let specular = Math.pow(diffuse, shininess);
+
+          // Subsurface scattering falso (Bordas mais saturadas/claras)
+          const edgeGlow = (1 - hRaw) * 0.4;
+
+          let r = color.r * (0.3 + diffuse * 0.7 + edgeGlow);
+          let g = color.g * (0.3 + diffuse * 0.7 + edgeGlow);
+          let b = color.b * (0.3 + diffuse * 0.7 + edgeGlow);
+
+          r += specular * 255;
+          g += specular * 255;
+          b += specular * 255;
+
+          out[idx] = Math.min(255, r);
+          out[idx + 1] = Math.min(255, g);
+          out[idx + 2] = Math.min(255, b);
+          out[idx + 3] = alpha;
+        }
+      }
+
+      ctx.putImageData(outImg, 0, 0);
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  woodTexture: {
+    name: 'Wood Grain',
+    params: [
+      { key: 'baseColor', label: 'Base Color', type: 'color', default: '#8b5a2b' },
+      { key: 'ringColor', label: 'Ring Color', type: 'color', default: '#4a2f14' },
+      { key: 'rings', label: 'Ring Density', type: 'range', min: 1, max: 50, step: 1, default: 15 },
+      { key: 'distortion', label: 'Knot Distortion', type: 'range', min: 0, max: 10, step: 0.1, default: 3.5 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 42 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const cBase = hexToRgb(params.baseColor ?? '#8b5a2b');
+      const cRing = hexToRgb(params.ringColor ?? '#4a2f14');
+      const ringDensity = params.rings ?? 15;
+      const distortion = params.distortion ?? 3.5;
+      const seed = params.seed ?? 42;
+      const w = canvas.width, h = canvas.height;
+
+      const outImg = ctx.createImageData(w, h);
+      const data = outImg.data;
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+
+      // PRNG Simples
+      let _s = seed * 1029;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      const noiseGrid = new Float32Array(256 * 256);
+      for (let i = 0; i < noiseGrid.length; i++) noiseGrid[i] = rng();
+
+      const getNoise = (nx, ny) => {
+        const x = Math.floor(nx) % 256;
+        const y = Math.floor(ny) % 256;
+        return noiseGrid[(y < 0 ? y + 256 : y) * 256 + (x < 0 ? x + 256 : x)];
+      };
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const idx = (py * w + px) * 4;
+          const alpha = srcData[idx + 3];
+          if (alpha < 5) continue;
+
+          // Ruído para distorcer a coordenada
+          const nx = px * 0.02;
+          const ny = py * 0.005; // Esticado verticalmente para simular o veio
+          const n = getNoise(nx, ny) + getNoise(nx * 2, ny * 2) * 0.5;
+
+          // Distância do centro distorcida
+          const dx = (px - w / 2) * 0.01 + n * distortion;
+          const dy = (py - h / 2) * 0.01 + n * distortion;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          // Função seno para os anéis
+          let ringVal = (Math.sin(dist * ringDensity) + 1) / 2;
+          // Deixa as bordas dos anéis mais duras
+          ringVal = Math.pow(ringVal, 0.6);
+
+          data[idx] = lerp(cRing.r, cBase.r, ringVal);
+          data[idx + 1] = lerp(cRing.g, cBase.g, ringVal);
+          data[idx + 2] = lerp(cRing.b, cBase.b, ringVal);
+          data[idx + 3] = alpha;
+        }
+      }
+
+      ctx.putImageData(outImg, 0, 0);
+      return { canvas, ctx, abortSignal };
+    }
+  }, concreteTexture: {
+    name: 'Concrete / Stone',
+    params: [
+      { key: 'lightColor', label: 'Light Area', type: 'color', default: '#cccccc' },
+      { key: 'darkColor', label: 'Dark Area', type: 'color', default: '#777777' },
+      { key: 'roughness', label: 'Surface Noise', type: 'range', min: 0, max: 1, step: 0.1, default: 0.8 },
+      { key: 'pores', label: 'Pore Density', type: 'range', min: 0, max: 1, step: 0.05, default: 0.3 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 12 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const cLight = hexToRgb(params.lightColor ?? '#cccccc');
+      const cDark = hexToRgb(params.darkColor ?? '#777777');
+      const roughness = params.roughness ?? 0.8;
+      const pores = params.pores ?? 0.3;
+      const seed = params.seed ?? 12;
+      const w = canvas.width, h = canvas.height;
+
+      const outImg = ctx.createImageData(w, h);
+      const data = outImg.data;
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+
+      let _s = seed * 412;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const idx = (py * w + px) * 4;
+          const alpha = srcData[idx + 3];
+          if (alpha < 5) continue;
+
+          // Ruído base (manchas grandes) - aproximação rápida sem FBM completo
+          const macroNoise = (Math.sin(px * 0.03 + rng() * 0.1) + Math.cos(py * 0.02 + rng() * 0.1) + 2) / 4;
+
+          // Ruído de grão (areia do concreto)
+          const microNoise = rng();
+
+          // Mistura de cor base
+          const mix = clamp(macroNoise + (microNoise - 0.5) * roughness, 0, 1);
+          let r = lerp(cDark.r, cLight.r, mix);
+          let g = lerp(cDark.g, cLight.g, mix);
+          let b = lerp(cDark.b, cLight.b, mix);
+
+          // Poros (Buracos profundos)
+          if (rng() < (pores * 0.1)) {
+            // Escurece drasticamente para simular sombra do buraco
+            r *= 0.2; g *= 0.2; b *= 0.2;
+          }
+
+          data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = alpha;
+        }
+      }
+
+      ctx.putImageData(outImg, 0, 0);
+
+      // Adiciona um leve chanfro/bevel para dar volume à pedra
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.shadowColor = 'rgba(255,255,255,0.4)';
+      ctx.shadowOffsetX = -2; ctx.shadowOffsetY = -2; ctx.shadowBlur = 2;
+      ctx.drawImage(canvas, 0, 0); // Highlight
+
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3; ctx.shadowBlur = 4;
+      ctx.drawImage(canvas, 0, 0); // Shadow
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  }, leatherTexture: {
+    name: 'Leather',
+    params: [
+      { key: 'baseColor', label: 'Leather Color', type: 'color', default: '#3d1f00' },
+      { key: 'creaseColor', label: 'Crease Color', type: 'color', default: '#1a0d00' },
+      { key: 'scale', label: 'Wrinkle Scale', type: 'range', min: 0.01, max: 0.2, step: 0.01, default: 0.08 },
+      { key: 'depth', label: 'Depth', type: 'range', min: 0, max: 1, step: 0.1, default: 0.7 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 5 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const cBase = hexToRgb(params.baseColor ?? '#3d1f00');
+      const cCrease = hexToRgb(params.creaseColor ?? '#1a0d00');
+      const scale = params.scale ?? 0.08;
+      const depth = params.depth ?? 0.7;
+      const seed = params.seed ?? 5;
+      const w = canvas.width, h = canvas.height;
+
+      const outImg = ctx.createImageData(w, h);
+      const data = outImg.data;
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+
+      let _s = seed * 732;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      const noiseSize = 256;
+      const noise = new Float32Array(noiseSize * noiseSize);
+      for (let i = 0; i < noise.length; i++) noise[i] = rng() * 2 - 1; // -1 a 1
+
+      const getNoise = (x, y) => {
+        const ix = Math.floor(x) & 255; const iy = Math.floor(y) & 255;
+        const fx = x - Math.floor(x); const fy = y - Math.floor(y);
+        const i00 = noise[iy * 256 + ix]; const i10 = noise[iy * 256 + ((ix + 1) & 255)];
+        const i01 = noise[((iy + 1) & 255) * 256 + ix]; const i11 = noise[((iy + 1) & 255) * 256 + ((ix + 1) & 255)];
+        const nx0 = lerp(i00, i10, fx); const nx1 = lerp(i01, i11, fx);
+        return lerp(nx0, nx1, fy);
+      };
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const idx = (py * w + px) * 4;
+          const alpha = srcData[idx + 3];
+          if (alpha < 5) continue;
+
+          // Turbulence (Abs do ruído cria "vales" afiados)
+          let turb = 0;
+          turb += Math.abs(getNoise(px * scale, py * scale));
+          turb += Math.abs(getNoise(px * scale * 2, py * scale * 2)) * 0.5;
+          turb += Math.abs(getNoise(px * scale * 4, py * scale * 4)) * 0.25;
+
+          // Inverte e ajusta para que os vales sejam escuros
+          let creaseMask = clamp(1 - (turb * depth * 1.5), 0, 1);
+
+          // Adiciona um microponto de luz (specular do couro) nas partes altas
+          const highlight = (creaseMask > 0.8) ? (creaseMask - 0.8) * 2 : 0;
+
+          let r = lerp(cCrease.r, cBase.r, creaseMask) + (highlight * 255);
+          let g = lerp(cCrease.g, cBase.g, creaseMask) + (highlight * 255);
+          let b = lerp(cCrease.b, cBase.b, creaseMask) + (highlight * 255);
+
+          data[idx] = clamp(r, 0, 255);
+          data[idx + 1] = clamp(g, 0, 255);
+          data[idx + 2] = clamp(b, 0, 255);
+          data[idx + 3] = alpha;
+        }
+      }
+
+      ctx.putImageData(outImg, 0, 0);
+      return { canvas, ctx, abortSignal };
+    }
+  }, glitterTexture: {
+    name: 'Glitter / Sparkle',
+    params: [
+      { key: 'baseColor', label: 'Glitter Color', type: 'color', default: '#ff0077' },
+      { key: 'density', label: 'Flake Density', type: 'range', min: 0.1, max: 1, step: 0.1, default: 0.7 },
+      { key: 'rainbow', label: 'Iridescence', type: 'range', min: 0, max: 1, step: 0.1, default: 0.3 },
+      { key: 'size', label: 'Flake Size', type: 'range', min: 1, max: 4, step: 1, default: 2 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const cBase = hexToRgb(params.baseColor ?? '#ff0077');
+      const density = params.density ?? 0.7;
+      const rainbow = params.rainbow ?? 0.3;
+      const flakeSize = params.size ?? 2;
+      const w = canvas.width, h = canvas.height;
+
+      const glitCanvas = document.createElement('canvas');
+      glitCanvas.width = w; glitCanvas.height = h;
+      const gCtx = glitCanvas.getContext('2d');
+
+      // Preenche fundo escuro da cor base
+      gCtx.fillStyle = `rgb(${cBase.r * 0.4}, ${cBase.g * 0.4}, ${cBase.b * 0.4})`;
+      gCtx.fillRect(0, 0, w, h);
+
+      // Prepara o ImageData para injetar os pontos
+      const imgData = gCtx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+
+      const rng = () => Math.random();
+
+      for (let py = 0; py < h; py += flakeSize) {
+        for (let px = 0; px < w; px += flakeSize) {
+
+          if (rng() < density) {
+            // Decide o brilho do floco (alguns pegam luz direta, outros não)
+            const brightness = rng();
+            let r = cBase.r * brightness * 2;
+            let g = cBase.g * brightness * 2;
+            let b = cBase.b * brightness * 2;
+
+            // Efeito iridescente (muda levemente a cor)
+            if (rng() < rainbow) {
+              r += (rng() - 0.5) * 150;
+              g += (rng() - 0.5) * 150;
+              b += (rng() - 0.5) * 150;
+            }
+
+            // Desenha o bloco (simulando size)
+            for (let sy = 0; sy < flakeSize; sy++) {
+              for (let sx = 0; sx < flakeSize; sx++) {
+                if (px + sx < w && py + sy < h) {
+                  const idx = ((py + sy) * w + (px + sx)) * 4;
+                  data[idx] = clamp(r, 0, 255);
+                  data[idx + 1] = clamp(g, 0, 255);
+                  data[idx + 2] = clamp(b, 0, 255);
+                }
+              }
+            }
+          }
+        }
+      }
+      gCtx.putImageData(imgData, 0, 0);
+
+      // Recorta o glitter no formato do texto original
+      gCtx.globalCompositeOperation = 'destination-in';
+      gCtx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(glitCanvas, 0, 0);
+
+      // Bloom/Glow no próprio texto para destacar os brilhos
+      ctx.save();
+      ctx.globalCompositeOperation = 'color-dodge';
+      ctx.filter = 'blur(2px)';
+      ctx.globalAlpha = 0.5;
+      ctx.drawImage(glitCanvas, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  mangaScreentone: {
+    name: 'Manga Screentone',
+    params: [
+      { key: 'dotSize', label: 'Max Dot Size', type: 'range', min: 2, max: 20, step: 1, default: 6 },
+      { key: 'spacing', label: 'Grid Spacing', type: 'range', min: 4, max: 30, step: 1, default: 8 },
+      { key: 'angle', label: 'Screen Angle', type: 'range', min: 0, max: 90, step: 1, default: 45 },
+      { key: 'color', label: 'Ink Color', type: 'color', default: '#111111' },
+      { key: 'gradient', label: 'Shading', type: 'range', min: 0, max: 1, step: 0.1, default: 1 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const maxDot = params.dotSize ?? 6;
+      const spacing = params.spacing ?? 8;
+      const angle = (params.angle ?? 45) * (Math.PI / 180);
+      const color = params.color ?? '#111111';
+      const gradAmount = params.gradient ?? 1;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Pega a máscara do texto original
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+
+      const screenCanvas = document.createElement('canvas');
+      screenCanvas.width = w; screenCanvas.height = h;
+      const sCtx = screenCanvas.getContext('2d');
+
+      sCtx.fillStyle = color;
+
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+
+      // Encontra os limites para saber onde aplicar o gradiente de sombreamento
+      let minY = h, maxY = 0;
+      for (let i = 3; i < srcData.length; i += 4) {
+        if (srcData[i] > 10) {
+          const py = Math.floor((i / 4) / w);
+          if (py < minY) minY = py;
+          if (py > maxY) maxY = py;
+        }
+      }
+      const textHeight = maxY - minY;
+
+      // 2. Desenha o grid rotacionado
+      // Expandimos os limites do loop para cobrir as rotações sem cortar as bordas
+      const diag = Math.sqrt(w * w + h * h);
+      const limit = Math.ceil(diag / spacing);
+
+      for (let gridY = -limit; gridY <= limit; gridY++) {
+        for (let gridX = -limit; gridX <= limit; gridX++) {
+
+          // Coordenadas originais do grid não rotacionado
+          const px = gridX * spacing;
+          const py = gridY * spacing;
+
+          // Rotaciona as coordenadas para a posição na tela
+          const screenX = Math.round(w / 2 + (px * cosA - py * sinA));
+          const screenY = Math.round(h / 2 + (px * sinA + py * cosA));
+
+          if (screenX >= 0 && screenX < w && screenY >= 0 && screenY < h) {
+            const idx = (screenY * w + screenX) * 4;
+            const alpha = srcData[idx + 3];
+
+            if (alpha > 0) {
+              // Calcula o tamanho do ponto baseado na posição Y (Sombreamento)
+              let intensity = 1;
+              if (gradAmount > 0 && textHeight > 0) {
+                const relativeY = (screenY - minY) / textHeight; // 0 (topo) a 1 (base)
+                // O gradiente faz os pontos serem menores no topo e maiores na base
+                intensity = lerp(1, relativeY, gradAmount);
+              }
+
+              // Suaviza a borda usando o alpha original do texto
+              const edgeSoftness = alpha / 255;
+              const radius = (maxDot / 2) * intensity * edgeSoftness;
+
+              if (radius > 0.5) {
+                sCtx.beginPath();
+                sCtx.arc(screenX, screenY, radius, 0, Math.PI * 2);
+                sCtx.fill();
+              }
+            }
+          }
+        }
+      }
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(screenCanvas, 0, 0);
+
+      // Opcional: Adiciona um contorno sólido sutil para o texto não sumir
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 2;
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  actionSpeedlines: {
+    name: 'Anime Speedlines',
+    params: [
+      { key: 'color', label: 'Line Color', type: 'color', default: '#ffffff' },
+      { key: 'density', label: 'Line Density', type: 'range', min: 10, max: 200, step: 1, default: 80 },
+      { key: 'thickness', label: 'Thickness', type: 'range', min: 1, max: 20, step: 1, default: 4 },
+      { key: 'centerClear', label: 'Clear Center', type: 'range', min: 0, max: 1, step: 0.1, default: 0.3 },
+      { key: 'mode', label: 'Masking', type: 'select', options: ['Behind Text', 'Inside Text'], default: 'Inside Text' },
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 99 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const color = params.color ?? '#ffffff';
+      const density = params.density ?? 80;
+      const thickness = params.thickness ?? 4;
+      const centerClear = params.centerClear ?? 0.3;
+      const isInside = params.mode === 'Inside Text';
+      const seed = params.seed ?? 99;
+      const w = canvas.width, h = canvas.height;
+
+      let _s = seed * 852;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      const linesCanvas = document.createElement('canvas');
+      linesCanvas.width = w; linesCanvas.height = h;
+      const lCtx = linesCanvas.getContext('2d');
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxRadius = Math.sqrt(cx * cx + cy * cy);
+      const clearRadius = maxRadius * centerClear;
+
+      lCtx.fillStyle = color;
+
+      // Desenha as linhas radiais
+      for (let i = 0; i < density; i++) {
+        const angle = rng() * Math.PI * 2;
+
+        // Varia onde a linha começa (para não ser um círculo perfeito no meio)
+        const startRadius = clearRadius + (rng() * clearRadius);
+
+        // Varia a grossura da linha
+        const lineThick = thickness * (0.2 + rng() * 0.8);
+
+        lCtx.save();
+        lCtx.translate(cx, cy);
+        lCtx.rotate(angle);
+
+        // Desenha um triângulo fino (estilo speedline) que afina em direção ao centro
+        lCtx.beginPath();
+        lCtx.moveTo(startRadius, -lineThick / 4);
+        lCtx.lineTo(maxRadius, -lineThick);
+        lCtx.lineTo(maxRadius, lineThick);
+        lCtx.lineTo(startRadius, lineThick / 4);
+        lCtx.fill();
+
+        lCtx.restore();
+      }
+
+      ctx.clearRect(0, 0, w, h);
+
+      if (isInside) {
+        // As linhas preenchem o texto
+        lCtx.globalCompositeOperation = 'destination-in';
+        lCtx.drawImage(canvas, 0, 0);
+
+        // Mantém uma borda ou fundo sutil do texto original para legibilidade
+        ctx.save();
+        ctx.globalAlpha = 0.2;
+        ctx.drawImage(canvas, 0, 0);
+        ctx.restore();
+
+        ctx.drawImage(linesCanvas, 0, 0);
+      } else {
+        // As linhas ficam no fundo, o texto intacto na frente
+        ctx.drawImage(linesCanvas, 0, 0);
+
+        // Borda grossa preta/branca no texto ajuda a separar do fundo caótico
+        ctx.save();
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 10;
+        ctx.drawImage(canvas, 0, 0);
+        ctx.drawImage(canvas, 0, 0); // Desenha duas vezes para endurecer a sombra
+        ctx.restore();
+      }
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  cosmicNebula: {
+    name: 'Cosmic / Galaxy',
+    params: [
+      { key: 'color1', label: 'Nebula A', type: 'color', default: '#ff00aa' },
+      { key: 'color2', label: 'Nebula B', type: 'color', default: '#00ccff' },
+      { key: 'stars', label: 'Star Density', type: 'range', min: 100, max: 2000, step: 100, default: 800 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 42 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const c1 = hexToRgb(params.color1 ?? '#ff00aa');
+      const c2 = hexToRgb(params.color2 ?? '#00ccff');
+      const starCount = params.stars ?? 800;
+      const seed = params.seed ?? 42;
+      const w = canvas.width, h = canvas.height;
+
+      let _s = seed * 1010;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      const spaceCanvas = document.createElement('canvas');
+      spaceCanvas.width = w; spaceCanvas.height = h;
+      const sCtx = spaceCanvas.getContext('2d');
+      const imgData = sCtx.createImageData(w, h);
+      const data = imgData.data;
+
+      // Noise Helpers
+      const noiseGrid = new Float32Array(256 * 256);
+      for (let i = 0; i < noiseGrid.length; i++) noiseGrid[i] = rng();
+      const getNoise = (nx, ny) => {
+        const x = Math.floor(nx) & 255, y = Math.floor(ny) & 255;
+        const fx = nx - Math.floor(nx), fy = ny - Math.floor(ny);
+        const i00 = noiseGrid[y * 256 + x], i10 = noiseGrid[y * 256 + ((x + 1) & 255)];
+        const i01 = noiseGrid[((y + 1) & 255) * 256 + x], i11 = noiseGrid[((y + 1) & 255) * 256 + ((x + 1) & 255)];
+        return lerp(lerp(i00, i10, fx), lerp(i01, i11, fx), fy);
+      };
+
+      // 1. Gera a Nebulosa (FBM)
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const idx = (py * w + px) * 4;
+
+          let n = 0;
+          n += getNoise(px * 0.01, py * 0.01);
+          n += getNoise(px * 0.02, py * 0.02) * 0.5;
+          n += getNoise(px * 0.04, py * 0.04) * 0.25;
+          n /= 1.75; // Normaliza
+
+          // Mapeia o ruído:
+          // Partes baixas = Escuro/Espaço
+          // Partes médias = Cor 1
+          // Partes altas = Cor 2
+
+          let r = 0, g = 0, b = 0;
+
+          if (n > 0.4) {
+            const mix = clamp((n - 0.4) * 2.5, 0, 1);
+            r = lerp(c1.r * 0.2, c2.r, mix);
+            g = lerp(c1.g * 0.2, c2.g, mix);
+            b = lerp(c1.b * 0.2, c2.b, mix);
+          } else if (n > 0.2) {
+            const mix = clamp((n - 0.2) * 5, 0, 1);
+            r = c1.r * mix * 0.5;
+            g = c1.g * mix * 0.5;
+            b = c1.b * mix * 0.5;
+          }
+
+          data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = 255;
+        }
+      }
+      sCtx.putImageData(imgData, 0, 0);
+
+      // 2. Adiciona as Estrelas
+      sCtx.globalCompositeOperation = 'screen';
+      for (let i = 0; i < starCount; i++) {
+        const sx = rng() * w;
+        const sy = rng() * h;
+        const size = rng() * 1.5;
+        const brightness = 0.5 + rng() * 0.5;
+
+        sCtx.beginPath();
+        sCtx.arc(sx, sy, size, 0, Math.PI * 2);
+        sCtx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+        sCtx.fill();
+
+        // Algumas estrelas maiores ganham "lens flare" de cruz
+        if (size > 1.2 && rng() > 0.8) {
+          sCtx.fillStyle = `rgba(255, 255, 255, ${brightness * 0.5})`;
+          sCtx.fillRect(sx - size * 4, sy - size / 4, size * 8, size / 2);
+          sCtx.fillRect(sx - size / 4, sy - size * 4, size / 2, size * 8);
+        }
+      }
+
+      // 3. Aplica o Clipping ao Texto
+      sCtx.globalCompositeOperation = 'destination-in';
+      sCtx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(spaceCanvas, 0, 0);
+
+      // Leve brilho cósmico ao redor do texto
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.filter = 'blur(6px)';
+      ctx.globalAlpha = 0.4;
+      ctx.drawImage(spaceCanvas, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  acidCorrosion: {
+    name: 'Acid Corrosion',
+    params: [
+      { key: 'acidColor', label: 'Acid Color', type: 'color', default: '#aaff00' },
+      { key: 'damage', label: 'Damage Level', type: 'range', min: 0.1, max: 0.8, step: 0.05, default: 0.4 },
+      { key: 'melt', label: 'Drip Scale', type: 'range', min: 0, max: 50, step: 1, default: 15 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 7 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const acidC = hexToRgb(params.acidColor ?? '#aaff00');
+      const damage = params.damage ?? 0.4;
+      const melt = params.melt ?? 15;
+      const seed = params.seed ?? 7;
+      const w = canvas.width, h = canvas.height;
+
+      let _s = seed * 369;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      const noiseSize = 256;
+      const noise = new Float32Array(noiseSize * noiseSize);
+      for (let i = 0; i < noise.length; i++) noise[i] = rng();
+
+      const getNoise = (x, y) => {
+        const ix = Math.floor(x) & 255; const iy = Math.floor(y) & 255;
+        return noise[iy * 256 + ix];
+      };
+
+      const cCanvas = document.createElement('canvas');
+      cCanvas.width = w; cCanvas.height = h;
+      const cCtx = cCanvas.getContext('2d');
+
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+      const imgData = cCtx.createImageData(w, h);
+      const data = imgData.data;
+
+      // Processamento pixel a pixel
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          // Deslocamento vertical para simular o derretimento (Drip)
+          // Usamos um ruído de baixa frequência no X para criar "colunas" que derretem
+          const dripNoise = getNoise(px * 0.05, 0) * melt;
+
+          // O Y real de onde vamos ler a cor original sofre offset para cima
+          // Isso faz o pixel original "descer"
+          const readY = Math.max(0, Math.floor(py - dripNoise));
+          const idxSrc = (readY * w + px) * 4;
+          const alphaSrc = srcData[idxSrc + 3];
+
+          if (alphaSrc > 5) {
+            const idx = (py * w + px) * 4;
+
+            // Ruído de corrosão (manchas)
+            const n = getNoise(px * 0.1, py * 0.1);
+
+            if (n < damage) {
+              // Área muito danificada -> vira buraco transparente
+              data[idx + 3] = 0;
+            } else if (n < damage + 0.15) {
+              // Borda do dano -> vira a cor do ácido
+              data[idx] = acidC.r;
+              data[idx + 1] = acidC.g;
+              data[idx + 2] = acidC.b;
+              data[idx + 3] = alphaSrc;
+            } else {
+              // Mantém a cor original do texto 
+              // (Para simplificar, copiamos os canais RGB originais)
+              data[idx] = srcData[idxSrc];
+              data[idx + 1] = srcData[idxSrc + 1];
+              data[idx + 2] = srcData[idxSrc + 2];
+              data[idx + 3] = alphaSrc;
+            }
+          }
+        }
+      }
+
+      cCtx.putImageData(imgData, 0, 0);
+
+      // Suaviza as bordas ácidas
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(cCanvas, 0, 0);
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+
+  stickerPeel: {
+    name: 'Die-cut Sticker Peel',
+    params: [
+      { key: 'border', label: 'Border Size', type: 'range', min: 2, max: 50, step: 1, default: 15 },
+      { key: 'peelSize', label: 'Peel Amount', type: 'range', min: 10, max: 200, step: 1, default: 60 },
+      { key: 'shadow', label: 'Shadow Opacity', type: 'range', min: 0, max: 1, step: 0.1, default: 0.5 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const border = params.border ?? 15;
+      const peel = params.peelSize ?? 60;
+      const shadowAlpha = params.shadow ?? 0.5;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Criar a Borda Branca (Die-cut)
+      const borderCanvas = document.createElement('canvas');
+      borderCanvas.width = w; borderCanvas.height = h;
+      const bCtx = borderCanvas.getContext('2d');
+
+      bCtx.drawImage(canvas, 0, 0);
+      bCtx.globalCompositeOperation = 'source-in';
+      bCtx.fillStyle = '#ffffff';
+      bCtx.fillRect(0, 0, w, h);
+
+      // Expande a borda usando blur e threshold
+      bCtx.globalCompositeOperation = 'source-over';
+      const passes = Math.ceil(border / 5);
+      for (let i = 0; i < passes; i++) {
+        bCtx.filter = `blur(${border}px)`;
+        bCtx.drawImage(borderCanvas, 0, 0);
+      }
+      bCtx.filter = 'none';
+
+      // Endurece o blur para fazer uma borda sólida
+      const bData = bCtx.getImageData(0, 0, w, h);
+      for (let i = 3; i < bData.data.length; i += 4) {
+        bData.data[i] = bData.data[i] > 10 ? 255 : 0;
+      }
+      bCtx.putImageData(bData, 0, 0);
+
+      // 2. Mescla o texto original em cima da borda branca
+      bCtx.drawImage(canvas, 0, 0);
+
+      // 3. Encontra o canto inferior direito real do adesivo para fazer o peel
+      let maxX = 0, maxY = 0;
+      for (let py = 0; py < h; py += 5) {
+        for (let px = 0; px < w; px += 5) {
+          if (bData.data[(py * w + px) * 4 + 3] > 0) {
+            if (px > maxX) maxX = px;
+            if (py > maxY) maxY = py;
+          }
+        }
+      }
+      if (maxX === 0) return { canvas, ctx };
+
+      // 4. Configura a dobra (Peel)
+      const peelX = maxX - peel;
+      const peelY = maxY - peel;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Sombra global do adesivo
+      ctx.save();
+      ctx.shadowColor = `rgba(0,0,0,${shadowAlpha})`;
+      ctx.shadowBlur = 15;
+      ctx.shadowOffsetY = 8;
+
+      // Desenha o adesivo inteiro, MAS recorta a ponta que vai dobrar
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(w, 0);
+      ctx.lineTo(w, peelY);
+      ctx.lineTo(peelX, maxY);
+      ctx.lineTo(0, maxY);
+      ctx.lineTo(0, 0);
+      ctx.clip();
+      ctx.drawImage(borderCanvas, 0, 0);
+      ctx.restore();
+
+      // 5. Desenha a aba dobrada (Verso do adesivo)
+      ctx.save();
+      // O triângulo da ponta dobrada
+      ctx.beginPath();
+      ctx.moveTo(w, peelY);
+      ctx.lineTo(peelX, maxY);
+      // Ponto de dobra projetado para cima e esquerda
+      ctx.lineTo(peelX - (w - peelX), peelY - (maxY - peelY));
+      ctx.closePath();
+
+      // Sombra projetada pela aba sobre o adesivo
+      ctx.shadowColor = `rgba(0,0,0,${shadowAlpha + 0.3})`;
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetX = -5;
+      ctx.shadowOffsetY = -5;
+
+      // Preenchimento do verso (acinzentado/fosco)
+      ctx.fillStyle = '#e0e0e0';
+      ctx.fill();
+
+      // Leve gradiente para dar volume à dobra
+      const grad = ctx.createLinearGradient(peelX, maxY, peelX - peel, peelY - peel);
+      grad.addColorStop(0, 'rgba(255,255,255,0.8)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+      ctx.shadowColor = 'transparent'; // desativa sombra pro gradiente
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  gummyCandy: {
+    name: 'Gummy / Subsurface',
+    params: [
+      { key: 'color', label: 'Flavor Color', type: 'color', default: '#ff0066' },
+      { key: 'thickness', label: 'Thickness', type: 'range', min: 1, max: 50, step: 1, default: 20 },
+      { key: 'sugar', label: 'Sugar Coating', type: 'range', min: 0, max: 1, step: 0.1, default: 0.8 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const color = hexToRgb(params.color ?? '#ff0066');
+      const thickness = params.thickness ?? 20;
+      const sugar = params.sugar ?? 0.8;
+      const w = canvas.width, h = canvas.height;
+
+      // Mapa de Profundidade Interna (Blurred Mask)
+      const depthCanvas = document.createElement('canvas');
+      depthCanvas.width = w; depthCanvas.height = h;
+      const dCtx = depthCanvas.getContext('2d');
+      dCtx.drawImage(canvas, 0, 0);
+      dCtx.globalCompositeOperation = 'source-in';
+      dCtx.fillStyle = '#fff';
+      dCtx.fillRect(0, 0, w, h);
+
+      dCtx.filter = `blur(${thickness}px)`;
+      dCtx.globalCompositeOperation = 'source-over';
+      dCtx.drawImage(depthCanvas, 0, 0);
+      dCtx.filter = 'none';
+
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+      const depthData = dCtx.getImageData(0, 0, w, h).data;
+      const outImg = ctx.createImageData(w, h);
+      const out = outImg.data;
+
+      const rng = () => Math.random();
+
+      for (let i = 0; i < srcData.length; i += 4) {
+        const alpha = srcData[i + 3];
+        if (alpha < 5) continue;
+
+        // Profundidade (0 = borda afiada, 255 = centro denso)
+        const dVal = depthData[i + 1];
+        const normalizedDepth = dVal / 255;
+
+        // Subsurface Scattering Fake:
+        // Bordas são mais claras/saturadas porque a luz atravessa mais fácil.
+        // Centro é mais escuro.
+        const sss = Math.pow(1 - normalizedDepth, 1.5);
+
+        let r = color.r * (0.4 + normalizedDepth * 0.4) + (sss * 255 * 0.5);
+        let g = color.g * (0.4 + normalizedDepth * 0.4) + (sss * 255 * 0.5);
+        let b = color.b * (0.4 + normalizedDepth * 0.4) + (sss * 255 * 0.5);
+
+        // Highlight direcional simples em cima à esquerda
+        const isHighlight = (depthData[i - w * 4 - 4 + 1] < dVal);
+        if (isHighlight) {
+          r += 40; g += 40; b += 40;
+        }
+
+        // Açúcar (Cristais na superfície)
+        if (sugar > 0 && rng() > 0.8) {
+          const crystal = rng() * 150 * sugar;
+          r += crystal; g += crystal; b += crystal;
+        }
+
+        out[i] = Math.min(255, r);
+        out[i + 1] = Math.min(255, g);
+        out[i + 2] = Math.min(255, b);
+        out[i + 3] = alpha;
+      }
+
+      ctx.putImageData(outImg, 0, 0);
+
+      // Sombra colorida translúcida projetada no fundo
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
+      ctx.shadowBlur = thickness;
+      ctx.shadowOffsetY = thickness / 2;
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  pcbCircuit: {
+    name: 'Circuit Board (PCB)',
+    params: [
+      { key: 'board', label: 'Board Color', type: 'color', default: '#003300' },
+      { key: 'trace', label: 'Trace Color', type: 'color', default: '#ffcc00' },
+      { key: 'density', label: 'Complexity', type: 'range', min: 5, max: 30, step: 1, default: 12 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 999, step: 1, default: 101 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const boardC = params.board ?? '#003300';
+      const traceC = params.trace ?? '#ffcc00';
+      const gridSize = params.density ?? 12;
+      const seed = params.seed ?? 101;
+      const w = canvas.width, h = canvas.height;
+
+      let _s = seed * 555;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      const pcbCanvas = document.createElement('canvas');
+      pcbCanvas.width = w; pcbCanvas.height = h;
+      const pCtx = pcbCanvas.getContext('2d');
+
+      // Fundo da Placa
+      pCtx.fillStyle = boardC;
+      pCtx.fillRect(0, 0, w, h);
+
+      pCtx.strokeStyle = traceC;
+      pCtx.fillStyle = traceC;
+      pCtx.lineWidth = Math.max(1, gridSize / 4);
+      pCtx.lineCap = 'round';
+      pCtx.lineJoin = 'bevel'; // Dobras chanfradas clássicas de PCB
+
+      const cols = Math.ceil(w / gridSize);
+      const rows = Math.ceil(h / gridSize);
+
+      // Gerador de trilhas
+      const drawTrace = (startX, startY, length) => {
+        pCtx.beginPath();
+        pCtx.moveTo(startX * gridSize, startY * gridSize);
+
+        let cx = startX, cy = startY;
+        for (let i = 0; i < length; i++) {
+          // Direções: 0=Dir, 1=Baixo, 2=Diag Dir-Baixo, 3=Diag Dir-Cima
+          const dir = Math.floor(rng() * 4);
+          if (dir === 0) cx++;
+          else if (dir === 1) cy++;
+          else if (dir === 2) { cx++; cy++; }
+          else if (dir === 3) { cx++; cy--; }
+          pCtx.lineTo(cx * gridSize, cy * gridSize);
+        }
+        pCtx.stroke();
+
+        // Solda/Via no final da trilha
+        if (rng() > 0.3) {
+          pCtx.beginPath();
+          pCtx.arc(cx * gridSize, cy * gridSize, gridSize / 2.5, 0, Math.PI * 2);
+          pCtx.fill();
+          // Furo da via
+          pCtx.fillStyle = boardC;
+          pCtx.beginPath();
+          pCtx.arc(cx * gridSize, cy * gridSize, gridSize / 5, 0, Math.PI * 2);
+          pCtx.fill();
+          pCtx.fillStyle = traceC;
+        }
+      };
+
+      // Espalha centenas de componentes e trilhas
+      const traceCount = (cols * rows) / 4;
+      for (let i = 0; i < traceCount; i++) {
+        const sx = Math.floor(rng() * cols);
+        const sy = Math.floor(rng() * rows);
+        const len = 2 + Math.floor(rng() * 6);
+        drawTrace(sx, sy, len);
+      }
+
+      // Máscara do circuito para o formato do texto original
+      pCtx.globalCompositeOperation = 'destination-in';
+      pCtx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(pcbCanvas, 0, 0);
+
+      // Sombra interna e chanfro da borda da placa
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 3;
+      ctx.shadowOffsetY = 3;
+      // Truque para desenhar a borda chanfrada
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 2;
+      ctx.drawImage(canvas, -2, -2);
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  origamiFold: {
+    name: 'Low-Poly / Origami',
+    params: [
+      { key: 'color', label: 'Paper Color', type: 'color', default: '#ffaa00' },
+      { key: 'complexity', label: 'Folds', type: 'range', min: 100, max: 2000, step: 50, default: 500 },
+      { key: 'contrast', label: 'Shadow Contrast', type: 'range', min: 0.1, max: 1, step: 0.1, default: 0.6 },
+      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 42 }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const baseColor = hexToRgb(params.color ?? '#ffaa00');
+      const ptsCount = params.complexity ?? 500;
+      const contrast = params.contrast ?? 0.6;
+      const seed = params.seed ?? 42;
+      const w = canvas.width, h = canvas.height;
+
+      let _s = seed * 1234;
+      const rng = () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+
+      // 1. Gera os vértices das dobras
+      const points = [];
+      for (let i = 0; i < ptsCount; i++) {
+        points.push({
+          x: rng() * w,
+          y: rng() * h,
+          shade: 1 - (rng() * contrast) // Modificador de luz do plano
+        });
+      }
+
+      const outImg = ctx.createImageData(w, h);
+      const data = outImg.data;
+      const srcData = ctx.getImageData(0, 0, w, h).data;
+
+      // 2. Renderização de Células de Voronoi (Pixel-perfect low poly fake)
+      // Otimização: Escaneia o texto, acha o ponto mais próximo
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const idx = (py * w + px) * 4;
+          const alpha = srcData[idx + 3];
+
+          if (alpha > 5) {
+            let minDist = Infinity;
+            let bestP = points[0];
+
+            for (let i = 0; i < ptsCount; i++) {
+              const p = points[i];
+              // Math.abs é mais rápido que multiplicar ao quadrado para fake distance (Manhattan)
+              // mas para origami o Euclideano forma arestas mais nítidas e naturais
+              const d = (px - p.x) * (px - p.x) + (py - p.y) * (py - p.y);
+              if (d < minDist) {
+                minDist = d;
+                bestP = p;
+              }
+            }
+
+            // Simula um gradiente dentro da faceta (O brilho cai do centro pro canto)
+            const distGradient = 1 - (Math.sqrt(minDist) / 50);
+            const facetLight = bestP.shade * (0.9 + Math.max(0, distGradient) * 0.1);
+
+            data[idx] = Math.min(255, baseColor.r * facetLight);
+            data[idx + 1] = Math.min(255, baseColor.g * facetLight);
+            data[idx + 2] = Math.min(255, baseColor.b * facetLight);
+            data[idx + 3] = alpha;
+          }
+        }
+      }
+
+      ctx.putImageData(outImg, 0, 0);
+
+      // Adiciona uma fina linha de luz (Highlight) ao redor de todo o texto
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 1;
+      ctx.strokeText(text, x, y); // Fallback caso as arestas fiquem muito perdidas
+      ctx.restore();
+
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  voxelIso: {
+    name: '3D Voxel / Isometric',
+    params: [
+      { key: 'size', label: 'Voxel Size', type: 'range', min: 4, max: 40, step: 2, default: 12 },
+      { key: 'height', label: 'Extrude Height', type: 'range', min: 1, max: 20, step: 1, default: 4 },
+      { key: 'angle', label: 'Rotation', type: 'range', min: 0, max: 360, step: 1, default: 0 },
+      { key: 'colorTop', label: 'Top Color', type: 'color', default: '#00d2ff' },
+      { key: 'colorLeft', label: 'Left Color', type: 'color', default: '#0088ff' },
+      { key: 'colorRight', label: 'Right Color', type: 'color', default: '#0044aa' }
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const size = params.size ?? 12;
+      const hExt = params.height ?? 4;
+      const angleDeg = params.angle ?? 0;
+      const cTop = params.colorTop ?? '#00d2ff';
+      const cLeft = params.colorLeft ?? '#0088ff';
+      const cRight = params.colorRight ?? '#0044aa';
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Amostrar o texto numa grelha
+      const gridW = Math.ceil(w / (size / 2));
+      const gridH = Math.ceil(h / (size / 2));
+
+      const sampleC = document.createElement('canvas');
+      sampleC.width = gridW; sampleC.height = gridH;
+      const sCtx = sampleC.getContext('2d');
+      sCtx.imageSmoothingEnabled = false;
+      sCtx.drawImage(canvas, 0, 0, w, h, 0, 0, gridW, gridH);
+      const gridData = sCtx.getImageData(0, 0, gridW, gridH).data;
+
+      // 2. Extrair voxels sólidos
+      const voxels = [];
+      for (let gy = 0; gy < gridH; gy++) {
+        for (let gx = 0; gx < gridW; gx++) {
+          if (gridData[(gy * gridW + gx) * 4 + 3] > 128) {
+            voxels.push({ x: gx, y: gy });
+          }
+        }
+      }
+
+      if (voxels.length === 0) return { canvas, ctx };
+
+      // Centro da grelha
+      let minGx = gridW, maxGx = 0, minGy = gridH, maxGy = 0;
+      voxels.forEach(v => {
+        if (v.x < minGx) minGx = v.x; if (v.x > maxGx) maxGx = v.x;
+        if (v.y < minGy) minGy = v.y; if (v.y > maxGy) maxGy = v.y;
+      });
+      const gridCenterX = (minGx + maxGx) / 2;
+      const gridCenterY = (minGy + maxGy) / 2;
+
+      // 3. Aplicar Rotação e Profundidade (Z-Sort)
+      const angleRad = angleDeg * (Math.PI / 180);
+      const cosA = Math.cos(angleRad);
+      const sinA = Math.sin(angleRad);
+
+      let minIsoX = Infinity, maxIsoX = -Infinity;
+      let minIsoY = Infinity, maxIsoY = -Infinity;
+
+      voxels.forEach(v => {
+        const dx = v.x - gridCenterX;
+        const dy = v.y - gridCenterY;
+
+        // Rotação na base 2D
+        v.rx = dx * cosA - dy * sinA;
+        v.ry = dx * sinA + dy * cosA;
+
+        // Profundidade para o Painter's Algorithm (Trás para a Frente)
+        v.depth = v.rx + v.ry;
+
+        // Calcular limites da projeção isométrica para conseguir centralizar
+        const isoX = (v.rx - v.ry) * (size / 2);
+        const isoY = (v.rx + v.ry) * (size / 4);
+
+        if (isoX < minIsoX) minIsoX = isoX;
+        if (isoX > maxIsoX) maxIsoX = isoX;
+        if (isoY < minIsoY) minIsoY = isoY;
+        if (isoY > maxIsoY) maxIsoY = isoY;
+      });
+
+      // Ordenar voxels do mais distante para o mais próximo da câmara
+      voxels.sort((a, b) => a.depth - b.depth);
+
+      // 4. Calcular Bounding Box do Texto Original
+      const origData = ctx.getImageData(0, 0, w, h).data;
+      let oMinX = w, oMaxX = 0, oMinY = h, oMaxY = 0;
+      for (let i = 3; i < origData.length; i += 4) {
+        if (origData[i] > 10) {
+          const px = (i / 4) % w, py = Math.floor((i / 4) / w);
+          if (px < oMinX) oMinX = px; if (px > oMaxX) oMaxX = px;
+          if (py < oMinY) oMinY = py; if (py > oMaxY) oMaxY = py;
+        }
+      }
+
+      // 5. Calcular Offset de Desenho Perfeito
+      const textCenterX = (oMinX + oMaxX) / 2;
+      const textCenterY = (oMinY + oMaxY) / 2;
+      const drawnIsoCX = (minIsoX + maxIsoX) / 2;
+      const drawnIsoCY = (minIsoY + maxIsoY) / 2;
+
+      const drawOffX = textCenterX - drawnIsoCX;
+      const drawOffY = textCenterY - drawnIsoCY + (hExt * (size / 4) / 2);
+
+      // 6. Renderizar
+      const isoCanvas = document.createElement('canvas');
+      isoCanvas.width = w; isoCanvas.height = h;
+      const iCtx = isoCanvas.getContext('2d');
+      iCtx.lineJoin = 'round';
+
+      const drawCube = (cx, cy) => {
+        const half = size / 2, quarter = size / 4;
+        const totalHeight = half + (hExt * quarter);
+
+        // Face Esquerda
+        iCtx.fillStyle = cLeft;
+        iCtx.beginPath(); iCtx.moveTo(cx, cy); iCtx.lineTo(cx - half, cy - quarter); iCtx.lineTo(cx - half, cy - quarter - totalHeight); iCtx.lineTo(cx, cy - totalHeight); iCtx.fill();
+
+        // Face Direita
+        iCtx.fillStyle = cRight;
+        iCtx.beginPath(); iCtx.moveTo(cx, cy); iCtx.lineTo(cx + half, cy - quarter); iCtx.lineTo(cx + half, cy - quarter - totalHeight); iCtx.lineTo(cx, cy - totalHeight); iCtx.fill();
+
+        // Face Topo
+        iCtx.fillStyle = cTop;
+        iCtx.beginPath(); iCtx.moveTo(cx, cy - totalHeight); iCtx.lineTo(cx - half, cy - quarter - totalHeight); iCtx.lineTo(cx, cy - half - totalHeight); iCtx.lineTo(cx + half, cy - quarter - totalHeight); iCtx.fill();
+      };
+
+      // Desenhar na ordem correta
+      voxels.forEach(v => {
+        const isoX = drawOffX + (v.rx - v.ry) * (size / 2);
+        const isoY = drawOffY + (v.rx + v.ry) * (size / 4);
+        drawCube(isoX, isoY);
+      });
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(isoCanvas, 0, 0);
+      return { canvas, ctx, abortSignal };
+    }
+  },
+  liquidMercury: {
+    name: 'Liquid Melt / Mercury',
+    params: [
+      { key: 'melt', label: 'Melt / Merge', type: 'range', min: 2, max: 40, step: 1, default: 12 },
+      { key: 'shininess', label: 'Reflection', type: 'range', min: 1, max: 10, step: 0.1, default: 6 },
+    ],
+    apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      const melt = params.melt ?? 12;
+      const shininess = params.shininess ?? 6;
+      const w = canvas.width, h = canvas.height;
+
+      // 1. Criar o blob colorido (Mistura as cores do texto como tinta)
+      const colorBlob = document.createElement('canvas');
+      colorBlob.width = w; colorBlob.height = h;
+      const cbCtx = colorBlob.getContext('2d');
+      cbCtx.filter = `blur(${melt}px)`;
+      cbCtx.drawImage(canvas, 0, 0);
+      cbCtx.filter = 'none';
+
+      const colorData = cbCtx.getImageData(0, 0, w, h);
+      const cd = colorData.data;
+
+      // Endurecer as bordas (Threshold) mas MANTER a cor fundida no RGB
+      for (let i = 0; i < cd.length; i += 4) {
+        cd[i + 3] = cd[i + 3] < 120 ? 0 : 255;
+      }
+      cbCtx.putImageData(colorData, 0, 0);
+
+      // 2. Criar o mapa de alturas para as sombras/brilho
+      const heightBlob = document.createElement('canvas');
+      heightBlob.width = w; heightBlob.height = h;
+      const hCtx = heightBlob.getContext('2d');
+
+      // Extrair apenas a silhueta branca a partir do blob endurecido
+      hCtx.drawImage(colorBlob, 0, 0);
+      hCtx.globalCompositeOperation = 'source-in';
+      hCtx.fillStyle = '#fff';
+      hCtx.fillRect(0, 0, w, h);
+      hCtx.globalCompositeOperation = 'source-over';
+
+      // Borrar para criar o domo/declive 3D
+      hCtx.filter = `blur(${melt / 1.5}px)`;
+      hCtx.drawImage(heightBlob, 0, 0);
+      hCtx.filter = 'none';
+
+      const heightData = hCtx.getImageData(0, 0, w, h).data;
+      const outImg = ctx.createImageData(w, h);
+      const out = outImg.data;
+
+      // Luz vindo de cima/esquerda
+      const Lx = -0.5, Ly = -0.7, Lz = 0.8;
+      const lLen = Math.sqrt(Lx * Lx + Ly * Ly + Lz * Lz);
+      const LnX = Lx / lLen, LnY = Ly / lLen, LnZ = Lz / lLen;
+
+      for (let py = 1; py < h - 1; py++) {
+        const rowOffset = py * w;
+        for (let px = 1; px < w - 1; px++) {
+          const idx = (rowOffset + px) * 4;
+
+          if (cd[idx + 3] === 0) continue; // Pula transparente
+
+          // Mapa de Normais 3D
+          const hL = heightData[(rowOffset + px - 1) * 4];
+          const hR = heightData[(rowOffset + px + 1) * 4];
+          const hT = heightData[((py - 1) * w + px) * 4];
+          const hB = heightData[((py + 1) * w + px) * 4];
+
+          const nx = (hL - hR);
+          const ny = (hT - hB);
+          const nz = 600 / melt;
+
+          const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+          const Nnx = nx / len, Nny = ny / len, Nnz = nz / len;
+
+          let r, g, b;
+
+          // Se usa a cor original, a base vem do colorBlob endurecido
+          r = cd[idx]; g = cd[idx + 1]; b = cd[idx + 2];
+
+          // Iluminação simples por cima para dar profundidade (Ambient + Diffuse)
+          const light = 0.4 + Math.max(0, Nnx * LnX + Nny * LnY + Nnz * LnZ) * 0.6;
+          r *= light; g *= light; b *= light;
+
+          // Efeito Molhado: Specular Point (Luz refletida dura)
+          let diffuse = Math.max(0, Nnx * LnX + Nny * LnY + Nnz * LnZ);
+          let spec = Math.pow(diffuse, shininess * 5);
+
+          // Borda sombreada (Fresnel/Tensão Superficial)
+          const fresnel = 1 - Math.abs(Nnz);
+          r *= (1 - fresnel * 0.4);
+          g *= (1 - fresnel * 0.4);
+          b *= (1 - fresnel * 0.4);
+
+          // Soma o especular no fim
+          out[idx] = Math.min(255, r + spec * 255);
+          out[idx + 1] = Math.min(255, g + spec * 255);
+          out[idx + 2] = Math.min(255, b + spec * 255);
+          out[idx + 3] = 255;
+        }
+      }
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.putImageData(outImg, 0, 0);
+
+      return { canvas, ctx, abortSignal };
+    }
+  }
+}
 
 /* -------------------------
    3. API Helpers
