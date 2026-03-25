@@ -489,9 +489,22 @@ async function drawCompositeText(canvasHash, width, height, abortSignal) {
         canvas = clonedText.canvas;
         ctx = clonedText.ctx;
 
+        // const res = await runStep(
+        //   layerHash,
+        //   effectDef.apply,
+        //   ctx,
+        //   canvas,
+        //   text,
+        //   x,
+        //   y,
+        //   eff.params || {},
+        //   abortSignal,
+        //   eff
+        // );
+
         const res = await runStep(
           layerHash,
-          effectDef.apply,
+          applyTextEffect,
           ctx,
           canvas,
           text,

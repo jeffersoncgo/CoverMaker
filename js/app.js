@@ -1305,7 +1305,7 @@ function addTextLayer(layerIndex) {
     if (Setup.defaults.textLayers) {
       const selectInput = clone.querySelector(".fontSelect-input");
       selectInput.value = Setup.defaults.textLayers.font.family;
-      attachFontSelectListeners(selectInput);
+      // attachFontSelectListeners(selectInput);
       // Populate basic font settings
       clone.querySelector(".overlayText-input").value = Setup.defaults.textLayers.overlayText;
       // clone.querySelector(".fontSelect-input").value = Setup.defaults.textLayers.font.family;

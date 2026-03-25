@@ -1,0 +1,142 @@
+{
+  "textLayers": [
+    {
+      "font": {
+        "family": "Gabriola",
+        "source": "Local",
+        "weight": "bold",
+        "style": "normal",
+        "size": 462,
+        "color": "#ffffff",
+        "opacity": 1
+      },
+      "position": {
+        "textAlign": "center",
+        "textBaseline": "middle",
+        "x": 0,
+        "y": -32,
+        "rotation": 0
+      },
+      "id": "layer_1",
+      "overlayText": "DRAGON",
+      "enabled": true,
+      "fontStyle": "normal bold 462px \"Gabriola\"",
+      "fillStyle": "rgba(255, 255, 255, 1)",
+      "effects": [
+        {
+          "type": "fluffy",
+          "enabled": true,
+          "params": {
+            "color": "#688d82",
+            "length": 25,
+            "density": 0.5,
+            "gravity": 20,
+            "seed": 1
+          }
+        },
+        {
+          "type": "frozen",
+          "enabled": true,
+          "params": {
+            "color": "#8aadff",
+            "freeze": 73,
+            "icicles": 28,
+            "seed": 5
+          }
+        },
+        {
+          "type": "gummyCandy",
+          "enabled": true,
+          "params": {
+            "color": "#ff0066",
+            "thickness": 34,
+            "sugar": 0.8
+          }
+        },
+        {
+          "type": "infernoForge",
+          "enabled": true,
+          "params": {
+            "seed": 1337,
+            "coreColor": "#fff4d6",
+            "hotColor": "#ffb14a",
+            "midColor": "#ff5a00",
+            "darkColor": "#551100",
+            "emberColor": "#ff6a00",
+            "smokeColor": "#3a0904",
+            "glowSize": 34,
+            "glowIntensity": 3.2,
+            "outerGlowSize": 78,
+            "crackAmount": 0.42,
+            "textureScale": 2.4,
+            "smokeAmount": 0.58,
+            "embers": 180,
+            "showBase": true
+          }
+        }
+      ]
+    }
+  ],
+  "canvas": {
+    "type": "line",
+    "format": "cover",
+    "opacity": 0,
+    "overlayColorStart": "#000000",
+    "overlayColorStartRGB": {
+      "r": 0,
+      "g": 0,
+      "b": 0
+    },
+    "overlayColorEnd": "#000000",
+    "overlayColorEndRGB": {
+      "r": 0,
+      "g": 0,
+      "b": 0
+    },
+    "overlayOpacityStart": 0.1,
+    "overlayOpacityEnd": 0.4,
+    "reflectionDistance": 0.7,
+    "reflectionScale": 0.8,
+    "baseScale": 1.4,
+    "blurAmount": 5,
+    "spacing": 1,
+    "salt": 3,
+    "composite": {
+      "type": "line",
+      "params": {
+        "enableReflection": true,
+        "baseScale": 1.35,
+        "spacing": 3,
+        "salt": 0,
+        "reflectionDistance": 0.68,
+        "reflectionScale": 0.87,
+        "blurAmount": 7.5,
+        "startColor": "#000000",
+        "endColor": "#000000",
+        "startOpacity": 0.17,
+        "endOpacity": 0.98
+      },
+      "enabled": true
+    },
+    "effects": [
+      {
+        "type": "overlay",
+        "params": {
+          "startColor": "#000000",
+          "startOpacity": 0.39,
+          "endColor": "#000000",
+          "endOpacity": 0.67
+        },
+        "enabled": true
+      },
+      {
+        "type": "scanLines",
+        "params": {
+          "opacity": 1,
+          "density": 8
+        },
+        "enabled": true
+      }
+    ]
+  }
+}

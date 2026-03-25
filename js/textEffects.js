@@ -9,6 +9,16 @@
    1. Utilities & Helpers
    ------------------------- */
 
+const GLOBAL_OPACITY_PARAM = { 
+  key: 'globalOpacity', 
+  label: 'Effect Blend Opacity', 
+  type: 'range', 
+  min: 0, 
+  max: 1, 
+  step: 0.05, 
+  default: 1 
+};
+
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 
@@ -5304,366 +5314,521 @@ const TEXT_EFFECTS = {
     }
   },
   nordicRuneforge: {
-    name: 'Nordic Runeforge',
-    params: [
-      { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 9999, step: 1, default: 7331 },
+  name: 'Nordic Runeforge',
+  params: [
+    { key: 'seed',            label: 'Seed',            type: 'range',  min: 1,    max: 9999, step: 1,    default: 7331 },
+    { key: 'runeText',        label: 'Rune Text',       type: 'text',                                     default: 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛟ' },
+    { key: 'metalLight',      label: 'Metal Light',     type: 'color',                                    default: '#d4c4b4' },
+    { key: 'metalMid',        label: 'Metal Mid',       type: 'color',                                    default: '#7a6355' },
+    { key: 'metalDark',       label: 'Metal Dark',      type: 'color',                                    default: '#1c0802' },
+    { key: 'patinaA',         label: 'Patina A',        type: 'color',                                    default: '#4d8b88' },
+    { key: 'patinaB',         label: 'Patina B',        type: 'color',                                    default: '#7aa7a0' },
+    { key: 'emberColor',      label: 'Ember',           type: 'color',                                    default: '#8e1c14' },
+    { key: 'extrudeDepth',    label: 'Extrude Depth',   type: 'range',  min: 0,    max: 30,   step: 1,    default: 10 },
+    { key: 'volumeDepth',     label: 'Volume Depth',    type: 'range',  min: 0,    max: 1,    step: 0.01, default: 0.88 },
+    { key: 'depthContrast',   label: 'Depth Contrast',  type: 'range',  min: 0,    max: 1,    step: 0.01, default: 0.75 },
+    { key: 'specularStrength',label: 'Specular',        type: 'range',  min: 0,    max: 1,    step: 0.01, default: 0.12 },
+    { key: 'lightAngleX',     label: 'Light X',         type: 'range',  min: -1,   max: 1,    step: 0.01, default: -0.55 },
+    { key: 'lightAngleY',     label: 'Light Y',         type: 'range',  min: -1,   max: 1,    step: 0.01, default: -0.70 },
+    { key: 'textureScale',    label: 'Texture Scale',   type: 'range',  min: 0.5,  max: 8,    step: 0.1,  default: 2.4 },
+    { key: 'textureStrength', label: 'Texture Strength',type: 'range',  min: 0,    max: 1,    step: 0.01, default: 0.55 },
+    { key: 'patinaAmount',    label: 'Patina',          type: 'range',  min: 0,    max: 1,    step: 0.01, default: 0.32 },
+    { key: 'engraveDepth',    label: 'Rune Depth',      type: 'range',  min: 0,    max: 1,    step: 0.01, default: 0.70 },
+    { key: 'runeSize',        label: 'Rune Size',       type: 'range',  min: 0.02, max: 0.30, step: 0.01, default: 0.09 },
+    { key: 'runeSpacing',     label: 'Rune Spacing',    type: 'range',  min: 0.5,  max: 3.0,  step: 0.1,  default: 1.2 },
+    { key: 'emberAmount',     label: 'Inner Ember',     type: 'range',  min: 0,    max: 1,    step: 0.01, default: 0.20 },
+    { key: 'innerGlow',       label: 'Inner Glow',      type: 'range',  min: 0,    max: 1,    step: 0.01, default: 0.38 },
+  ],
+  apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
+    const w = canvas.width;
+    const h = canvas.height;
+    const seed            = Number(params.seed            ?? 7331);
+    const rnd             = createSeededRandom(seed) || Math.random;
+    const extrudeDepth    = Math.round(clamp(Number(params.extrudeDepth    ?? 10),  0, 30));
+    const volumeDepth     = clamp(Number(params.volumeDepth     ?? 0.88), 0, 1);
+    const depthContrast   = clamp(Number(params.depthContrast   ?? 1), 0, 1);
+    const specularStrength= clamp(Number(params.specularStrength?? 0.25), 0, 1);
+    const lightAngleX     = clamp(Number(params.lightAngleX     ?? -0.55), -1, 1);
+    const lightAngleY     = clamp(Number(params.lightAngleY     ?? -0.70), -1, 1);
+    const textureScale    = Math.max(0.1, Number(params.textureScale ?? 2.4));
+    const textureStrength = clamp(Number(params.textureStrength ?? 0.55), 0, 1);
+    const patinaAmount    = clamp(Number(params.patinaAmount    ?? 0.32), 0, 1);
+    const engraveDepth    = clamp(Number(params.engraveDepth    ?? 0.70), 0, 1);
+    const runeSize        = clamp(Number(params.runeSize        ?? 0.09), 0.02, 0.30);
+    const runeSpacing     = clamp(Number(params.runeSpacing     ?? 1.2),  0.5, 3.0);
+    const emberAmount     = clamp(Number(params.emberAmount     ?? 0.20), 0, 1);
+    const innerGlow       = clamp(Number(params.innerGlow       ?? 0.38), 0, 1);
 
-      { key: 'metalLight', label: 'Metal Light', type: 'color', default: '#b8a79a' },
-      { key: 'metalMid', label: 'Metal Mid', type: 'color', default: '#7c665b' },
-      { key: 'metalDark', label: 'Metal Dark', type: 'color', default: '#2c2522' },
+    // Rune chars: usa runeText do param, filtrando espaços
+    const runeTextRaw = String(params.runeText ?? 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛟ');
+    // Segmenta corretamente (suporte a emoji/astral)
+    const runeChars = [...runeTextRaw].filter(c => c.trim().length > 0);
+    if (runeChars.length === 0) runeChars.push(...[...'ᚠᚢᚦᚨᚱᚲᚷᚹ']);
 
-      { key: 'patinaA', label: 'Patina A', type: 'color', default: '#4d8b88' },
-      { key: 'patinaB', label: 'Patina B', type: 'color', default: '#7aa7a0' },
-      { key: 'emberColor', label: 'Ember', type: 'color', default: '#8e1c14' },
-
-      { key: 'bevelStrength', label: 'Bevel', type: 'range', min: 0, max: 1, step: 0.01, default: 0.72 },
-      { key: 'textureScale', label: 'Texture Scale', type: 'range', min: 0.5, max: 8, step: 0.1, default: 2.4 },
-      { key: 'textureStrength', label: 'Texture Strength', type: 'range', min: 0, max: 1, step: 0.01, default: 0.68 },
-      { key: 'patinaAmount', label: 'Patina', type: 'range', min: 0, max: 1, step: 0.01, default: 0.38 },
-      { key: 'engraveDepth', label: 'Rune Depth', type: 'range', min: 0, max: 1, step: 0.01, default: 0.62 },
-      { key: 'emberAmount', label: 'Inner Ember', type: 'range', min: 0, max: 1, step: 0.01, default: 0.22 },
-      { key: 'rimLight', label: 'Rim Light', type: 'range', min: 0, max: 1, step: 0.01, default: 0.58 }
-    ],
-
-    apply: (ctx, canvas, text, x, y, params = {}, abortSignal) => {
-      const w = canvas.width;
-      const h = canvas.height;
-
-      const seed = Number(params.seed ?? 7331);
-      const rnd = createSeededRandom(seed) || Math.random;
-
-      const bevelStrength = clamp(Number(params.bevelStrength ?? 0.72), 0, 1);
-      const textureScale = Math.max(0.1, Number(params.textureScale ?? 2.4));
-      const textureStrength = clamp(Number(params.textureStrength ?? 0.68), 0, 1);
-      const patinaAmount = clamp(Number(params.patinaAmount ?? 0.38), 0, 1);
-      const engraveDepth = clamp(Number(params.engraveDepth ?? 0.62), 0, 1);
-      const emberAmount = clamp(Number(params.emberAmount ?? 0.22), 0, 1);
-      const rimLight = clamp(Number(params.rimLight ?? 0.58), 0, 1);
-
-      const hexToRgb = (hex) => {
-        const clean = String(hex).replace('#', '').trim();
-        const full = clean.length === 3
-          ? clean.split('').map(c => c + c).join('')
-          : clean.padEnd(6, '0').slice(0, 6);
-        return {
-          r: parseInt(full.slice(0, 2), 16),
-          g: parseInt(full.slice(2, 4), 16),
-          b: parseInt(full.slice(4, 6), 16)
-        };
+    const hexToRgb = (hex) => {
+      const clean = String(hex).replace('#', '').trim();
+      const full = clean.length === 3
+        ? clean.split('').map(c => c + c).join('')
+        : clean.padEnd(6, '0').slice(0, 6);
+      return {
+        r: parseInt(full.slice(0, 2), 16),
+        g: parseInt(full.slice(2, 4), 16),
+        b: parseInt(full.slice(4, 6), 16)
       };
+    };
+    const smoothstep = (a, b, xv) => {
+      const t = clamp((xv - a) / (b - a), 0, 1);
+      return t * t * (3 - 2 * t);
+    };
+    const mixRgb = (a, b, t) => ({
+      r: lerp(a.r, b.r, t),
+      g: lerp(a.g, b.g, t),
+      b: lerp(a.b, b.b, t)
+    });
 
-      const smoothstep = (a, b, x) => {
-        const t = clamp((x - a) / (b - a), 0, 1);
-        return t * t * (3 - 2 * t);
-      };
+    const metalLight  = hexToRgb(params.metalLight  ?? '#d4c4b4');
+    const metalMid    = hexToRgb(params.metalMid    ?? '#7a6355');
+    const metalDark   = hexToRgb(params.metalDark   ?? '#120d0b');
+    const patinaA     = hexToRgb(params.patinaA     ?? '#4d8b88');
+    const patinaB     = hexToRgb(params.patinaB     ?? '#7aa7a0');
+    const emberColor  = hexToRgb(params.emberColor  ?? '#8e1c14');
 
-      const mixRgb = (a, b, t) => ({
-        r: lerp(a.r, b.r, t),
-        g: lerp(a.g, b.g, t),
-        b: lerp(a.b, b.b, t)
-      });
+    // ── Máscara original ──────────────────────────────────────────────────────
+    const maskCanvas = createCanvas(w, h);
+    const maskCtx    = maskCanvas.getContext('2d');
+    maskCtx.drawImage(canvas, 0, 0);
+    const maskImg = getImageDataSafe(maskCtx, 0, 0, w, h);
+    const src     = maskImg.data;
 
-      const metalLight = hexToRgb(params.metalLight ?? '#b8a79a');
-      const metalMid = hexToRgb(params.metalMid ?? '#7c665b');
-      const metalDark = hexToRgb(params.metalDark ?? '#2c2522');
-      const patinaA = hexToRgb(params.patinaA ?? '#4d8b88');
-      const patinaB = hexToRgb(params.patinaB ?? '#7aa7a0');
-      const emberColor = hexToRgb(params.emberColor ?? '#8e1c14');
+    let minX = w, minY = h, maxX = 0, maxY = 0, found = false;
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        if (src[(py * w + px) * 4 + 3] > 10) {
+          found = true;
+          if (px < minX) minX = px;
+          if (py < minY) minY = py;
+          if (px > maxX) maxX = px;
+          if (py > maxY) maxY = py;
+        }
+      }
+    }
+    if (!found) return { canvas, ctx, abortSignal };
+    const textW = Math.max(1, maxX - minX);
+    const textH = Math.max(1, maxY - minY);
 
-      const maskCanvas = createCanvas(w, h);
-      const maskCtx = maskCanvas.getContext('2d');
-      maskCtx.drawImage(canvas, 0, 0);
+    // ── SDF preciso: múltiplos passes de blur para suavidade máxima ───────────
+    // Passe 1: blur médio (captura forma geral)
+    const sdf1Canvas = createCanvas(w, h);
+    const sdf1Ctx    = sdf1Canvas.getContext('2d');
+    sdf1Ctx.drawImage(maskCanvas, 0, 0);
+    for (let i = 0; i < 8; i++) {
+      const pass = createCanvas(w, h);
+      const pc   = pass.getContext('2d');
+      pc.filter  = `blur(${2 + i * 3}px)`;
+      pc.drawImage(sdf1Canvas, 0, 0);
+      sdf1Ctx.clearRect(0, 0, w, h);
+      sdf1Ctx.drawImage(pass, 0, 0);
+    }
+    const fieldData = getImageDataSafe(sdf1Ctx, 0, 0, w, h).data;
 
-      const maskImg = getImageDataSafe(maskCtx, 0, 0, w, h);
-      const src = maskImg.data;
+    // Passe 2: blur suave adicional para normal suave (gradiente bevel)
+    const sdf2Canvas = createCanvas(w, h);
+    const sdf2Ctx    = sdf2Canvas.getContext('2d');
+    sdf2Ctx.drawImage(maskCanvas, 0, 0);
+    for (let i = 0; i < 3; i++) {
+      const pass = createCanvas(w, h);
+      const pc   = pass.getContext('2d');
+      pc.filter  = `blur(${6 + i * 6}px)`;
+      pc.drawImage(sdf2Canvas, 0, 0);
+      sdf2Ctx.clearRect(0, 0, w, h);
+      sdf2Ctx.drawImage(pass, 0, 0);
+    }
+    const normData = getImageDataSafe(sdf2Ctx, 0, 0, w, h).data;
 
-      let minX = w, minY = h, maxX = 0, maxY = 0, found = false;
-      for (let py = 0; py < h; py++) {
-        for (let px = 0; px < w; px++) {
-          const a = src[(py * w + px) * 4 + 3];
-          if (a > 10) {
-            found = true;
-            if (px < minX) minX = px;
-            if (py < minY) minY = py;
-            if (px > maxX) maxX = px;
-            if (py > maxY) maxY = py;
+    const fieldAlpha = (px, py) => {
+      px = clamp(Math.round(px), 0, w - 1);
+      py = clamp(Math.round(py), 0, h - 1);
+      return fieldData[(py * w + px) * 4 + 3] / 255;
+    };
+    const normAlpha = (px, py) => {
+      px = clamp(Math.round(px), 0, w - 1);
+      py = clamp(Math.round(py), 0, h - 1);
+      return normData[(py * w + px) * 4 + 3] / 255;
+    };
+
+    // ── Noise helpers ─────────────────────────────────────────────────────────
+    const hash2 = (nx, ny) => {
+      const n = Math.sin(nx * 127.1 + ny * 311.7 + seed * 17.13) * 43758.5453123;
+      return n - Math.floor(n);
+    };
+    const valueNoise = (nx, ny) => {
+      const xi = Math.floor(nx), yi = Math.floor(ny);
+      const xf = nx - xi, yf = ny - yi;
+      const ux = xf * xf * (3 - 2 * xf);
+      const uy = yf * yf * (3 - 2 * yf);
+      return lerp(
+        lerp(hash2(xi, yi),     hash2(xi + 1, yi),     ux),
+        lerp(hash2(xi, yi + 1), hash2(xi + 1, yi + 1), ux),
+        uy
+      );
+    };
+    const fbm = (nx, ny, oct = 4) => {
+      let v = 0, amp = 0.5, freq = 1, norm = 0;
+      for (let i = 0; i < oct; i++) {
+        v += valueNoise(nx * freq, ny * freq) * amp;
+        norm += amp; amp *= 0.5; freq *= 2;
+      }
+      return v / norm;
+    };
+    const ridge = (nx, ny) => 1 - Math.abs(fbm(nx, ny, 4) - 0.5) * 2;
+
+    // ── Normaliza direção da luz ───────────────────────────────────────────────
+    const lLen = Math.sqrt(lightAngleX * lightAngleX + lightAngleY * lightAngleY) || 1;
+    const lx = lightAngleX / lLen;
+    const ly = lightAngleY / lLen;
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // FASE 1 — Extrusão 3D: camadas empilhadas deslocadas para baixo-direita
+    // Cria o "peso" e profundidade real da letra, como se fosse esculpida em pedra
+    // ══════════════════════════════════════════════════════════════════════════
+    const extrudeCanvas = createCanvas(w, h);
+    const extrudeCtx    = extrudeCanvas.getContext('2d');
+    extrudeCtx.clearRect(0, 0, w, h);
+
+    // Direção de extrusão oposta à luz (sombra vai embaixo-direita se luz é cima-esquerda)
+    const extDirX =  0.35;
+    const extDirY =  0.70;
+
+    if (extrudeDepth > 0) {
+      // Camadas de extrusão do fundo para a frente
+      for (let layer = extrudeDepth; layer >= 1; layer--) {
+        const t       = layer / extrudeDepth; // 1=fundo, 0=frente
+        // Cor da camada: mais escura quanto mais fundo
+        const layerDark = 0.12 + t * 0.06;
+        extrudeCtx.save();
+        extrudeCtx.globalAlpha = 0.90 + layer * 0.01;
+        extrudeCtx.shadowColor = 'transparent';
+        // Deslocamento acumulado
+        const ox = Math.round(extDirX * layer * 1.0);
+        const oy = Math.round(extDirY * layer * 1.0);
+        // Desenha a máscara deslocada com a cor do metal escuro
+        const layerCanvas = createCanvas(w, h);
+        const lc          = layerCanvas.getContext('2d');
+        lc.drawImage(maskCanvas, 0, 0);
+        // Colore esta camada: gradiente escuro → muito escuro no fundo
+        const lImg  = getImageDataSafe(lc, 0, 0, w, h);
+        const lData = lImg.data;
+        const ri = Math.round(lerp(metalDark.r * 1.4, metalDark.r * 0.5, t));
+        const gi = Math.round(lerp(metalDark.g * 1.4, metalDark.g * 0.5, t));
+        const bi = Math.round(lerp(metalDark.b * 1.4, metalDark.b * 0.5, t));
+        for (let i = 0; i < lData.length; i += 4) {
+          if (lData[i + 3] > 8) {
+            lData[i]     = clamp(ri, 0, 255);
+            lData[i + 1] = clamp(gi, 0, 255);
+            lData[i + 2] = clamp(bi, 0, 255);
           }
         }
+        lc.putImageData(lImg, 0, 0);
+        extrudeCtx.drawImage(layerCanvas, ox, oy);
+        extrudeCtx.restore();
       }
-      if (!found) return { canvas, ctx, abortSignal };
+    }
 
-      const textW = Math.max(1, maxX - minX);
-      const textH = Math.max(1, maxY - minY);
+    // ══════════════════════════════════════════════════════════════════════════
+    // FASE 2 — Superfície principal: shading volumétrico Blinn-Phong
+    // ══════════════════════════════════════════════════════════════════════════
+    const renderCanvas = createCanvas(w, h);
+    const renderCtx    = renderCanvas.getContext('2d');
+    const renderImg    = renderCtx.createImageData(w, h);
+    const out          = renderImg.data;
 
-      const fieldCanvas = createCanvas(w, h);
-      const fieldCtx = fieldCanvas.getContext('2d');
-      fieldCtx.drawImage(maskCanvas, 0, 0);
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const idx   = (py * w + px) * 4;
+        const alpha = src[idx + 3];
+        if (alpha < 8) continue;
 
-      for (let i = 0; i < 4; i++) {
-        const pass = createCanvas(w, h);
-        const pctx = pass.getContext('2d');
-        pctx.filter = `blur(${4 + i * 3}px)`;
-        pctx.drawImage(fieldCanvas, 0, 0);
-        fieldCtx.clearRect(0, 0, w, h);
-        fieldCtx.drawImage(pass, 0, 0);
+        // Campo de distância: 0=borda, 1=interior profundo
+        const edge = fieldData[idx + 3] / 255;
+
+        // ── Domo volumétrico ──────────────────────────────────────────────
+        const dome         = smoothstep(0.0, 0.68, edge);
+        const volumeFactor = Math.pow(dome, 1.0 + depthContrast * 2.2);
+
+        // ── Normal da superfície (via SDF suavizado) ──────────────────────
+        // Usa normData para normal suave e fieldData para borda nítida
+        const ns   = 2.0;
+        const ngx  = normAlpha(px + ns, py) - normAlpha(px - ns, py);
+        const ngy  = normAlpha(px, py + ns) - normAlpha(px, py - ns);
+        const nLen2 = Math.sqrt(ngx * ngx + ngy * ngy) || 0.001;
+        const nnx   = -ngx / nLen2;
+        const nny   = -ngy / nLen2;
+        // Z da normal proporcional à elevação do domo — curva real
+        const nnz   = clamp(Math.sqrt(Math.max(0, 1 - ngx * ngx - ngy * ngy)) * (0.6 + volumeFactor * 0.8), 0, 1);
+
+        // ── Diffuse Lambert ───────────────────────────────────────────────
+        const diff = clamp(nnx * (-lx) + nny * (-ly) + nnz * 0.55, 0, 1);
+
+        // ── Specular Blinn-Phong ──────────────────────────────────────────
+        const hvx  = (-lx + 0) * 0.5;  // half-vector (câmera em z+)
+        const hvy  = (-ly + 0) * 0.5;
+        const hvz  = 1.0;
+        const hvN  = Math.sqrt(hvx * hvx + hvy * hvy + hvz * hvz) || 1;
+        const sDot = clamp(nnx * (hvx / hvN) + nny * (hvy / hvN) + nnz * (hvz / hvN), 0, 1);
+        // Expoente alto = highlight pequeno e nítido (metal polido)
+        const specExp = 28 + specularStrength * 90;
+        const specular = Math.pow(sDot, specExp) * specularStrength * (0.5 + volumeFactor * 0.5);
+
+        // ── Textura de superfície ─────────────────────────────────────────
+        const hammered = ridge(px * 0.055 * textureScale, py * 0.055 * textureScale);
+        const grain    = ridge(px * 0.22  * textureScale + 11.7, py * 0.18 * textureScale + 3.1);
+        const nFine    = fbm(px * 0.17 * textureScale, py * 0.17 * textureScale, 3);
+        const nMicro   = fbm(px * 0.38 * textureScale + 5.3, py * 0.38 * textureScale + 9.1, 2);
+        const texLift  = ((hammered - 0.5) * 0.55 + (grain - 0.5) * 0.35 + (nMicro - 0.5) * 0.15) * textureStrength;
+
+        // ── Cor base: 3 estágios (borda escura → mid → centro claro) ─────
+        let metal = mixRgb(metalDark, metalMid,  smoothstep(0.00, 0.42, volumeFactor));
+        metal     = mixRgb(metal,     metalLight, smoothstep(0.38, 1.00, volumeFactor) * volumeDepth);
+
+        // Modulação por textura
+        metal.r += texLift * 95;
+        metal.g += texLift * 82;
+        metal.b += texLift * 68;
+
+        // Iluminação difusa direcional
+        metal.r = lerp(metal.r, metalLight.r, diff * 0.38);
+        metal.g = lerp(metal.g, metalLight.g, diff * 0.38);
+        metal.b = lerp(metal.b, metalLight.b, diff * 0.38);
+
+        // Sombra nas bordas — queda brusca no escuro (concavidade)
+        const bEdge       = Math.pow(1 - smoothstep(0.0, 0.28, edge), 2.5);
+        const shadowPower = 0.72 + depthContrast * 0.28;
+        metal.r = lerp(metal.r, metalDark.r, bEdge * shadowPower);
+        metal.g = lerp(metal.g, metalDark.g, bEdge * shadowPower);
+        metal.b = lerp(metal.b, metalDark.b, bEdge * shadowPower);
+
+        // Sombra direcional extra (lado oposto à luz fica mais escuro)
+        const shadowDot = clamp(nnx * lx + nny * ly, 0, 1);
+        metal.r = lerp(metal.r, metalDark.r, shadowDot * 0.40);
+        metal.g = lerp(metal.g, metalDark.g, shadowDot * 0.40);
+        metal.b = lerp(metal.b, metalDark.b, shadowDot * 0.40);
+
+        // ── Pátina nos recessos ───────────────────────────────────────────
+        const pNoise = fbm(px * 0.028 * textureScale + 80.1, py * 0.028 * textureScale + 12.4, 5);
+        const pMask  = smoothstep(0.60, 0.84, pNoise) * patinaAmount * (0.25 + (1 - edge) * 0.95);
+        const pColor = mixRgb(patinaA, patinaB, nFine);
+        metal = mixRgb(metal, pColor, pMask);
+
+        // ── Ember nos recessos ────────────────────────────────────────────
+        const eNoise = fbm(px * 0.048 + 120.4, py * 0.068 + 77.8, 4);
+        const eMask  = smoothstep(0.70, 0.92, eNoise) * emberAmount * (1 - smoothstep(0.25, 0.65, edge)) * 0.90;
+        metal.r = lerp(metal.r, emberColor.r, eMask);
+        metal.g = lerp(metal.g, emberColor.g, eMask * 0.28);
+        metal.b = lerp(metal.b, emberColor.b, eMask * 0.12);
+
+        // ── Inner Glow no centro ──────────────────────────────────────────
+        const glow = smoothstep(0.48, 1.0, edge) * innerGlow * 0.48;
+        metal.r = lerp(metal.r, metalLight.r, glow);
+        metal.g = lerp(metal.g, metalLight.g, glow * 0.86);
+        metal.b = lerp(metal.b, metalLight.b, glow * 0.70);
+
+        // ── Specular por cima ─────────────────────────────────────────────
+        metal.r += specular * 255 * 0.92;
+        metal.g += specular * 255 * 0.82;
+        metal.b += specular * 255 * 0.70;
+
+        // Rim light suave na borda oposta (simula reflexo ambiente)
+        const rimLight = smoothstep(0.60, 1.0, edge) * 0.18 * specularStrength;
+        metal.r = lerp(metal.r, metalLight.r, rimLight);
+        metal.g = lerp(metal.g, metalLight.g, rimLight * 0.85);
+        metal.b = lerp(metal.b, metalLight.b, rimLight * 0.70);
+
+        out[idx]     = clamp(Math.round(metal.r), 0, 255);
+        out[idx + 1] = clamp(Math.round(metal.g), 0, 255);
+        out[idx + 2] = clamp(Math.round(metal.b), 0, 255);
+        out[idx + 3] = alpha;
       }
+    }
 
-      const fieldData = getImageDataSafe(fieldCtx, 0, 0, w, h).data;
+    renderCtx.putImageData(renderImg, 0, 0);
+    // Recorta pela máscara original
+    renderCtx.globalCompositeOperation = 'destination-in';
+    renderCtx.drawImage(maskCanvas, 0, 0);
+    renderCtx.globalCompositeOperation = 'source-over';
 
-      const fieldAlpha = (px, py) => {
-        px = clamp(px, 0, w - 1);
-        py = clamp(py, 0, h - 1);
-        return fieldData[(py * w + px) * 4 + 3] / 255;
-      };
+    // ══════════════════════════════════════════════════════════════════════════
+    // FASE 3 — Runas: distribui os chars do runeText na superfície
+    // ══════════════════════════════════════════════════════════════════════════
+    const runeLayer = createCanvas(w, h);
+    const runeCtx   = runeLayer.getContext('2d');
+    runeCtx.clearRect(0, 0, w, h);
+    runeCtx.textAlign    = 'center';
+    runeCtx.textBaseline = 'middle';
 
-      const hash2 = (x, y) => {
-        const n = Math.sin(x * 127.1 + y * 311.7 + seed * 17.13) * 43758.5453123;
-        return n - Math.floor(n);
-      };
+    // Tamanho base das runas
+    const runeFontSize = Math.max(10, Math.round(Math.min(textW, textH) * runeSize));
+    // Espaçamento entre runas
+    const runeStep     = runeFontSize * runeSpacing;
 
-      const valueNoise = (x, y) => {
-        const xi = Math.floor(x), yi = Math.floor(y);
-        const xf = x - xi, yf = y - yi;
+    // Fonte com estilo slab/serif
+    const runeFontStr = `700 ${runeFontSize}px serif`;
+    runeCtx.font      = runeFontStr;
 
-        const h00 = hash2(xi, yi);
-        const h10 = hash2(xi + 1, yi);
-        const h01 = hash2(xi, yi + 1);
-        const h11 = hash2(xi + 1, yi + 1);
+    // Posiciona runas ao longo de linhas verticais distribuídas pelo texto
+    // Número de colunas dinâmico baseado na largura
+    const numCols = Math.max(2, Math.round(textW / (textH * 0.55)));
+    let runeIdx   = 0;
 
-        const ux = xf * xf * (3 - 2 * xf);
-        const uy = yf * yf * (3 - 2 * yf);
+    for (let col = 0; col < numCols; col++) {
+      const colX  = minX + textW * ((col + 0.5) / numCols);
+      // Número de runas por coluna baseado na altura
+      const count = Math.max(2, Math.round((textH * 0.72) / runeStep));
 
-        return lerp(
-          lerp(h00, h10, ux),
-          lerp(h01, h11, ux),
-          uy
-        );
-      };
+      for (let row = 0; row < count; row++) {
+        const colY = minY + textH * 0.14 + (textH * 0.72) * (row / Math.max(count - 1, 1));
 
-      const fbm = (x, y, octaves = 4) => {
-        let value = 0;
-        let amp = 0.5;
-        let freq = 1;
-        let norm = 0;
-        for (let i = 0; i < octaves; i++) {
-          value += valueNoise(x * freq, y * freq) * amp;
-          norm += amp;
-          amp *= 0.5;
-          freq *= 2;
-        }
-        return value / norm;
-      };
+        // Verificar se o ponto está dentro da máscara com margem
+        const mx = clamp(Math.round(colX), 0, w - 1);
+        const my = clamp(Math.round(colY), 0, h - 1);
+        const mA = src[(my * w + mx) * 4 + 3];
+        if (mA < 60) continue;
 
-      const ridge = (x, y, scale = 1) => {
-        const n = fbm(x * scale, y * scale, 4);
-        return 1 - Math.abs(n - 0.5) * 2;
-      };
+        // Pequena perturbação para não ficar perfeitamente alinhado
+        const jitterX = (rnd() - 0.5) * runeFontSize * 0.3;
+        const jitterY = (rnd() - 0.5) * runeFontSize * 0.15;
 
-      const renderCanvas = createCanvas(w, h);
-      const renderCtx = renderCanvas.getContext('2d');
-      const renderImg = renderCtx.createImageData(w, h);
-      const out = renderImg.data;
+        const char = runeChars[runeIdx % runeChars.length];
+        runeIdx++;
 
-      for (let py = 0; py < h; py++) {
-        for (let px = 0; px < w; px++) {
-          const idx = (py * w + px) * 4;
-          const alpha = src[idx + 3];
-          if (alpha < 8) continue;
-
-          const nx = (px - minX) / textW;
-          const ny = (py - minY) / textH;
-          const edge = fieldData[idx + 3] / 255;
-
-          const nLarge = fbm(px * 0.018 * textureScale, py * 0.018 * textureScale, 5);
-          const nMid = fbm(px * 0.065 * textureScale, py * 0.065 * textureScale, 4);
-          const nFine = fbm(px * 0.18 * textureScale, py * 0.18 * textureScale, 3);
-
-          const hammered = ridge(px * 0.055 * textureScale, py * 0.055 * textureScale, 1.0);
-          const grain = ridge(px * 0.23 * textureScale + 11.7, py * 0.19 * textureScale + 3.1, 1.0);
-          const crack = smoothstep(0.62, 0.90, nMid * 0.65 + nFine * 0.35);
-
-          const gx = fieldAlpha(px + 1, py) - fieldAlpha(px - 1, py);
-          const gy = fieldAlpha(px, py + 1) - fieldAlpha(px, py - 1);
-
-          const bevel = clamp((-gx * 0.85 - gy * 0.55) * 2.2, -1, 1);
-          const edgeRim = smoothstep(0.25, 0.95, edge);
-
-          let metal = mixRgb(metalDark, metalMid, 0.52 + (hammered - 0.5) * 0.38);
-          metal = mixRgb(metal, metalLight, smoothstep(0.52, 0.95, edgeRim) * 0.22);
-
-          const texLift = ((hammered - 0.5) * 0.7 + (grain - 0.5) * 0.45 + (nLarge - 0.5) * 0.28) * textureStrength;
-          metal.r += texLift * 110;
-          metal.g += texLift * 95;
-          metal.b += texLift * 85;
-
-          metal.r += bevel * bevelStrength * 85;
-          metal.g += bevel * bevelStrength * 72;
-          metal.b += bevel * bevelStrength * 58;
-
-          const innerShadow = (1 - edgeRim) * 0.34;
-          metal.r = lerp(metal.r, metalDark.r, innerShadow);
-          metal.g = lerp(metal.g, metalDark.g, innerShadow);
-          metal.b = lerp(metal.b, metalDark.b, innerShadow);
-
-          const patinaNoise = fbm(px * 0.030 * textureScale + 80.1, py * 0.030 * textureScale + 12.4, 5);
-          const patinaMask = smoothstep(0.66, 0.88, patinaNoise) * patinaAmount * (0.35 + (1 - edgeRim) * 0.85);
-          const patinaColor = mixRgb(patinaA, patinaB, nFine);
-
-          metal.r = lerp(metal.r, patinaColor.r, patinaMask);
-          metal.g = lerp(metal.g, patinaColor.g, patinaMask);
-          metal.b = lerp(metal.b, patinaColor.b, patinaMask);
-
-          const emberNoise = fbm(px * 0.05 + 120.4, py * 0.07 + 77.8, 4);
-          const emberMask = smoothstep(0.74, 0.94, emberNoise) * emberAmount * (1 - edgeRim) * 0.9;
-          metal.r = lerp(metal.r, emberColor.r, emberMask);
-          metal.g = lerp(metal.g, emberColor.g, emberMask * 0.35);
-          metal.b = lerp(metal.b, emberColor.b, emberMask * 0.18);
-
-          const crackDark = crack * 0.22;
-          metal.r = lerp(metal.r, metalDark.r, crackDark);
-          metal.g = lerp(metal.g, metalDark.g, crackDark);
-          metal.b = lerp(metal.b, metalDark.b, crackDark);
-
-          const rim = smoothstep(0.55, 1.0, edgeRim) * rimLight;
-          metal.r = lerp(metal.r, metalLight.r, rim * 0.68);
-          metal.g = lerp(metal.g, metalLight.g, rim * 0.60);
-          metal.b = lerp(metal.b, metalLight.b, rim * 0.52);
-
-          out[idx] = clamp(Math.round(metal.r), 0, 255);
-          out[idx + 1] = clamp(Math.round(metal.g), 0, 255);
-          out[idx + 2] = clamp(Math.round(metal.b), 0, 255);
-          out[idx + 3] = alpha;
-        }
+        runeCtx.save();
+        runeCtx.translate(colX + jitterX, colY + jitterY);
+        // Leve rotação aleatória (±8°)
+        runeCtx.rotate((rnd() - 0.5) * 0.28);
+        runeCtx.font      = runeFontStr;
+        runeCtx.fillStyle = 'rgba(255,255,255,1.0)';
+        runeCtx.fillText(char, 0, 0);
+        runeCtx.restore();
       }
+    }
 
-      renderCtx.putImageData(renderImg, 0, 0);
-      renderCtx.globalCompositeOperation = 'destination-in';
-      renderCtx.drawImage(maskCanvas, 0, 0);
-      renderCtx.globalCompositeOperation = 'source-over';
+    // Recorta runas pela máscara
+    runeCtx.globalCompositeOperation = 'destination-in';
+    runeCtx.drawImage(maskCanvas, 0, 0);
+    runeCtx.globalCompositeOperation = 'source-over';
 
-      const runeLayer = createCanvas(w, h);
-      const runeCtx = runeLayer.getContext('2d');
-      runeCtx.clearRect(0, 0, w, h);
-      runeCtx.textAlign = 'center';
-      runeCtx.textBaseline = 'middle';
+    const runeImg  = getImageDataSafe(runeCtx, 0, 0, w, h);
+    const runeData = runeImg.data;
 
-      const runeChars = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ', 'ᛇ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ', 'ᛜ', 'ᛟ'];
+    // ── Entalhe: gravar as runas na superfície metálica ───────────────────────
+    const engravedCanvas = createCanvas(w, h);
+    const engravedCtx    = engravedCanvas.getContext('2d');
+    engravedCtx.drawImage(renderCanvas, 0, 0);
+    const engravedImg  = getImageDataSafe(engravedCtx, 0, 0, w, h);
+    const engravedData = engravedImg.data;
 
-      const placeRuneChain = (x0, y0, x1, y1, count) => {
-        for (let i = 0; i < count; i++) {
-          const t = (i + 1) / (count + 1);
-          const px = lerp(x0, x1, t) + (rnd() - 0.5) * 2;
-          const py = lerp(y0, y1, t) + (rnd() - 0.5) * 2;
-          const angle = Math.atan2(y1 - y0, x1 - x0);
+    const runeAlphaAt = (rpx, rpy) => {
+      rpx = clamp(Math.round(rpx), 0, w - 1);
+      rpy = clamp(Math.round(rpy), 0, h - 1);
+      return runeData[(rpy * w + rpx) * 4 + 3] / 255;
+    };
 
-          runeCtx.save();
-          runeCtx.translate(px, py);
-          runeCtx.rotate(angle);
-          runeCtx.font = `600 ${Math.max(12, Math.round(Math.min(textW, textH) * 0.08))}px serif`;
-          runeCtx.fillStyle = 'rgba(255,255,255,0.92)';
-          runeCtx.fillText(runeChars[Math.floor(rnd() * runeChars.length)], 0, 0);
-          runeCtx.restore();
-        }
-      };
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const idx = (py * w + px) * 4;
+        const ra  = runeData[idx + 3] / 255;
+        if (ra <= 0.01) continue;
 
-      const runeGuide = [
-        [minX + textW * 0.08, minY + textH * 0.34, minX + textW * 0.14, minY + textH * 0.58, 4],
-        [minX + textW * 0.23, minY + textH * 0.23, minX + textW * 0.23, minY + textH * 0.76, 5],
-        [minX + textW * 0.43, minY + textH * 0.20, minX + textW * 0.43, minY + textH * 0.72, 4],
-        [minX + textW * 0.62, minY + textH * 0.18, minX + textW * 0.62, minY + textH * 0.74, 4],
-        [minX + textW * 0.76, minY + textH * 0.20, minX + textW * 0.76, minY + textH * 0.70, 4],
-        [minX + textW * 0.90, minY + textH * 0.34, minX + textW * 0.84, minY + textH * 0.58, 4]
-      ];
+        // Gradiente do entalhe para bevel nas bordas da runa
+        const step = 1.2;
+        const rgx  = runeAlphaAt(px + step, py) - runeAlphaAt(px - step, py);
+        const rgy  = runeAlphaAt(px, py + step) - runeAlphaAt(px, py - step);
+        // Bevel direcional da runa (luz de cima-esquerda)
+        const engraveBevel = clamp((rgx * lx + rgy * ly) * 2.2, -1, 1) * engraveDepth;
 
-      for (const g of runeGuide) {
-        placeRuneChain(g[0], g[1], g[2], g[3], g[4]);
+        let r = engravedData[idx];
+        let g = engravedData[idx + 1];
+        let b = engravedData[idx + 2];
+
+        // Escurece o interior da runa (entalhe rebaixado)
+        const engraveAmt = ra * 0.82;
+        r = lerp(r, metalDark.r, engraveAmt);
+        g = lerp(g, metalDark.g, engraveAmt);
+        b = lerp(b, metalDark.b, engraveAmt);
+
+        // Bevel: borda iluminada de um lado, sombra do outro
+        r += engraveBevel * 70;
+        g += engraveBevel * 60;
+        b += engraveBevel * 48;
+
+        // Ember nas runas
+        const eInRune = ra * emberAmount * 0.55;
+        r = lerp(r, emberColor.r, eInRune);
+        g = lerp(g, emberColor.g, eInRune * 0.20);
+        b = lerp(b, emberColor.b, eInRune * 0.08);
+
+        // Pátina nas runas
+        const pInRune = ra * patinaAmount * 0.40;
+        r = lerp(r, patinaA.r, pInRune);
+        g = lerp(g, patinaA.g, pInRune);
+        b = lerp(b, patinaA.b, pInRune);
+
+        engravedData[idx]     = clamp(Math.round(r), 0, 255);
+        engravedData[idx + 1] = clamp(Math.round(g), 0, 255);
+        engravedData[idx + 2] = clamp(Math.round(b), 0, 255);
       }
+    }
+    engravedCtx.putImageData(engravedImg, 0, 0);
 
-      runeCtx.globalCompositeOperation = 'destination-in';
-      runeCtx.drawImage(maskCanvas, 0, 0);
-      runeCtx.globalCompositeOperation = 'source-over';
+    // ══════════════════════════════════════════════════════════════════════════
+    // FASE 4 — Composição final com sombra volumétrica
+    // ══════════════════════════════════════════════════════════════════════════
 
-      const runeImg = getImageDataSafe(runeCtx, 0, 0, w, h);
-      const runeData = runeImg.data;
-
-      const engravedCanvas = createCanvas(w, h);
-      const engravedCtx = engravedCanvas.getContext('2d');
-      engravedCtx.drawImage(renderCanvas, 0, 0);
-
-      const engravedImg = getImageDataSafe(engravedCtx, 0, 0, w, h);
-      const engravedData = engravedImg.data;
-
-      const runeAlphaAt = (px, py) => {
-        px = clamp(px, 0, w - 1);
-        py = clamp(py, 0, h - 1);
-        return runeData[(py * w + px) * 4 + 3] / 255;
-      };
-
-      for (let py = 0; py < h; py++) {
-        for (let px = 0; px < w; px++) {
-          const idx = (py * w + px) * 4;
-          const ra = runeData[idx + 3] / 255;
-          if (ra <= 0.01) continue;
-
-          const rgx = runeAlphaAt(px + 1, py) - runeAlphaAt(px - 1, py);
-          const rgy = runeAlphaAt(px, py + 1) - runeAlphaAt(px, py - 1);
-
-          const engrave = clamp((rgx * -0.9 + rgy * -0.65) * 1.8, -1, 1) * engraveDepth;
-
-          let r = engravedData[idx];
-          let g = engravedData[idx + 1];
-          let b = engravedData[idx + 2];
-
-          r = lerp(r, metalDark.r, ra * 0.72);
-          g = lerp(g, metalDark.g, ra * 0.72);
-          b = lerp(b, metalDark.b, ra * 0.72);
-
-          r += engrave * 60;
-          g += engrave * 52;
-          b += engrave * 42;
-
-          const emberInRune = ra * emberAmount * 0.55;
-          r = lerp(r, emberColor.r, emberInRune);
-          g = lerp(g, emberColor.g, emberInRune * 0.25);
-          b = lerp(b, emberColor.b, emberInRune * 0.12);
-
-          engravedData[idx] = clamp(Math.round(r), 0, 255);
-          engravedData[idx + 1] = clamp(Math.round(g), 0, 255);
-          engravedData[idx + 2] = clamp(Math.round(b), 0, 255);
-        }
-      }
-
-      engravedCtx.putImageData(engravedImg, 0, 0);
-
-      const shadowCanvas = createCanvas(w, h);
-      const shadowCtx = shadowCanvas.getContext('2d');
-      shadowCtx.clearRect(0, 0, w, h);
+    // Sombra suave projetada pela extrusão
+    const shadowCanvas = createCanvas(w, h);
+    const shadowCtx    = shadowCanvas.getContext('2d');
+    shadowCtx.clearRect(0, 0, w, h);
+    if (extrudeDepth > 0) {
+      // Sombra difusa base
       shadowCtx.save();
-      shadowCtx.shadowColor = 'rgba(0,0,0,0.9)';
-      shadowCtx.shadowBlur = 18;
-      shadowCtx.shadowOffsetX = 0;
+      shadowCtx.shadowColor   = 'rgba(0,0,0,0.88)';
+      shadowCtx.shadowBlur    = 8 + extrudeDepth * 0.8;
+      shadowCtx.shadowOffsetX = extDirX * extrudeDepth * 0.6;
+      shadowCtx.shadowOffsetY = extDirY * extrudeDepth * 0.6;
+      shadowCtx.drawImage(maskCanvas, 0, 0);
+      shadowCtx.restore();
+    } else {
+      shadowCtx.save();
+      shadowCtx.shadowColor   = 'rgba(0,0,0,0.88)';
+      shadowCtx.shadowBlur    = 18;
+      shadowCtx.shadowOffsetX = 2;
       shadowCtx.shadowOffsetY = 8;
       shadowCtx.drawImage(maskCanvas, 0, 0);
       shadowCtx.restore();
-
-      const redGlowCanvas = createCanvas(w, h);
-      const redGlowCtx = redGlowCanvas.getContext('2d');
-      redGlowCtx.clearRect(0, 0, w, h);
-      redGlowCtx.save();
-      redGlowCtx.shadowColor = `rgba(${emberColor.r},${emberColor.g},${emberColor.b},0.9)`;
-      redGlowCtx.shadowBlur = 18;
-      redGlowCtx.globalAlpha = 0.22 + emberAmount * 0.18;
-      redGlowCtx.drawImage(maskCanvas, 0, 0);
-      redGlowCtx.restore();
-
-      ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(shadowCanvas, 0, 0);
-      ctx.drawImage(redGlowCanvas, 0, 0);
-      ctx.drawImage(engravedCanvas, 0, 0);
-
-      return { canvas, ctx, abortSignal };
     }
-  },
+
+    // Ember glow externo
+    const glowCanvas = createCanvas(w, h);
+    const glowCtx    = glowCanvas.getContext('2d');
+    glowCtx.clearRect(0, 0, w, h);
+    if (emberAmount > 0.02) {
+      glowCtx.save();
+      glowCtx.shadowColor = `rgba(${emberColor.r},${emberColor.g},${emberColor.b},0.80)`;
+      glowCtx.shadowBlur  = 20 + emberAmount * 15;
+      glowCtx.globalAlpha = 0.14 + emberAmount * 0.24;
+      glowCtx.drawImage(maskCanvas, 0, 0);
+      glowCtx.restore();
+    }
+
+    // Composição final
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(shadowCanvas,   0, 0);   // sombra projetada
+    ctx.drawImage(extrudeCanvas,  0, 0);   // extrusão lateral 3D
+    ctx.drawImage(glowCanvas,     0, 0);   // ember glow
+    ctx.drawImage(engravedCanvas, 0, 0);   // superfície principal com runas
+
+    return { canvas, ctx, abortSignal };
+  }
+},
 
   innerShadow: {
     name: 'Inner Shadow',
@@ -7718,25 +7883,108 @@ const TEXT_EFFECTS = {
 /* -------------------------
    3. API Helpers
    ------------------------- */
-function applyTextEffect(textCtx, textCanvas, effectType, text, x, y, params = {}) {
-  const effect = TEXT_EFFECTS[effectType];
-  if (effect && effect.apply) {
-    textCtx.save();
+// function applyTextEffect(textCtx, textCanvas, effectType, text, x, y, params = {}) {
+//   const effect = TEXT_EFFECTS[effectType];
+//   if (effect && effect.apply) {
+//     textCtx.save();
+//     try {
+//       effect.apply(textCtx, textCanvas, text, x, y, params);
+//     } finally {
+//       textCtx.restore();
+//     }
+//   }
+// }
+
+async function applyTextEffect(ctx, canvas, text, x, y, params = {}, abortSignal, eff) {
+  const effectDef = TEXT_EFFECTS[eff.type];
+  if (!effectDef || !effectDef.apply) return { canvas, ctx, abortSignal };
+
+  // Pega o Strength global (default 1 se não existir)
+  const opacity = params.globalOpacity !== undefined ? clamp(params.globalOpacity, 0, 1) : 1;
+  const blendMode = params.blendMode || 'source-over';
+
+  // CAMINHO RÁPIDO: Se a força for 100%, não precisa de frescura, roda direto.
+  if (opacity === 1 && blendMode === 'source-over') {
+    ctx.save();
+    let result;
     try {
-      effect.apply(textCtx, textCanvas, text, x, y, params);
+      result = await effectDef.apply(ctx, canvas, text, x, y, params, abortSignal);
     } finally {
-      textCtx.restore();
+      ctx.restore();
     }
+    // Retorna o resultado (que os efeitos geralmente já retornam: { canvas, ctx })
+    return result || { canvas, ctx, abortSignal }; 
   }
+
+  // CAMINHO MESCLADO: O usuário reduziu o opacity
+  
+  // 1. Tira uma "foto" do canvas ANTES do efeito (Snapshot)
+  const snapshot = cloneCanvas(canvas, abortSignal);
+
+  // 2. Aplica o efeito destrutivo no canvas principal
+  ctx.save();
+  let effectResult;
+  try {
+    effectResult = await effectDef.apply(ctx, canvas, text, x, y, params, abortSignal);
+  } finally {
+    ctx.restore();
+  }
+
+  // Pegamos o canvas com o efeito 100% aplicado
+  const resultCtx = effectResult ? effectResult.ctx : ctx;
+  const resultCanvas = effectResult ? effectResult.canvas : canvas;
+
+  // 3. Salva esse resultado final do efeito numa cópia temporária
+  const tempEffectCanvas = cloneCanvas(resultCanvas, abortSignal);
+
+  // 4. Limpa o canvas e devolve a "foto" original intacta
+  resultCtx.clearRect(0, 0, resultCanvas.width, resultCanvas.height);
+  resultCtx.drawImage(snapshot.canvas, 0, 0);
+
+  // 5. Carimba o efeito por cima com a opacidade correta!
+  resultCtx.save();
+  resultCtx.globalAlpha = opacity;
+  resultCtx.globalCompositeOperation = blendMode;
+  resultCtx.drawImage(tempEffectCanvas.canvas, 0, 0);
+  resultCtx.restore();
+
+  return { canvas: resultCanvas, ctx: resultCtx, abortSignal };
 }
+
+// function getAvailableTextEffects() {
+//   return Object.entries(TEXT_EFFECTS)
+//     .map(([id, effect]) => ({
+//       id,
+//       name: effect.name,
+//       params: effect.params || []
+//     }))
+//     .sort((a, b) => a.name.localeCompare(b.name));
+// }
 
 function getAvailableTextEffects() {
   return Object.entries(TEXT_EFFECTS)
-    .map(([id, effect]) => ({
-      id,
-      name: effect.name,
-      params: effect.params || []
-    }))
+    .map(([id, effect]) => {
+      // 1. Garante que params é um array (mesmo que algum efeito esqueça de declarar)
+      if (!effect.params) {
+        effect.params = [];
+      }
+
+      // 2. Trava de segurança: Verifica se a opacidade global já foi injetada antes
+      const hasGlobalOpacity = effect.params.some(p => p.key === 'globalOpacity');
+      
+      // 3. Muta o objeto ORIGINAL (TEXT_EFFECTS) permanentemente
+      if (!hasGlobalOpacity) {
+        // Colocamos no final da lista de parâmetros. 
+        // Se preferir que apareça no topo da UI, use effect.params.unshift(...)
+        effect.params.push(GLOBAL_OPACITY_PARAM); 
+      }
+
+      return {
+        id,
+        name: effect.name,
+        params: effect.params
+      };
+    })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 

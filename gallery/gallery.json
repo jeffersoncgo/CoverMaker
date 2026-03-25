@@ -98,5 +98,16 @@
     "page": "https://github.com/jeffersoncgo/CoverMaker",
     "setup": "gallery/projects/batman-collection/project.json",
     "project": "gallery/projects/batman-collection/batman.collection.project.zip"
+  },
+  {
+    "id": "dragon-fire",
+    "title": "Dragon — Fire",
+    "shortDescription": "Dragon Inspirated Library Cover.",
+    "image": "gallery/projects/dragon-fire/dragon.fire.result.png",
+    "type": "cover",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/dragon.fire/project.json",
+    "project": "gallery/projects/dragon.fire/dragon.fire.project.zip"
   }
 ]
