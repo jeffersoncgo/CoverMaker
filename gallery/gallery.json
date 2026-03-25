@@ -107,7 +107,7 @@
     "type": "cover",
     "author": "jeffersoncgo",
     "page": "https://github.com/jeffersoncgo/CoverMaker",
-    "setup": "gallery/projects/dragon.fire/project.json",
-    "project": "gallery/projects/dragon.fire/dragon.fire.project.zip"
+    "setup": "gallery/projects/dragon-fire/project.json",
+    "project": "gallery/projects/dragon-fire/dragon.fire.project.zip"
   }
 ]
