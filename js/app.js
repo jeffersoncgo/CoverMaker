@@ -1,3 +1,14 @@
+/**
+ * Keeps focus on a select element after its value changes.
+ * Useful when the change event causes a re-render that would otherwise lose focus.
+ * Add as a 'change' event listener alongside other handlers.
+ */
+function keepFocusAfterChange(e) {
+  const select = e.currentTarget;
+  // Use setTimeout to re-focus after any synchronous DOM re-renders triggered by the change
+  setTimeout(() => select.focus(), 0);
+}
+
 // Adiciona sliders de parâmetros de efeito dinamicamente
 function addEffectParamsOptions(paramsContainer, effectType, paramsObj, effectIndex) {
   const effectDef = EFFECTS_REGISTRY[effectType];
@@ -20,6 +31,8 @@ function addEffectParamsOptions(paramsContainer, effectType, paramsObj, effectIn
   const eff = projectConfig.canvas.effects[effectIndex];
   if (eff) typeSelect.value = eff.type;
   typeSelect.addEventListener('change', changeEffectLayerType);
+  typeSelect.addEventListener('change', keepFocusAfterChange);
+
   typeContainer.appendChild(typeLabel);
   typeContainer.appendChild(typeSelect);
   paramsContainer.appendChild(typeContainer);
@@ -60,6 +73,7 @@ function addTextEffectParamsOptions(paramsContainer, effectType, paramsObj, laye
   });
   typeSelect.value = effectType;
   typeSelect.addEventListener('change', changeTextEffectLayerType);
+  typeSelect.addEventListener('change', keepFocusAfterChange);
   typeContainer.appendChild(typeLabel);
   typeContainer.appendChild(typeSelect);
   paramsContainer.appendChild(typeContainer);
@@ -617,7 +631,6 @@ function onTextEffectParamChange(event) {
 // Hooks from addTextLayer - attach listener to add-text-effect-btn
 
 addEffectLayerBtn?.addEventListener('click', addImageEffectLayer);
-
 
 window.addEventListener('DOMContentLoaded', renderEffectLayers);
 window.addEventListener('DOMContentLoaded', renderTextEffectLayers);

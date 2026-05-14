@@ -1,0 +1,120 @@
+{
+  "textLayers": [
+    {
+      "font": {
+        "family": "Protest Revolution",
+        "source": "Google",
+        "weight": "lighter",
+        "style": "normal",
+        "size": 332,
+        "color": "#ffffff",
+        "opacity": 1
+      },
+      "position": {
+        "textAlign": "center",
+        "textBaseline": "middle",
+        "x": -5,
+        "y": -7,
+        "rotation": 0
+      },
+      "id": "layer_1",
+      "overlayText": "SERIES",
+      "enabled": true,
+      "fontStyle": "normal lighter 332px \"Protest Revolution\"",
+      "fillStyle": "rgba(255, 255, 255, 1)",
+      "effects": [
+        {
+          "type": "crystallize",
+          "enabled": true,
+          "params": {
+            "size": 10,
+            "seed": 189.81,
+            "globalOpacity": 1
+          }
+        },
+        {
+          "type": "extrude",
+          "enabled": true,
+          "params": {
+            "depth": 16,
+            "angle": 45,
+            "color": "#000000",
+            "fade": 0.15,
+            "globalOpacity": 1
+          }
+        },
+        {
+          "type": "outline",
+          "enabled": true,
+          "params": {
+            "color": "#ffffff",
+            "thickness": 1,
+            "globalOpacity": 1
+          }
+        }
+      ]
+    }
+  ],
+  "canvas": {
+    "type": "line",
+    "format": "cover",
+    "opacity": 0,
+    "overlayColorStart": "#000000",
+    "overlayColorStartRGB": {
+      "r": 0,
+      "g": 0,
+      "b": 0
+    },
+    "overlayColorEnd": "#000000",
+    "overlayColorEndRGB": {
+      "r": 0,
+      "g": 0,
+      "b": 0
+    },
+    "overlayOpacityStart": 0.1,
+    "overlayOpacityEnd": 0.4,
+    "reflectionDistance": 0.7,
+    "reflectionScale": 0.8,
+    "baseScale": 1.4,
+    "blurAmount": 5,
+    "spacing": 1,
+    "salt": 3,
+    "composite": {
+      "type": "line",
+      "params": {
+        "enableReflection": true,
+        "baseScale": 1.35,
+        "spacing": 3,
+        "salt": 0,
+        "reflectionDistance": 0.68,
+        "reflectionScale": 0.87,
+        "blurAmount": 7.5,
+        "startColor": "#000000",
+        "endColor": "#000000",
+        "startOpacity": 0.17,
+        "endOpacity": 0.98
+      },
+      "enabled": true
+    },
+    "effects": [
+      {
+        "type": "overlay",
+        "params": {
+          "startColor": "#000000",
+          "startOpacity": 0.39,
+          "endColor": "#000000",
+          "endOpacity": 0.67
+        },
+        "enabled": true
+      },
+      {
+        "type": "scanLines",
+        "params": {
+          "opacity": 1,
+          "density": 8
+        },
+        "enabled": true
+      }
+    ]
+  }
+}

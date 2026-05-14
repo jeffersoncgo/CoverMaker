@@ -109,5 +109,16 @@
     "page": "https://github.com/jeffersoncgo/CoverMaker",
     "setup": "gallery/projects/dragon-fire/project.json",
     "project": "gallery/projects/dragon-fire/dragon.fire.project.zip"
+  },
+  {
+    "id": "series-rough",
+    "title": "Series — Rough",
+    "shortDescription": "Distressed grunge brush lettering with rough painted textures and a dark cinematic feel.",
+    "image": "gallery/projects/series-rough/series.rough.result.png",
+    "type": "cover",
+    "author": "jeffersoncgo",
+    "page": "https://github.com/jeffersoncgo/CoverMaker",
+    "setup": "gallery/projects/series-rough/project.json",
+    "project": "gallery/projects/series-rough/series.rough.project.zip"
   }
 ]
