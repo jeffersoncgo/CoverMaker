@@ -4,9 +4,12 @@
  * Add as a 'change' event listener alongside other handlers.
  */
 function keepFocusAfterChange(e) {
-  const select = e.currentTarget;
-  // Use setTimeout to re-focus after any synchronous DOM re-renders triggered by the change
-  setTimeout(() => select.focus(), 0);
+  const selectId = e.currentTarget.id;
+  if (!selectId) return;
+  setTimeout(() => {
+    const reQueried = document.getElementById(selectId);
+    if (reQueried) reQueried.focus();
+  }, 0);
 }
 
 // Adiciona sliders de parâmetros de efeito dinamicamente
@@ -21,6 +24,8 @@ function addEffectParamsOptions(paramsContainer, effectType, paramsObj, effectIn
   const typeLabel = document.createElement('label');
   typeLabel.textContent = 'Effect Type:';
   const typeSelect = document.createElement('select');
+  const effectLayerId = paramsContainer.closest('[id]')?.id ?? `effect_${effectIndex}`;
+  typeSelect.id = `effectTypeSelect_${effectLayerId}`;
   typeSelect.className = 'effectTypeSelect-input';
   availableEffects.forEach(e => {
     const opt = document.createElement('option');
@@ -30,8 +35,8 @@ function addEffectParamsOptions(paramsContainer, effectType, paramsObj, effectIn
   });
   const eff = projectConfig.canvas.effects[effectIndex];
   if (eff) typeSelect.value = eff.type;
-  typeSelect.addEventListener('change', changeEffectLayerType);
   typeSelect.addEventListener('change', keepFocusAfterChange);
+  typeSelect.addEventListener('change', changeEffectLayerType);
 
   typeContainer.appendChild(typeLabel);
   typeContainer.appendChild(typeSelect);
@@ -64,6 +69,8 @@ function addTextEffectParamsOptions(paramsContainer, effectType, paramsObj, laye
   const typeLabel = document.createElement('label');
   typeLabel.textContent = 'Effect Type:';
   const typeSelect = document.createElement('select');
+  const effectLayerId = paramsContainer.closest('[id]')?.id ?? `effect_${effectIndex}`;
+  typeSelect.id = `effectTypeSelect_${effectLayerId}`;
   typeSelect.className = 'effectTypeSelect-input';
   availableTextEffects.forEach(e => {
     const option = document.createElement('option');
@@ -72,8 +79,8 @@ function addTextEffectParamsOptions(paramsContainer, effectType, paramsObj, laye
     typeSelect.appendChild(option);
   });
   typeSelect.value = effectType;
-  typeSelect.addEventListener('change', changeTextEffectLayerType);
   typeSelect.addEventListener('change', keepFocusAfterChange);
+  typeSelect.addEventListener('change', changeTextEffectLayerType);
   typeContainer.appendChild(typeLabel);
   typeContainer.appendChild(typeSelect);
   paramsContainer.appendChild(typeContainer);
