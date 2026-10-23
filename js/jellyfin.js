@@ -651,6 +651,11 @@ class Jellyfin {
               this.Libraries[library.Name].Locations = library.Locations;
               toReagroupd.push(library.Id);
               console.log(`${loadedData.Name} loaded from cache.`)
+              // Same item count, but items may have been edited on the server since the cache was written
+              const hadSync = Boolean(loadedData.LastSync);
+              const refreshed = await this.refreshChangedItems(library.Id);
+              if (refreshed > 0 || (!hadSync && refreshed === 0))
+                await this.saveData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
               continue;
             }
           }
@@ -678,6 +683,8 @@ class Jellyfin {
         this.showLoadingLibraries();
         
         this.Libraries[library.Name].Count = Count;
+        // Taken before loading, so edits made while loading are picked up by the next refreshChangedItems
+        const loadStartedAt = new Date().toISOString();
         const items = await this.loadLibraryItems(library.Id);
         if (!items || items.length == 0) {
           this.Libraries[library.Name].Status = 'Loading Error';
@@ -686,6 +693,7 @@ class Jellyfin {
         console.log(`Loaded ${items.length} items from library ${library.Name}`)
         this.Libraries[library.Name].Items = items;
         this.Libraries[library.Name].Count = items.length;
+        this.Libraries[library.Name].LastSync = loadStartedAt;
 
         this.saveData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
         this.Libraries[library.Name].Status = 'Loaded';
@@ -819,7 +827,8 @@ class Jellyfin {
   }
 
   isPlayed(item) {
-    return item.UserData && ((item.UserData.Played) || (item.UserData.PlayedPercentage >= 70) || (item.UserData.PlayCount > 0)) && item.CollectionType != "BoxSet";
+    // Items carry Type (CollectionType is a library property): collections never count as watched
+    return item.UserData && ((item.UserData.Played) || (item.UserData.PlayedPercentage >= 70) || (item.UserData.PlayCount > 0)) && item.Type != "BoxSet" && item.CollectionType != "BoxSet";
   }
 
   extractInfoByTitle(title) {
@@ -882,7 +891,7 @@ class Jellyfin {
 
     const sortKey = this.searchParams.sortBy;
     if (sortKey === "Random") {
-      items = items.sort(() => 0.5 - Math.random());
+      items = Jellyfin.shuffle([...items]);
     } else {
       items = items.sort((a, b) => {
         if (this.searchParams.order === "desc") {
@@ -1047,8 +1056,9 @@ class Jellyfin {
 
     let startsWithFilters = "";
     if(library.Locations?.length > 0) {
+      // Meilisearch filter strings are double-quoted: escape \ and " (Windows paths like C:\Media)
       startsWithFilters = library.Locations
-      .map(loc => `(path STARTS WITH "${loc}")`)
+      .map(loc => `(path STARTS WITH "${String(loc).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`)
       .join(" OR ");
       startsWithFilters = ` AND (${startsWithFilters})`;
     }
@@ -1108,15 +1118,97 @@ class Jellyfin {
   }
 
 
+  // The fields kept per item in the library cache
+  static toLibraryItem(item) {
+    return {
+      Id: item.Id,
+      Name: item.Name,
+      ImageId: item.ImageTags?.Primary,
+      PremiereDate: item.PremiereDate,
+      OfficialRating: item.OfficialRating,
+      CommunityRating: item.CommunityRating,
+      ProductionYear: item.ProductionYear,
+      Genres: item.Genres,
+      Studios: item.Studios,
+      Tags: item.Tags,
+      Overview: item.Overview,
+      Type: item.Type,
+      ItemsCount: item.RecursiveItemCount || item.ChildCount || item.MediaSources?.length,
+      UserData: Jellyfin.pickUserData(item.UserData),
+      ParentId: item.ParentId,
+      Path: item.Path,
+      originalData: item
+    };
+  }
+
+  // PlayedPercentage is kept too: isPlayed() counts an item watched to 70 % or more
+  static pickUserData(userData) {
+    return {
+      IsFavorite: userData?.IsFavorite,
+      Played: userData?.Played,
+      PlayCount: userData?.PlayCount,
+      LastPlayedDate: userData?.LastPlayedDate,
+      PlayedPercentage: userData?.PlayedPercentage
+    };
+  }
+
+  // Jellyfin ids are GUIDs; some sources (e.g. Meilisearch) write them with dashes or in another case
+  static itemKey(id) {
+    return String(id ?? "").replace(/-/g, "").toLowerCase();
+  }
+
+  // Fisher-Yates: every order is equally likely (sort(() => 0.5 - Math.random()) is biased)
+  static shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  // Fields requested for every library item (also used to refresh edited items)
+  libraryItemFields(fastLoading = false) {
+    const Fields = ["OriginalTitle"];
+    if (!fastLoading)
+      Fields.push(...[ "Overview", "Genres", "Studios", "Tags","ParentId", "Path" ])
+    return Fields;
+  }
+
+  // A cached library is reused while its item count is the same; items edited on the server since the last sync
+  // (title, cover, genres…) are fetched with MinDateLastSaved and replace their cached copy. Resolves the number of
+  // updated items, or -1 when the request failed (the cache is kept as it was).
+  async refreshChangedItems(libraryId) {
+    const library = this.Libraries[this.libaryNameById(libraryId)];
+    if (!library?.Items || !this.isAuthenticated) return 0;
+    const since = library.LastSync;
+    const startedAt = new Date().toISOString();
+    library.LastSync = startedAt;
+    if (!since) return 0; // cache written by an older version: edits are tracked from now on
+
+    const FieldsText = encodeURIComponent(this.libraryItemFields().join(","));
+    const IncludeItemsTypesText = encodeURIComponent(this.IncludeItemsTypes.join(","));
+    const url = `${this.Server.Address}/Users/${this.User.Id}/Items?SortBy=IndexNumber&Fields=${FieldsText}&ImageTypeLimit=1&EnableImageTypes=Primary&ParentId=${libraryId}&includeItemTypes=${IncludeItemsTypesText}&MinDateLastSaved=${encodeURIComponent(since)}`;
+    try {
+      const response = await fetch(url, { method: "GET", headers: this.headers });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const changed = (await response.json()).Items || [];
+      if (!changed.length) return 0;
+      const byKey = new Map(changed.map(item => [Jellyfin.itemKey(item.Id), Jellyfin.toLibraryItem(item)]));
+      library.Items = library.Items.map(item => byKey.get(Jellyfin.itemKey(item.Id)) ?? item);
+      console.log(`${library.Name}: ${changed.length} edited item(s) refreshed from the server.`);
+      return changed.length;
+    } catch (error) {
+      library.LastSync = since;
+      console.warn(`Could not check ${library.Name} for edited items:`, error);
+      return -1;
+    }
+  }
+
   async loadLibraryItemsVanilla(libraryId, fastLoading = false) {
     if (!this.isAuthenticated) return [];
 
-    const Fields = ["OriginalTitle"];
+    const Fields = this.libraryItemFields(fastLoading);
     // const IncludeItemsTypes = ["Audio", "Video", "BoxSet", "Book", "Channel", "Movie", "LiveTvChannel", "Playlist", "Series", "TvChannel"]
-
-    if (!fastLoading)
-      Fields.push(...[ "Overview", "Genres", "Studios", "Tags","ParentId", "Path" ])
-      
 
     const libraryName = this.libaryNameById(libraryId);
     const librarySize = this.Libraries[libraryName].Count;
@@ -1151,42 +1243,14 @@ class Jellyfin {
                 if (item.Genres) this.searchParams.Genres.push(...item.Genres.map(g => g.toLowerCase() + '\uFEFF'));
                 if (item.Studios) this.searchParams.Studios.push(...item.Studios.map(s => s.Name.toLowerCase() + '\uFEFF'));
 
-                this.Libraries[libraryName].Items.push({
-                  Id: item.Id,
-                  Name: item.Name,
-                  ImageId: item.ImageTags?.Primary,
-                  PremiereDate: item.PremiereDate,
-                  OfficialRating: item.OfficialRating,
-                  CommunityRating: item.CommunityRating,
-                  ProductionYear: item.ProductionYear,
-                  Genres: item.Genres,
-                  Studios: item.Studios,
-                  Tags: item.Tags,
-                  Overview: item.Overview,
-                  Type: item.Type,
-                  ItemsCount: item.RecursiveItemCount || item.ChildCount || item.MediaSources?.length,
-                  UserData: {
-                    IsFavorite: item.UserData?.IsFavorite,
-                    Played: item.UserData?.Played,
-                    PlayCount: item.UserData?.PlayCount,
-                    LastPlayedDate: item.UserData?.LastPlayedDate
-                  },
-                  ParentId: item.ParentId,
-                  Path: item.Path,
-                  originalData: item
-                });
+                this.Libraries[libraryName].Items.push(Jellyfin.toLibraryItem(item));
               }
             } else {
               for (const item of items) {
                 this.Libraries[libraryName].Items.push({
                   Id: item.Id,
                   ImageId: item.ImageTags?.Primary,
-                  UserData: {
-                    IsFavorite: item.UserData?.IsFavorite,
-                    Played: item.UserData?.Played,
-                    PlayCount: item.UserData?.PlayCount,
-                    LastPlayedDate: item.UserData?.LastPlayedDate
-                  }
+                  UserData: Jellyfin.pickUserData(item.UserData)
                 });
               }
             }
@@ -1235,12 +1299,7 @@ class Jellyfin {
           for (const item of items) {
             allItems.push({
               Id: item.Id,
-              UserData: {
-                IsFavorite: item.UserData?.IsFavorite,
-                Played: item.UserData?.Played,
-                PlayCount: item.UserData?.PlayCount,
-                LastPlayedDate: item.UserData?.LastPlayedDate
-              }
+              UserData: Jellyfin.pickUserData(item.UserData)
             });
           }
           resolve();
@@ -1252,10 +1311,12 @@ class Jellyfin {
       );
     });
 
+    // One lookup per item (a find() per item was O(n²) on large libraries)
+    const userDataByKey = new Map(allItems.map(fetchedItem => [Jellyfin.itemKey(fetchedItem.Id), fetchedItem.UserData]));
     library.Items = library.Items.map(existingItem => {
-      const updatedUserData = allItems.find(fetchedItem => fetchedItem.Id === existingItem.Id);
+      const updatedUserData = userDataByKey.get(Jellyfin.itemKey(existingItem.Id));
       if (updatedUserData) {
-        return { ...existingItem, UserData: updatedUserData.UserData };
+        return { ...existingItem, UserData: updatedUserData };
       }
       return existingItem;
     });
