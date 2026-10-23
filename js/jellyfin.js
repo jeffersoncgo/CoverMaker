@@ -168,43 +168,75 @@ class Jellyfin {
     this.headers.authorization = `MediaBrowser Client="${this.Server.Client}", Device="${this.Server.Device}", DeviceId="${this.Name}", Version="${this.Server.Version}"${TokenBit}`;
   }
 
+  // One shared connection per database. Opening a new connection for every read/write and never closing it
+  // blocked the version upgrade needed to create the next store, which stalled the first library load until
+  // the browser happened to garbage-collect the old connections.
   openDB(dbName, storeName) {
+    this._idb ??= {};
+    const entry = this._idb[dbName] ??= { db: null, queue: Promise.resolve() };
+    const opened = entry.queue.then(() => this._openStore(entry, dbName, storeName));
+    entry.queue = opened.catch(() => { });
+    return opened;
+  }
+
+  _openStore(entry, dbName, storeName) {
     return new Promise((resolve, reject) => {
-      let db;
+      const use = (db) => {
+        // Let other tabs (or a newer CoverMaker/content-recommender) upgrade the database
+        db.onversionchange = () => {
+          db.close();
+          if (entry.db === db) entry.db = null;
+        };
+        entry.db = db;
+        resolve(db);
+      };
+
+      const upgrade = (db) => {
+        const version = db.version + 1;
+        db.close();
+        if (entry.db === db) entry.db = null;
+
+        const upgradeRequest = indexedDB.open(dbName, version);
+        upgradeRequest.onupgradeneeded = (event) => {
+          const upgradeDb = event.target.result;
+          if (!upgradeDb.objectStoreNames.contains(storeName)) upgradeDb.createObjectStore(storeName);
+        };
+        upgradeRequest.onsuccess = () => use(upgradeRequest.result);
+        upgradeRequest.onerror = () => reject(upgradeRequest.error);
+        upgradeRequest.onblocked = () => console.warn(`IndexedDB "${dbName}" upgrade is waiting for another tab to release it`);
+      };
+
+      if (entry.db) {
+        if (entry.db.objectStoreNames.contains(storeName)) return resolve(entry.db);
+        return upgrade(entry.db);
+      }
 
       const checkRequest = indexedDB.open(dbName);
       checkRequest.onsuccess = () => {
-        db = checkRequest.result;
-
-        if (db.objectStoreNames.contains(storeName)) {
-          return resolve(db);
-        }
-
-        const version = db.version + 1;
-        db.close();
-
-        const upgradeRequest = indexedDB.open(dbName, version);
-
-        upgradeRequest.onupgradeneeded = (event) => {
-          const upgradeDb = event.target.result;
-          upgradeDb.createObjectStore(storeName);
-        };
-
-        upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
-        upgradeRequest.onerror = () => reject(upgradeRequest.error);
+        const db = checkRequest.result;
+        if (db.objectStoreNames.contains(storeName)) use(db);
+        else upgrade(db);
       };
-
       checkRequest.onerror = () => reject(checkRequest.error);
     });
   }
 
 
+  // Resolves true when the write is committed, false (and logs) if it fails
   async saveData(dbName, storeName, key = "result", data) {
-    const db = await this.openDB(dbName, storeName);
-    const tx = db.transaction(storeName, "readwrite");
-    const store = tx.objectStore(storeName);
-    store.put(JSON.stringify(data), key);
-    return tx.complete;
+    try {
+      const db = await this.openDB(dbName, storeName);
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, "readwrite");
+        tx.objectStore(storeName).put(JSON.stringify(data), key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } catch (error) {
+      console.error(`Could not save ${storeName} to IndexedDB:`, error);
+      return false;
+    }
   }
 
   async loadData(dbName, storeName, key = "result") {
@@ -316,8 +348,10 @@ class Jellyfin {
 
   async setFastestAddress() {
     const controller = new AbortController();
-    const signal = controller.signal;
-    signal.timeout = 5000;
+    // Stop waiting for an address after 5 s (AbortSignal.any keeps the "first answer wins" abort as well)
+    const signal = (typeof AbortSignal.any === 'function' && typeof AbortSignal.timeout === 'function')
+      ? AbortSignal.any([controller.signal, AbortSignal.timeout(5000)])
+      : controller.signal;
 
     const checkAddress = async (address) => {
       try {
