@@ -255,7 +255,9 @@ async function searchOnLibrary(Qry, force = false, useDelay = false) {
     } else
       jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[1]
   }
-  fillposters(await jellyfin.searchItems(searchQuery, Setup.Library.loadedLibrary, null, null), true)
+  const items = await jellyfin.searchItems(searchQuery, Setup.Library.loadedLibrary, null, null);
+  if (!items) return; // superseded by a newer search
+  fillposters(items, true)
 }
 
 function filterRandom() {

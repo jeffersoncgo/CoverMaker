@@ -1,10 +1,13 @@
 const _searchCache = new WeakMap();
 
 
-const GetValueFromPath = (path, obj) => path.split('.').reduce((o, i) => o[i], obj);
+const GetValueFromPath = (path, obj) => path.split('.').reduce((o, i) => o?.[i], obj);
+// Keys that would let parsed JSON write into Object.prototype
+const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const MakeObjFromPath = (path, value, obj, spliter = '.') => {
   let paths = path.split(spliter);
   let last = paths.pop();
+  if (UNSAFE_OBJECT_KEYS.has(last) || paths.some(p => UNSAFE_OBJECT_KEYS.has(p))) return obj;
   let lastObj = paths.reduce((o, i) => o[i] = o[i] || {}, obj);
   lastObj[last] = value;
   return obj;
@@ -42,27 +45,22 @@ function flattenKeys(obj, path = '') {
   });
 }
 
+// Removes null, undefined, '' and empty arrays/objects (also the ones that become empty after cleaning).
+// Cleans in place and returns the same root object.
 function cleanObject(obj) {
-  for (let key in obj) {
-    if (obj[key] === null || obj[key] === undefined || obj[key] === '') {
+  for (const key of Object.keys(obj)) {
+    const value = obj[key];
+    if (value === null || value === undefined || value === '') {
       delete obj[key];
-    } else if (typeof obj[key] === 'object') {
-      if(Array.isArray(obj[key])) {
-        if(obj[key].length === 0) {
-          delete obj[key];
-          continue
-        }
-      }
-      if(Object.keys(obj[key]).length === 0) {
-        delete obj[key];
-        continue
-      }
-      if(obj[key].constructor === Object && Object.keys(obj[key]).length === 0) {
-        delete obj[key];
-        continue
-      }
-      obj = cleanObject(obj[key]);
+    } else if (typeof value === 'object') {
+      cleanObject(value);
+      if (Object.keys(value).length === 0) delete obj[key];
     }
+  }
+  if (Array.isArray(obj)) {
+    const kept = obj.filter((_, i) => i in obj);
+    obj.length = 0;
+    obj.push(...kept);
   }
   return obj;
 }
@@ -72,6 +70,7 @@ function mergeObjects(obj1, obj2, seen = new WeakSet()) {
   seen.add(obj2);
 
   for (let key in obj2) {
+    if (UNSAFE_OBJECT_KEYS.has(key)) continue;
     if (typeof obj2[key] === 'object' && obj2[key] !== null && !Array.isArray(obj2[key])) {
       if (!obj1[key]) obj1[key] = {};
       obj1[key] = mergeObjects(obj1[key], obj2[key], seen);

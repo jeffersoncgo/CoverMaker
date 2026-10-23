@@ -36,28 +36,36 @@ Os scripts estão no *scratchpad* da sessão e vão para `tests/` se o usuário 
 - [x] Referência visual de todos os layouts e efeitos.
 - [x] Teste e2e de 42 fluxos; resultado registrado acima.
 
-### Fase 1 — Bibliotecas base (`cdn`) e sincronização de `CoverMaker/js/vendor`
+### Fase 1 — Bibliotecas base (`cdn`) e sincronização de `CoverMaker/js/vendor` ✅ (2026-10-23)
 
 Sem mudança visual. Afeta os dois apps (o content-recommender carrega o `cdn` direto do `main`).
 
-- [ ] `CDN-01/02` — `Controller`: estado por execução (chamada antiga resolve, a nova recebe o próprio resultado) e
+- [x] `CDN-01/02` — `Controller`: estado por execução (chamada antiga resolve, a nova recebe o próprio resultado) e
       throttle que **executa a última chamada** em vez de descartá-la. Mesma API (`wrap`, `.Controller`,
       `startDelayMs`, eventos). Aceita `startDelayMs` como sinônimo de `delayMs` nas opções.
-- [ ] `CDN-03` — `pageMemory`: o `AbortSignal` correto chega em `_savePageInfo`.
-- [ ] Trazer para o `cdn` as melhorias que só existem na cópia do CoverMaker (`canSave`, *fallback* de Blob URL
+- [x] `CDN-03` — `pageMemory`: o `AbortSignal` correto chega em `_savePageInfo`.
+- [x] Trazer para o `cdn` as melhorias que só existem na cópia do CoverMaker (`canSave`, *fallback* de Blob URL
       revogada) e tornar configuráveis os atrasos e a lista de eventos (o CoverMaker usa 500 ms e não escuta `click`),
       para a cópia `vendor/` ficar idêntica ao `cdn` sem mudar o comportamento de nenhum dos dois.
-- [ ] `CDN-09` — `CSS.escape` nos seletores; `destroy()` sem erro; `added-trigger` fora dos atributos salvos.
-- [ ] `CDN-04` — `mergeObjects` ignora `__proto__`/`constructor`/`prototype`.
-- [ ] `CDN-05` — `SearchEngine.sort` passa a ordenar de fato.
-- [ ] `CDN-06` — `cleanObject` limpa sem trocar o objeto raiz.
-- [ ] `CDN-11` — `Observer.RemoveCallBack` funciona; nomes de evento corrigidos (`contextmenu`, `resize`, `copy`,
+- [x] `CDN-09` — `CSS.escape` nos seletores; `destroy()` sem erro; `added-trigger` fora dos atributos salvos.
+- [x] `CDN-04` — `mergeObjects` ignora `__proto__`/`constructor`/`prototype`.
+- [x] `CDN-05` — `SearchEngine.sort` passa a ordenar de fato.
+- [x] `CDN-06` — `cleanObject` limpa sem trocar o objeto raiz.
+- [x] `CDN-11` — `Observer.RemoveCallBack` funciona; nomes de evento corrigidos (`contextmenu`, `resize`, `copy`,
       `cut`, `paste`).
-- [ ] `CDN-14`, `CDN-17` — `safeWindowsFileName` (normaliza antes de limpar), `makeObjbyPath` retorna o objeto,
+- [x] `CDN-14`, `CDN-17` — `safeWindowsFileName` (normaliza antes de limpar), `makeObjbyPath` retorna o objeto,
       `GetValueFromPath` tolera caminho inexistente.
-- [ ] `CDN-12` — página de demonstração volta a carregar todas as seções.
-- [ ] Testes unitários em Node para `controller`, `object`, `search`, `common` (casos da auditoria).
+- [x] `CDN-12` — página de demonstração volta a carregar todas as seções.
+- [x] Testes unitários em Node para `controller`, `object`, `search`, `common` (casos da auditoria).
 - Verificação: testes Node + demo do `cdn` no Chromium + rede de segurança do CoverMaker com a `vendor/` sincronizada.
+- [x] Antecipado (achado durante a verificação): `CM-34`/`CR-14` — `tempLimit` recebia o `AbortSignal` e o
+      content-recommender não mostrava nenhuma recomendação desde 2025-12-01. Correção de uma linha no `jellyfin.js`.
+- [x] Adicionado à rede de segurança: servidor Jellyfin simulado (login admin/comum, 2 bibliotecas, 55 itens, imagens,
+      Meilisearch opcional) e fluxos com ele para o CoverMaker e o content-recommender.
+- Resultado: inventário sem remoções (5 adições); 210/210 renderizações idênticas; e2e 33/42 sem regressões (os 9 que
+  falham são da Fase 2); 17 testes Node passando; demo do `cdn` sem erros; CoverMaker com Jellyfin simulado igual ao
+  original e com a busca usando o texto completo; content-recommender com as mesmas recomendações (só o desempate de
+  itens com a mesma nota passou a seguir a nota da comunidade, como o código pedia).
 
 ### Fase 1b — Componentes só usados pela demo do `cdn`
 
@@ -67,6 +75,8 @@ Sem mudança visual. Afeta os dois apps (o content-recommender carrega o `cdn` d
 
 Sem mudança visual nos casos que já funcionam.
 
+- [ ] `CM-15` (movido da Fase 3 e elevado a Alta) — IndexedDB do Jellyfin: conexão única, `onblocked`/`onversionchange`,
+      gravação aguardável, timeout real. Medido: primeiro carregamento parado por 40 s+.
 - [ ] `CM-01` — sliders de efeitos de imagem atualizam o projeto (fim do alias `Setup.Settings`).
 - [ ] `CM-02` — camada de texto padrão criada na primeira visita; primeira sessão é salva.
 - [ ] `CM-03` — retornos vazios não congelam mais o canvas (0/1 imagem, Scanlines 0, Reflection 0).
@@ -89,7 +99,6 @@ Sem mudança visual nos casos que já funcionam.
 - [ ] `CM-05` / `CR-04` — guardar token em vez de senha; o login automático continua funcionando (decisão D4).
 - [ ] `CM-06` / `CR-03` — nomes do Jellyfin e mensagens como texto (mesma aparência para nomes normais).
 - [ ] `CM-08` — login com falha não é tratado como sucesso; Meilisearch com *fallback* para a carga normal.
-- [ ] `CM-15` — IndexedDB do Jellyfin: conexão única, `onblocked`, gravação aguardável, timeout real.
 - Verificação: servidor Jellyfin simulado (mock) para login, bibliotecas, Meilisearch indisponível e não-admin.
 
 ### Fase 4 — content-recommender e dados do Jellyfin
@@ -147,3 +156,4 @@ Sem mudança visual nos casos que já funcionam.
 | Data | Fase | Resultado |
 |---|---|---|
 | 2026-10-23 | 0 | Rede de segurança criada; referência registrada acima. |
+| 2026-10-23 | 1 | Concluída (exceto 1b). Mudanças no caminho: CM-34/CR-14 antecipado; CM-15 elevado a Alta e movido para a Fase 2; Jellyfin simulado adicionado à rede de segurança. |

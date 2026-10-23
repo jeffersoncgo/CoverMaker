@@ -751,7 +751,9 @@ class Jellyfin {
     this.searchParams.hasPreviousPage = this.hasPreviousPage();
     this.searchParams.hasNextPage = this.hasNextPage(items);
 
-    const mLimit = tempLimit || this.searchParams.limit;
+    // Only a positive number overrides the page size: callers that pass fewer arguments get the
+    // Controller's AbortSignal in this position (content-recommender calls searchItems('', '', {}))
+    const mLimit = (typeof tempLimit === 'number' && tempLimit > 0) ? tempLimit : this.searchParams.limit;
 
     items = items.slice(this.searchParams.offset, this.searchParams.offset + mLimit);
 

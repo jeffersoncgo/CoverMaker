@@ -7,7 +7,7 @@ class Controller {
       onError: []
     };
     this.startDelayMs = startDelayMs;
-    this.intervalBetweenRunsMs = intervalBetweenRunsMs; //If the try to run, is smaller than the interval, we will just not execute
+    this.intervalBetweenRunsMs = intervalBetweenRunsMs; // Calls inside this window run once it ends (the last call wins)
     this.AbortBeforeRun = AbortBeforeRun;
 
     this.running = false;
@@ -15,75 +15,103 @@ class Controller {
     this._timeout = null;
     this._lastRun = null;
 
-    this._resolve = null;
-    this._reject = null;
+    // Each scheduled/running call keeps its own state, so a superseded call can never
+    // resolve the promise of the call that replaced it (or clear its timer).
+    this._current = null;
+    this._trailing = null;
   }
 
   exec(...params) {
     if (this.running && !this.AbortBeforeRun) return Promise.resolve();
 
-    if (this._timeout) {
-      clearTimeout(this._timeout);
-      this.abort(...params);
+    // Inside the throttle window: defer to the end of the window instead of dropping the call
+    const elapsed = this._lastRun ? Date.now() - this._lastRun : Infinity;
+    if (elapsed < this.intervalBetweenRunsMs) {
+      return this._deferUntilIntervalEnds(params, this.intervalBetweenRunsMs - elapsed);
     }
 
-    return new Promise((resolve, reject) => {
-      // Check the intervalbetween runs here
-      // if we are within the interval, resolve immediately so the returned Promise doesn't hang
-      if (this._lastRun && Date.now() - this._lastRun < this.intervalBetweenRunsMs) {
-        resolve();
-        return;
-      }
-      this._resolve = resolve;
-      this._reject = reject;
+    if (this._current) this.abort(...params);
 
-      this._timeout = setTimeout(async () => {
+    const run = { controller: null, timeout: null, resolve: null, reject: null };
+    this._current = run;
+
+    return new Promise((resolve, reject) => {
+      run.resolve = resolve;
+      run.reject = reject;
+
+      run.timeout = this._timeout = setTimeout(async () => {
+        if (this._current !== run) return resolve(undefined);
         this._lastRun = Date.now();
-        this.controller = new AbortController();
-        const signal = this.controller.signal;
+        run.controller = this.controller = new AbortController();
+        const signal = run.controller.signal;
         this.running = true;
 
         try {
           const result = await this.func(...params, signal);
           this.execEvents('onDone', result, ...params);
-          this._resolve?.(result);
+          resolve(result);
         } catch (error) {
-          if (error.name === 'AbortError') {} else {
+          if (error?.name === 'AbortError') {
+            resolve(undefined);
+          } else {
             this.execEvents('onError', error);
-            this._reject?.(error);
+            reject(error);
           }
         } finally {
-          this.running = false;
-          this._timeout = null;
-          this.controller = null;
-          this._resolve = null;
-          this._reject = null;
+          if (this._current === run) {
+            this.running = false;
+            this._timeout = null;
+            this.controller = null;
+            this._current = null;
+          }
         }
       }, this.startDelayMs);
     });
   }
 
+  _deferUntilIntervalEnds(params, waitMs) {
+    // Only the latest deferred call runs; the one it replaces resolves with undefined
+    if (this._trailing) {
+      clearTimeout(this._trailing.timeout);
+      this._trailing.resolve(undefined);
+    }
+    return new Promise(resolve => {
+      const trailing = { resolve, timeout: null };
+      trailing.timeout = setTimeout(() => {
+        if (this._trailing === trailing) this._trailing = null;
+        resolve(this.exec(...params));
+      }, waitMs);
+      this._trailing = trailing;
+    });
+  }
+
   abort(...params) {
-    if (this.controller && !this.controller.signal.aborted) {
-      this.controller.abort();
+    const run = this._current;
+    const trailing = this._trailing;
+
+    if (trailing) {
+      clearTimeout(trailing.timeout);
+      trailing.resolve(undefined);
+      this._trailing = null;
     }
 
-    if (this._timeout) {
-      clearTimeout(this._timeout);
-      this._timeout = null;
+    if (run) {
+      clearTimeout(run.timeout);
+      if (run.controller && !run.controller.signal.aborted) run.controller.abort();
+      // Never leave a caller waiting forever: an aborted call resolves with undefined
+      run.resolve?.(undefined);
+      this._current = null;
     }
 
     this.running = false;
-    this.execEvents('onAbort', ...params);
-
-    this._resolve = null;
-    this._reject = null;
+    this._timeout = null;
     this.controller = null;
+    this.execEvents('onAbort', ...params);
   }
-  
+
   static wrap(fn, abortBeforeRunOrOptions, startDelayMs, intervalBetweenRunsMs) {
     // Backwards-compatible behavior:
-    // - If second parameter is an object, treat it as options: { abortBeforeRun, delayMs, intervalBetweenRunsMs }
+    // - If second parameter is an object, treat it as options: { abortBeforeRun, delayMs (or startDelayMs), intervalBetweenRunsMs }
     // - Otherwise treat parameters as positional: (fn, abortBeforeRun, startDelayMs, intervalBetweenRunsMs)
     let opts;
     if (abortBeforeRunOrOptions && typeof abortBeforeRunOrOptions === 'object') {
@@ -96,7 +124,7 @@ class Controller {
       };
     }
 
-    const controller = new Controller(fn, opts?.abortBeforeRun, opts?.delayMs, opts?.intervalBetweenRunsMs);
+    const controller = new Controller(fn, opts?.abortBeforeRun, opts?.delayMs ?? opts?.startDelayMs, opts?.intervalBetweenRunsMs);
     const bound = controller.exec.bind(controller);
     bound.Controller = controller;
     return bound;

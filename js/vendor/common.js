@@ -55,6 +55,14 @@ Array.prototype.removeDuplicates = function () {
   return [...new Set(this)];
 };
 
+// The helpers above must not show up in for...in loops over strings and arrays
+for (const [proto, names] of [
+  [String.prototype, ['eachWordUp', 'firstUpCase']],
+  [Array.prototype, ['sortInsensitive', 'eachWordUp', 'firstUpCase', 'toCase', 'toLowerCase', 'toUpperCase', 'removeDuplicates']],
+]) {
+  for (const name of names) Object.defineProperty(proto, name, { value: proto[name], enumerable: false, writable: true, configurable: true });
+}
+
 
 
 
@@ -99,6 +107,7 @@ class utils {
     obj ??= {};
     const keys = path.split('.');
     let current = obj;
+    if (keys.some(key => key === '__proto__' || key === 'constructor' || key === 'prototype')) return obj;
     keys.forEach((key, index) => {
       if (index === keys.length - 1) {
         current[key] = value;
@@ -106,6 +115,7 @@ class utils {
         current = current[key] ??= {};
       }
     });
+    return obj;
   }
   static safeWindowsFileName(filename) {
     if (typeof filename !== 'string') throw new TypeError('Input must be a string');
@@ -116,8 +126,11 @@ class utils {
     // Reserved filenames in Windows (case-insensitive)
     const reservedNames = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
+    // Normalize first (NFKD for compatibility): it can turn full-width characters into illegal ASCII ones
+    let safeName = filename.normalize('NFKD');
+
     // Replace illegal characters with underscore
-    let safeName = filename.replace(illegalChars, '_');
+    safeName = safeName.replace(illegalChars, '_');
 
     // Trim trailing dots and spaces (not allowed in Windows)
     safeName = safeName.trim().replace(/[. ]+$/, '');
@@ -126,9 +139,6 @@ class utils {
     if (reservedNames.test(safeName)) {
       safeName = '_' + safeName;
     }
-
-    // Optionally normalize Unicode (NFKD for compatibility)
-    safeName = safeName.normalize('NFKD');
 
     return safeName;
   }

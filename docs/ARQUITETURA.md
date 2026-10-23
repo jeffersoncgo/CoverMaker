@@ -35,7 +35,7 @@ Todos são scripts clássicos no fim do `<body>` (exceto `meilisearch_index.min.
 | 3 | `vendor/object.js` | `searchInArray`, `mergeObjects`, … | — |
 | 4 | `vendor/search.js` | `SearchEngine` (não usado pelo app) | `SearchEngine` |
 | 5 | `vendor/controller.js` | Debounce/abort de funções assíncronas | `Controller` |
-| 6 | `vendor/pagememory.js` | Persistência de elementos `[save]` no IndexedDB | `pageMemory` |
+| 6 | `vendor/pagememory.js` | Persistência de elementos `[save]` no IndexedDB (instanciado em `app.js` com `saveDelayMs`/`restoreDelayMs` 500 e sem escutar `click`) | `pageMemory` |
 | 7 | `vendor/observer.js` | MutationObserver + eventos | `Observer` |
 | 8 | `vendor/fetchqueue.js` | Fila de `fetch` concorrentes | `FetchQueue` |
 | 9 | `jellyfin.js` | Cliente da API Jellyfin + cache IndexedDB + Meilisearch | `Jellyfin` |
@@ -327,4 +327,4 @@ padrão; proxies reversos podem bloquear.
 | JSZip | 3.10.1 | cdnjs (SRI) | Exportar/importar `.zip` |
 | meilisearch-js | 0.54.0 | `js/vendor/meilisearch_index.min.js` | Carga rápida de bibliotecas |
 | Google Fonts | — | fonts.googleapis.com | Fontes sob demanda |
-| jeffersoncgo/cdn | cópia | `js/vendor/` | Utilitários base |
+| jeffersoncgo/cdn | cópia idêntica (sincronizada em 2026-10-23) | `js/vendor/` | Utilitários base. Alterou o `cdn`? Copie o arquivo para cá sem editar a cópia. |

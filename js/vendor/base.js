@@ -84,8 +84,10 @@ JCGWeb.Functions.getUniqueSelector = element => {
     return Array.from(parent.children).indexOf(child);
   }
 
+  const escape = value => (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(value) : value;
+
   if (!element) return '';
-  if (element.id) return `#${element.id}`;
+  if (element.id) return `#${escape(element.id)}`;
 
   let selector = '';
   const path = [];
@@ -98,7 +100,7 @@ JCGWeb.Functions.getUniqueSelector = element => {
     if (element.classList.length > 0) {
       const classNames = Array.from(element.classList).filter(name => name.trim() !== '');
       if (classNames.length > 0) {
-        currentSelector += `.${classNames.join('.')}`;
+        currentSelector += `.${classNames.map(escape).join('.')}`;
       }
     }
     

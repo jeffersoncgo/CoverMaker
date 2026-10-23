@@ -31,7 +31,7 @@
 | CM-12 | Média | `app.js:1185-1195` | `updateImageSettings` muta `Setup.Sizes`: miniaturas do Jellyfin passam a ser pedidas em 1920 px 🧪 |
 | CM-13 | Média | vários | Exceções não tratadas e IDs/elementos errados (lista) 🧪/🔎 |
 | CM-14 | Média | `drawing.js:65,322,488,569` | Cache de etapas só funciona por acidente; clones de canvas a cada redesenho 🧪 |
-| CM-15 | Média | `jellyfin.js:171-208,317-334` | IndexedDB do Jellyfin: conexões nunca fechadas, upgrade pode travar; timeout inexistente 🔎 |
+| CM-15 | **Alta** | `jellyfin.js:171-208,317-334` | IndexedDB do Jellyfin: conexões nunca fechadas **travam o primeiro carregamento das bibliotecas** (40 s+ medidos); timeout inexistente 🧪 |
 | CM-16 | Média | `jellyfin.js:476-504,1039-1099` | Cache de bibliotecas só invalida por contagem; `UserData` nunca atualiza por padrão 🔎 |
 | CM-17 | Média | `app.js:2021`, `vendor/controller.js` | Corrida em `updateTextSettings` pode duplicar camadas (potencial) 🔎 |
 | CM-18 | Média | `index.html`, `vendor/pagememory.js` | `pageMemory` pesado: ~340 KB de `outerHTML` por gravação, varre o painel inteiro a cada clique 🧪 |
@@ -49,6 +49,8 @@
 | CM-30 | Média | `textEffects.js` | Controles que não fazem nada e parâmetro `"undefined"` salvo nos projetos 🧪 |
 | CM-31 | Média | `textEffects.js` | Efeitos de texto travam a página por segundos (Stained Glass: 46 s no mínimo) 🧪 |
 | CM-32 | Baixa | vários | Achados de lint e casos-limite de parâmetros 🧪 |
+| CM-33 ✅ | Média | `app.js:2013` + `vendor/controller.js` | Busca do Jellyfin ignorava as últimas teclas digitadas (corrigido via `CDN-02`) 🧪 |
+| CM-34 ✅ | Alta | `jellyfin.js:754` | `searchItems` com 3 argumentos recebia o `AbortSignal` como `tempLimit` → lista vazia (quebra o content-recommender, `CR-14`) 🧪 |
 
 ---
 
@@ -308,7 +310,12 @@ Instrumentando `runStep` no navegador:
 - `stepsCache` mantém todos os canvases intermediários (dezenas de MB com várias camadas/efeitos) e nunca é aparado
   quando o número de etapas diminui: `stepsCache.length = lastStepIndex` ao final de `drawComposite`.
 
-### CM-15 — IndexedDB do cliente Jellyfin 🔎
+### CM-15 — IndexedDB do cliente Jellyfin 🧪
+
+**Confirmado em 2026-10-23** com um servidor Jellyfin simulado e perfil de navegador limpo: o carregamento das
+bibliotecas ficou parado por mais de 40 s logo após `getLibrarySize`; cada coleta de lixo forçada (`gc()`, que fecha as
+conexões esquecidas) destravou um passo. Em navegadores reais a coleta acontece em algum momento, o que explica o
+"First login takes 10-30 seconds" do README. Afeta CoverMaker e content-recommender.
 
 - `openDB` (`jellyfin.js:171-199`) abre uma conexão nova em **cada** `saveData/loadData/clearData` e nunca fecha.
   Quando um *store* não existe ele reabre com `version + 1`; as conexões antigas abertas recebem `versionchange` e não
@@ -502,6 +509,19 @@ camada, digitar com a camada padrão congela a interface por segundos, e um slid
 - Em geral: processar só o retângulo que contém o texto (não 1920×1080), limitar extremos dos sliders
   (ex.: `stainedGlass.size` mínimo 15) e mover efeitos de pixel para um *Worker* com `OffscreenCanvas`, mantendo uma
   prévia em resolução reduzida enquanto o usuário arrasta.
+
+### CM-33 — Busca ignorava as últimas teclas ✅
+
+`searchOnLibrary` usa `Controller.wrap(…, 100, 1000)`. Com o throttle antigo (`CDN-02`), teclas digitadas dentro de 1 s
+depois de uma busca eram descartadas: digitar "Horror" rápido mostrava o resultado de um prefixo ("Movie 000 Drama"…).
+Corrigido junto com o `Controller` (a última chamada roda no fim da janela) e com uma proteção em `searchOnLibrary`
+para buscas substituídas (`jellyfin_ui.js:258`).
+
+### CM-34 — `tempLimit` recebia o `AbortSignal` ✅
+
+`searchItems(Name, library, query, tempLimit)` é envolvida pelo `Controller`, que acrescenta o `AbortSignal` depois dos
+argumentos. Chamadas com três argumentos (como a do content-recommender) recebiam o sinal em `tempLimit` e
+`items.slice(0, 0 + signal)` devolvia `[]`. Agora só um número positivo substitui o tamanho da página.
 
 ### CM-32 — Lint e casos-limite 🧪
 

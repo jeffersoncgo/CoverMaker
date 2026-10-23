@@ -18,13 +18,13 @@ class Observer {
       // 'unload', //Disabled because of security browser bugs
       'DOMContentLoaded',
       'readystatechange',
-      'oncontextmenu',
+      'contextmenu',
       'scroll',
       'wheel',
-      'onresize',
-      'oncopy',
-      'oncut',
-      'onpaste', //Gonna add only these as default, the user can add more if needed
+      'resize',
+      'copy',
+      'cut',
+      'paste', //Gonna add only these as default, the user can add more if needed
     ]
     this.callbacks = [];
     this._isObserving = false;
@@ -91,9 +91,8 @@ class Observer {
   }
 
   RemoveCallBack(index) {
-    this.callbacks.splice(index, 1);
-    this.targetElement.removeEventListener('change', callback);
-    this.targetElement.removeEventListener('input', callback);
+    const [callback] = this.callbacks.splice(index, 1);
+    if (callback) this.RemoveListeners(callback);
   }
 
   AddListener(listener) {

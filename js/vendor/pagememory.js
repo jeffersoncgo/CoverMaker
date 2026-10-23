@@ -188,7 +188,14 @@ class PageMemoryDB {
 
 
 class pageMemory {
-    constructor() {
+    /**
+     * @param {Object} [options]
+     * @param {string[]} [options.listeners] DOM events that trigger a save (default: input, change, click, submit, toggle)
+     * @param {number} [options.saveDelayMs=100] Debounce before saving
+     * @param {number} [options.saveIntervalMs=2000] Minimum time between saves (the last change is still saved)
+     * @param {number} [options.restoreDelayMs=100] Delay before restoring
+     */
+    constructor(options = {}) {
         // Storage for previous page information
         this.previousPageInfo = {
             Title: null,
@@ -208,9 +215,10 @@ class pageMemory {
         // Reduced event list to avoid duplicates and improve performance
         // input covers most text changes, change covers selects/checkboxes
         // click covers buttons/links, submit covers forms
-        this.Listeners = [
+        this.Listeners = options.listeners ? [...options.listeners] : [
             'input',    // Covers text input, contenteditable changes
             'change',   // Covers select, checkbox, radio changes
+            'click',    // Covers button clicks, link clicks
             'submit',   // Covers form submissions
             'toggle'    // Covers details element toggles
         ];
@@ -231,7 +239,8 @@ class pageMemory {
             "dir",              // Text direction
             "lang",             // Language context
             "title",            // Tooltip – possibly dynamic
-            "translate"         // i18n behavior
+            "translate",        // i18n behavior
+            "added-trigger"     // Internal marker set by pageMemory itself
         ];
 
         // Initialize storage key and auto-save interval
@@ -257,10 +266,14 @@ class pageMemory {
         this.canSave = true;
 
 
-        // Wrap methods with Controller for debouncing and preventing concurrent runs
-        // Increased delays to prevent browser freezing
-        this.savePageInfo = Controller.wrap(this._savePageInfo.bind(this), true, 500, 2000);
-        this.restorePageInfo = Controller.wrap(this._restorePageInfo.bind(this), true, 500);
+        // Wrap methods with Controller for debouncing and preventing concurrent runs.
+        // Callers (event listeners, observers) pass their own arguments; the Controller appends the
+        // AbortSignal as the last one, so that is the one forwarded.
+        const saveDelayMs = options.saveDelayMs ?? 100;
+        const saveIntervalMs = options.saveIntervalMs ?? 2000;
+        const restoreDelayMs = options.restoreDelayMs ?? 100;
+        this.savePageInfo = Controller.wrap((...args) => this._savePageInfo(args[args.length - 1]), true, saveDelayMs, saveIntervalMs);
+        this.restorePageInfo = Controller.wrap((...args) => this._restorePageInfo(args[args.length - 1]), true, restoreDelayMs);
 
         this.observers = [];
 
@@ -695,6 +708,7 @@ class pageMemory {
                 // Restore attributes
                 if (savedElement.attributes && Array.isArray(savedElement.attributes)) {
                     savedElement.attributes.forEach(attr => {
+                        if (this.shouldIgnoreAttribute(attr.name)) return;
                         const currentValue = element.getAttribute(attr.name);
                         if (currentValue !== attr.value) {
                             changed = true;
@@ -970,8 +984,10 @@ class pageMemory {
             return Array.from(parent.children).indexOf(child);
         };
 
+        const escape = value => (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(value) : value;
+
         if (!element) return '';
-        if (element.id) return `#${element.id}`;
+        if (element.id) return `#${escape(element.id)}`;
 
         let selector = '';
         const path = [];
@@ -984,7 +1000,7 @@ class pageMemory {
             if (element.classList.length > 0) {
                 const classNames = Array.from(element.classList).filter(name => name.trim() !== '');
                 if (classNames.length > 0) {
-                    currentSelector += `.${classNames.join('.')}`;
+                    currentSelector += `.${classNames.map(escape).join('.')}`;
                 }
             }
             
@@ -1039,6 +1055,9 @@ class pageMemory {
             this.db.close();
         }
 
+        this.blobCache.clear();
+        this.blobSignatureCache.clear();
+
         // Clean up properties
         Object.keys(this).forEach(key => {
             try {
@@ -1053,8 +1072,6 @@ class pageMemory {
                 }
             }
         });
-        this.blobCache.clear()
-        this.blobSignatureCache.clear();
     }
 }
 

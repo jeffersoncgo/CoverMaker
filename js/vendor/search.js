@@ -91,8 +91,8 @@ class SearchEngine {
       return order * ((aVal > bVal) ? 1 : -1);
     };
 
-    // Use slice() to sort a copy, preventing mutation of the array during tie-breaker sorts
-    results.slice().sort((a, b) => {
+    // Sort a copy so the cached/original array is not mutated during tie-breaker sorts
+    return results.slice().sort((a, b) => {
       for (const s of sort) {
         const aVal = getComparableValue(this.getFieldValue(a, s.fields));
         const bVal = getComparableValue(this.getFieldValue(b, s.fields));
@@ -103,8 +103,6 @@ class SearchEngine {
       }
       return 0;
     });
-
-    return results;
   }
 
   getFieldValue(obj, fields) {

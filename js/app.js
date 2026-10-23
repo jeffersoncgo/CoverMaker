@@ -2270,7 +2270,8 @@ window.addEventListener('load', async () => {
 
 function loadEssentials() {
   window.memoryLoaded = false;
-  window.memory = new pageMemory();
+  // Same timing/events the vendored copy used before it was synced with jeffersoncgo/cdn
+  window.memory = new pageMemory({ saveDelayMs: 500, restoreDelayMs: 500, listeners: ['input', 'change', 'submit', 'toggle'] });
   window.memory.addEvent('onMemoryIsEmpty', () => dummyStart())
   window.memory.addEvent('onRestoreSucess', () => window.memoryLoaded = true)
   window.memory.addEvent('onRestoreSucess', loadprojectConfig)
