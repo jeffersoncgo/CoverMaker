@@ -25,6 +25,7 @@
   /* Functional Colors */
   --c-danger: #ef4444;
   --c-danger-bg: rgba(239, 68, 68, 0.15);
+  --c-warning: #f59e0b;
   --c-success: #10b981;
   --c-success-bg: rgba(16, 185, 129, 0.15);
 

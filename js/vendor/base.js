@@ -8,12 +8,15 @@ document.addEventListener('mousemove', (event) => {
 });
 
 
-JCGWeb.Functions = {};
+// Keep functions registered by an earlier load of this file
+JCGWeb.Functions = JCGWeb.Functions || {};
 JCGWeb.Functions.toObeserverGetMousePos = (event) => {
-	if(typeof event?.screenX != 'number')
+	if(typeof event?.clientX != 'number')
 		return;
-	JCGWeb.Variables.Mouse.X = event.screenX;
-	JCGWeb.Variables.Mouse.Y = event.screenY;	
+	// Same coordinates as the mousemove listener above (viewport, clientX/Y); this one used screenX/Y, so the
+	// shared Mouse.X/Y switched between viewport and screen coordinates
+	JCGWeb.Variables.Mouse.X = event.clientX;
+	JCGWeb.Variables.Mouse.Y = event.clientY;	
 }
 
 JCGWeb.Functions.MakeSafePos = (width, height, left, top, parent = document.body) => {
@@ -121,11 +124,12 @@ JCGWeb.Functions.getUniqueSelector = element => {
 }
 
 JCGWeb.Functions.getUniqueSelectorOnClick = () => {
-  this.page = document.querySelector('html');
-  this.page.addEventListener('click', (e) => {
+  // (was `this.page` in an arrow function, i.e. a global window.page)
+  const page = document.querySelector('html');
+  page.addEventListener('click', (e) => {
     const selector = JCGWeb.Functions.getUniqueSelector(e.target);
     if (selector) {
-      this.page.setAttribute('data-clicked-selector', selector);
+      page.setAttribute('data-clicked-selector', selector);
     }
   });
 }

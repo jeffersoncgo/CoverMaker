@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- zoom allowed (WCAG 1.4.4); it was blocked with maximum-scale=1.0, user-scalable=no -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
@@ -107,7 +108,7 @@
       ondragover="slotAllowDrop(event)" ondragleave="this.classList.remove('dragover')">
       <input type="file" accept="image/*" class="fileInput" style="display: none;"
         onchange="localImageInputChanged(this)">
-      <img src="" class="preview" save customTrigger="reloadSlotImage" src="" loading="lazy"></img>
+      <img src="" class="preview" save customTrigger="reloadSlotImage" loading="lazy">
       <div class="topButtons">
         <i class="fa-solid fa-thumbtack pin-button" onclick="toggleSlotPin(this)" title="Pin Image"></i>
         <i class="fa-solid fa-file-image" onclick="loadLocalImage(this)" title="Load Local Image"></i>
@@ -126,7 +127,7 @@
   <template id="cover-template">
     <div class="library">
       <span>{{name}}</span>
-      <img class="preview" library-name={{name}} library-id={{id}} onclick="selectLibrary(this)" loading="lazy"></img>
+      <img class="preview" library-name={{name}} library-id={{id}} onclick="selectLibrary(this)" loading="lazy">
     </div>
   </template>
 
@@ -134,7 +135,7 @@
     <div class="poster">
       <span>{{name}}</span>
       <img src="" draggable="true" ondragstart="onposterDragStart(event)" class="preview" item-name={{name}}
-        item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)" loading={{loading}}></img>
+        item-id={{id}} onclick="selectImageToSlot(this)" onerror="SlotImageOnError(this)" loading={{loading}}>
     </div>
   </template>
 
@@ -266,7 +267,7 @@
         </div>
       </div>
     </div>
-  </template>
+  </div></template><!-- this </div> closes the layer item; the browser used to close it at </template> -->
 
   <!-- Text Effect Layer Template (per text layer) -->
   <template id="text-effect-layer-template">
@@ -595,6 +596,6 @@
     <script src="js/textEffects.js"></script>
     <script src="js/app.js"></script>
     <script src="js/gallery.js"></script>
-</body>
 
-</html>
+
+</div><!-- #app (the browser used to close it here) --></body></html>

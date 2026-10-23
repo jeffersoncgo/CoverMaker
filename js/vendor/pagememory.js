@@ -194,6 +194,8 @@ class pageMemory {
      * @param {number} [options.saveDelayMs=100] Debounce before saving
      * @param {number} [options.saveIntervalMs=2000] Minimum time between saves (the last change is still saved)
      * @param {number} [options.restoreDelayMs=100] Delay before restoring
+     * @param {boolean} [options.saveDom=false] Also store document.documentElement.outerHTML in each record (field
+     *   `dom`). Nothing reads it back; it was always saved before 2026-10-23 (~340 KB per save in CoverMaker).
      */
     constructor(options = {}) {
         // Storage for previous page information
@@ -274,6 +276,7 @@ class pageMemory {
         const saveDelayMs = options.saveDelayMs ?? 100;
         const saveIntervalMs = options.saveIntervalMs ?? 2000;
         const restoreDelayMs = options.restoreDelayMs ?? 100;
+        this.saveDom = options.saveDom === true;
         this.savePageInfo = Controller.wrap((...args) => this._savePageInfo(args[args.length - 1]), true, saveDelayMs, saveIntervalMs);
         this.restorePageInfo = Controller.wrap((...args) => this._restorePageInfo(args[args.length - 1]), true, restoreDelayMs);
 
@@ -532,7 +535,7 @@ class pageMemory {
 
             const title = document.title;
             const url = window.location.href;
-            const dom = document.documentElement.outerHTML;
+            const dom = this.saveDom ? document.documentElement.outerHTML : undefined;
             const saveTargets = this.getSaveTargets();
             const savedElements = saveTargets.map(this.getElementInfo);
 
@@ -600,9 +603,9 @@ class pageMemory {
             
             const data = {
                 title,
-                dom,
                 savedElements
             };
+            if (this.saveDom) data.dom = dom;
 
             await this.db.save(url, data);
             

@@ -2138,6 +2138,26 @@ jellyfinsearchInput.addEventListener('input', () => {
   })
 })
 
+// Keyboard access for the icon buttons (<i onclick>, clickable previews): focusable, announced as buttons with their
+// title as name, and Enter/Space activate them like a click. Templates get it too, so new slots/layers have it.
+function makeClickablesAccessible(root) {
+  root.querySelectorAll('i[onclick], img[onclick]').forEach(el => {
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    if (!el.hasAttribute('aria-label') && el.getAttribute('title')) el.setAttribute('aria-label', el.getAttribute('title'));
+  });
+}
+document.querySelectorAll('template').forEach(t => makeClickablesAccessible(t.content));
+makeClickablesAccessible(document);
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target;
+  if (!(el instanceof Element) || el.getAttribute('role') !== 'button') return;
+  if (/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(el.tagName)) return; // native controls already do this
+  e.preventDefault();
+  el.click();
+});
+
 jellyfinloginActionBtn.addEventListener('click', Login)
 jellyfinLogoutBtn?.addEventListener('click', Logout)
 
@@ -2501,6 +2521,8 @@ function changeCompositeType(event) {
 
 
 function cleanMemory() {
+  // Everything below is erased at once and cannot be undone
+  if (!confirm('Clean all saved data? The current project, slot images, settings and the Jellyfin cache will be erased. This cannot be undone.')) return;
   window.memoryLoaded = false;
   window.projectFileName = null;
   memory.reset().then(() => {
