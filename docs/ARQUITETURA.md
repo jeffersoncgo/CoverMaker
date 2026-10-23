@@ -150,6 +150,16 @@ drawComposite(signal)
 - `applyTextEffect` adiciona a todos os efeitos de texto o parâmetro `globalOpacity` (mistura do resultado com o
   estado anterior) e aceita `params.blendMode`.
 
+### Opções acrescentadas em 2026-10-23 (padrão = como era)
+
+| Efeito | Parâmetro | Padrão (antigo) | Novo |
+|---|---|---|---|
+| Blur (imagem) | `edges` | `Classic` (borrado por cima do nítido: halo nas bordas) | `Extend Edges` (estende a borda antes de borrar) |
+| Stained Glass | `groutStyle` | `Hairline` (1 px; o slider `grout` não fazia nada) | `Use Grout Width` (usa o slider) |
+| Anime Speedlines | `mode` | `Inside Text` e `Behind Text` agora mostram o texto (antes ele era apagado: correção) | `Lines Only` = o que `Behind Text` desenhava antes |
+| comicLayout, glitchMosaic, cctv, mosaic, glitterTexture, gummyCandy | `seed` | `0` = aleatório a cada render | qualquer outro valor = sempre o mesmo resultado |
+| (novos efeitos) | — | — | `innerShadowOffset`, `extrudeShaded`: as primeiras versões de `innerShadow`/`extrude`, que estavam escondidas |
+
 ### Esquema de parâmetros (usado por `paramsRenderer.js`)
 
 ```js
@@ -323,7 +333,12 @@ recarrega a página.
 - **Local**: `window.queryLocalFonts()` (Chrome/Edge; exige gesto do usuário — a lista é carregada ao abrir o `<select>`).
   Sem a API, usa uma lista de fontes seguras. Fontes locais não padrão são carregadas como `FontFace` a partir do Blob.
 - **Google**: lista em `fonts/google-fonts.json`; ao usar, injeta `<link href="https://fonts.googleapis.com/css2?family=…">`
-  (apenas o peso/estilo padrão da família) e aguarda `document.fonts.load`.
+  (a face regular) e aguarda `document.fonts.load`. Se a camada usa outro peso (`lighter` → 100, `bold`/`bolder` → 700)
+  ou itálico, `loadFontVariant` também carrega a face real que o navegador escolheria entre as que a família tem
+  (`fonts/google-fonts-variants.json`, gerado de `https://fonts.google.com/metadata/fonts` em 2026-10-23; regenerar
+  quando `google-fonts.json` mudar). Família sem a face → nenhum pedido, o navegador imita negrito/itálico como antes.
+  Options → **Load real bold/italic (Google Fonts)** (`Setup.Fonts.loadVariants`, padrão ligado) desliga isso e remove
+  as faces já carregadas.
 
 ## 11. Persistência local
 

@@ -135,17 +135,23 @@ Sem mudança visual nos casos que já funcionam.
       na biblioteca real.
 - `CR-07` (README cita atores/diretores/estúdios que o cálculo não usa) vai com a documentação na Fase 6.
 
-### Fase 5 — Mudanças visuais (só com aprovação; opção antiga mantida)
+### Fase 5 — Mudanças visuais (opção antiga mantida) ✅ (2026-10-23)
 
-- [ ] `CM-07` — restaurar as versões antigas de `innerShadow`/`extrude` como efeitos adicionais e migrar projetos
-      antigos (ex.: galeria "Batman").
+- [x] `CM-07` — as versões antigas de `innerShadow`/`extrude` voltaram como efeitos adicionais (`innerShadowOffset`,
+      `extrudeShaded`); os atuais renderizam igual. **Sem migração automática** do projeto "Batman": comparado com a
+      imagem de resultado da galeria, a versão antiga com os valores do arquivo ficou ~1 % mais perto na média e um pouco
+      mais longe nos pixels muito diferentes (inconclusivo) → decisão do usuário (D6).
 - [x] `CM-09` — feito na Fase 2.
-- [ ] `CM-21` — opção para blur sem halo nas bordas (padrão: atual).
-- [ ] `CM-22` — opção de semente nos layouts/efeitos aleatórios (padrão: atual).
-- [ ] `CM-23` — carregar pesos/itálico reais das Google Fonts.
-- [ ] `CM-28` — Anime Speedlines deixa de apagar o texto (mostrar antes/depois).
-- [ ] `CM-31` — desempenho dos efeitos de texto **com saída idêntica** (comparação de pixels).
-- [ ] `CM-32` — limites de parâmetros que degeneram (Skew ±1).
+- [x] `CM-21` — Blur com `edges: Extend Edges` (padrão `Classic`, idêntico).
+- [x] `CM-22` — `seed` nos layouts/efeitos aleatórios (0 = aleatório, padrão, como antes).
+- [x] `CM-23` — faces reais (negrito/leve/itálico) das Google Fonts quando a família as tem; opção para desligar
+      (desligada = como antes). Muda a aparência de textos em negrito/itálico com essas fontes — por isso a opção.
+- [x] `CM-28` — Anime Speedlines mostra o texto; `Lines Only` = o antigo `Behind Text`, pixel a pixel. Antes/depois em
+      imagem.
+- [x] `CM-30` (resto) — largura do rejunte do Stained Glass como opção (padrão idêntico).
+- [x] `CM-31` — com **saída idêntica**: `stainedGlass` (grade espacial) e `longShadow` (canvas reaproveitado). O recorte
+      do `longShadow` à área do texto mudou pixels em 2 de 8 casos (até 85/255) e foi descartado.
+- [x] `CM-32` — Skew ±1; `focusTabName`; `return` no `finally`; `new Promise(async …)`.
 
 ### Fase 6 — HTML, acessibilidade e documentação
 
@@ -161,6 +167,7 @@ Sem mudança visual nos casos que já funcionam.
 | D2 | Versionar os testes em `tests/`? | Não respondida diretamente; adotado o padrão **sim** (é só adição e os testes se perderiam com o contêiner). |
 | D3 | Como publicar? | **Merge na `main` feito por mim**, sem PR. Depois do merge, conferir o deploy do GitHub Pages e os arquivos no ar. |
 | D4 | Senha salva → token? | **Sim.** A senha é a da conta Jellyfin digitada na janela de login; o app a usa uma última vez para obter o token e então a apaga do navegador. |
+| D6 | Projeto "Batman" da galeria (`CM-07`) | **Pendente.** Usar o efeito restaurado "Inner Shadow (Offset)" com os valores originais do arquivo (`offsetX 9`, `offsetY -1`)? Medição inconclusiva (~1 %). Recomendação: manter como está; o efeito antigo fica disponível para quem quiser. |
 | D5 | Perfil de gosto do content-recommender (`CR-06`) | **Pendente.** Hoje só a nota mínima filtra (os filtros de gênero, tag e ano não têm efeito). Recomendação: criar um modo novo como opção, mantendo o atual como padrão, para comparar na biblioteca real. |
 
 ## Checklist "mudei X, mexo em Y"
@@ -172,6 +179,7 @@ Sem mudança visual nos casos que já funcionam.
 | `cdn/js/*.js` usados pelo content-recommender | Copiar também para `content-recommender/js/vendor/` |
 | Parâmetros em `compositeRegistry.js`, `effectsRegistry.js` ou `textEffects.js` | Regenerar `docs/REFERENCIA-EFEITOS.md` e abrir os projetos da galeria |
 | Formato de `projectConfig` ou do ZIP | Manter leitura do formato antigo; atualizar `docs/ARQUITETURA.md` §7 |
+| `fonts/google-fonts.json` (lista de Google Fonts) | Regenerar `fonts/google-fonts-variants.json` a partir de `https://fonts.google.com/metadata/fonts` |
 | Chaves de `localStorage`/IndexedDB | Lembrar que os três apps compartilham a origem `jeffersoncgo.github.io` |
 
 ## Medições de referência (2026-10-23, Chromium headless)
@@ -193,6 +201,17 @@ Sem mudança visual nos casos que já funcionam.
   camada de texto padrão seriam 4 s: ~3 s são o desenho da camada padrão (`longShadow`), que antes só aparecia a
   partir da segunda visita. Ver `CM-31`.
 - Inventário: 0 remoções, 18 adições.
+
+### Depois da Fase 5 (2026-10-23)
+
+- Referência visual: 209 idênticas + 1 alterada de propósito (`actionSpeedlines`, o texto aparece); 2 efeitos novos.
+  `crystallize` deixou de ser aleatório com a semente padrão (1), como o parâmetro prometia.
+- Pipeline completo: os 5 cenários com os mesmos pixels da Fase 2.
+- `stainedGlass`: 6/6 combinações com saída idêntica; Shard Size 5 **34,7 s → 0,17 s**; padrão 1,5 s → 0,1 s.
+- `longShadow`: 6/6 idênticas; padrão da camada do app 1,9 s → 1,6 s; máximos 4,9 s → 3,9 s.
+- Fontes: Roboto `bold` usa a face 700 real; Open Sans `lighter` a 300; Bangers (só 400) sem nenhum pedido extra e
+  idêntico; nenhum erro HTTP no Google Fonts.
+- Lint: 61 → 53 achados (só remoções).
 
 ### Depois da Fase 4 (2026-10-23)
 
@@ -225,3 +244,4 @@ Sem mudança visual nos casos que já funcionam.
 | 2026-10-23 | 2 | Concluída. CM-09 antecipado; achado e corrigido o conflito de assinatura de imagens no `pageMemory`. Medições acima. Observação: a porta do proxy do contêiner mudou no meio da rodada (imagens externas falhavam); os testes passaram a ler `HTTPS_PROXY`. |
 | 2026-10-23 | 3 | Concluída. Achados extras no `pageMemory` (trava `canSave`, gravação superada). Teste e2e: aviso da galeria acompanhado durante a espera e "Failed to fetch" (sem Jellyfin em `localhost:8096`) tratado como erro conhecido, como já era "Fetch error: undefined". |
 | 2026-10-23 | 4 | Concluída, exceto `CR-06` (decisão do usuário). Observação: um mock caiu no meio dos testes por um `cd` que valia só para o primeiro comando; o cenário foi refeito com o mock no ar. |
+| 2026-10-23 | 5 | Concluída. Pendentes de decisão: D6 (Batman). O processo de trabalho foi reiniciado no meio da fase (servidores de teste caíram e foram reabertos). Um e2e deu 41/42 (export na abertura) enquanto o lint rodava em paralelo: as duas versões estabilizam o canvas antes dos 9 s do teste; o mapa de variações de fonte passou a ser baixado em paralelo no carregamento e o e2e, rodado sozinho, deu 42/42. |

@@ -24,7 +24,7 @@
 | CM-04 ✅ | Alta | `app.js:1641`, `:1936` | "Download" falha quando não há camada de texto (e pode exportar imagem antiga) 🧪 |
 | CM-05 ✅ | Alta | `app.js:708`, `index.html:39-43` | Senha do Jellyfin gravada em texto puro (localStorage **e** IndexedDB) 🧪 |
 | CM-06 ✅ | Alta | `jellyfin_ui.js:324,338`, `jellyfin.js:1151`, `toast.js:51` | XSS: nomes vindos do Jellyfin inseridos com `innerHTML` 🔎 |
-| CM-07 | Alta | `textEffects.js:1938,2140,5833,5945` | `innerShadow` e `extrude` declarados duas vezes; o projeto da galeria "Batman" perde parâmetros 🔎 |
+| CM-07 ✅ | Alta | `textEffects.js:1938,2140,5833,5945` | `innerShadow` e `extrude` declarados duas vezes; o projeto da galeria "Batman" perde parâmetros 🔎 |
 | CM-08 ✅ | Alta | `jellyfin.js:124-143,372-410,1188-1221` | Login falho tratado como sucesso; com o plugin Meilisearch, usuário não-admin nunca carrega bibliotecas 🔎 |
 | CM-09 ✅ | Alta | `gallery/gallery.json:122` | "Series — Rough → Use Full Project" aponta para um ZIP que não existe 🧪 |
 | CM-10 ✅ | Média | `app.js:1440,1479,1489,941` | Export/Import Config incompatíveis; importação é sobrescrita pelo que estava salvo 🧪 |
@@ -38,18 +38,18 @@
 | CM-18 | Média | `index.html`, `vendor/pagememory.js` | `pageMemory` pesado: ~340 KB de `outerHTML` por gravação, varre o painel inteiro a cada clique 🧪 |
 | CM-19 ✅ | Baixa | `app.js:1851-1897`, `gallery.js:164-220` | Importar ZIP descarta slots vazios do fim; fluxo "Use Json" inconsistente 🔎 |
 | CM-20 | Baixa | `index.html` | HTML inválido (`#app` sem fechamento, `div` faltando no template, `src` duplicado) 🧪 |
-| CM-21 | Baixa | `effectsRegistry.js`, `drawing.js:224` | Filtros redesenhados sobre o próprio canvas (bordas do blur); `ctx.filter` em Safari 🔎 |
-| CM-22 | Baixa | `compositeRegistry.js`, `textEffects.js` | Aleatoriedade sem semente: o mesmo projeto renderiza diferente após recarregar 🔎 |
-| CM-23 | Baixa | `fonts.js:214-229` | Google Fonts carrega só o peso/estilo padrão (negrito/itálico sintetizados) 🔎 |
+| CM-21 ✅ | Baixa | `effectsRegistry.js`, `drawing.js:224` | Filtros redesenhados sobre o próprio canvas (bordas do blur); `ctx.filter` em Safari 🔎 |
+| CM-22 ✅ | Baixa | `compositeRegistry.js`, `textEffects.js` | Aleatoriedade sem semente: o mesmo projeto renderiza diferente após recarregar 🔎 |
+| CM-23 ✅ | Baixa | `fonts.js:214-229` | Google Fonts carrega só o peso/estilo padrão (negrito/itálico sintetizados) 🔎 |
 | CM-24 | Baixa | `windowsHandle.js:85-100` | Parâmetro `window` sombreia o global; janelas não arrastam no toque 🔎 |
 | CM-25 | Baixa | vários | Código morto / legado 🔎 |
 | CM-26 | Baixa | `README.md`, `CONTRIBUTING.md` | Documentação desatualizada ou incorreta 🔎 |
 | CM-27 | Baixa | `index.html`, `paramsRenderer.js:213` | Acessibilidade e consistência de idioma 🔎 |
-| CM-28 | Média | `textEffects.js` (`actionSpeedlines`) | "Anime Speedlines" apaga o texto com os valores padrão 🧪 |
+| CM-28 ✅ | Média | `textEffects.js` (`actionSpeedlines`) | "Anime Speedlines" apaga o texto com os valores padrão 🧪 |
 | CM-29 ✅ | Média | `textEffects.js:1205` (`lightning`) | "Lightning" com Seed = 0 (mínimo do slider) lança `rnd is not a function` 🧪 |
-| CM-30 ◐ | Média | `textEffects.js` | Controles que não fazem nada e parâmetro `"undefined"` salvo nos projetos 🧪 |
-| CM-31 | Média | `textEffects.js` | Efeitos de texto travam a página por segundos (Stained Glass: 46 s no mínimo) 🧪 |
-| CM-32 | Baixa | vários | Achados de lint e casos-limite de parâmetros 🧪 |
+| CM-30 ✅ | Média | `textEffects.js` | Controles que não fazem nada e parâmetro `"undefined"` salvo nos projetos 🧪 |
+| CM-31 ◐ | Média | `textEffects.js` | Efeitos de texto travam a página por segundos (Stained Glass: 46 s no mínimo) 🧪 |
+| CM-32 ◐ | Baixa | vários | Achados de lint e casos-limite de parâmetros 🧪 |
 | CM-33 ✅ | Média | `app.js:2013` + `vendor/controller.js` | Busca do Jellyfin ignorava as últimas teclas digitadas (corrigido via `CDN-02`) 🧪 |
 | CM-34 ✅ | Alta | `jellyfin.js:754` | `searchItems` com 3 argumentos recebia o `AbortSignal` como `tempLimit` → lista vazia (quebra o content-recommender, `CR-14`) 🧪 |
 
@@ -189,7 +189,9 @@ qualquer usuário com permissão de edição). `toastMessage` também usa `inner
 `err.message` em vários pontos. Correção: `label.textContent = item.Name;` e, no toast,
 `span.textContent = message` (montar o ícone separadamente).
 
-### CM-07 — Efeitos de texto duplicados 🔎
+### CM-07 — Efeitos de texto duplicados 🔎 — ✅ corrigido (2026-10-23)
+
+Como ficou: as primeiras definições voltaram como `innerShadowOffset` e `extrudeShaded`; `innerShadow`/`extrude` renderizam como antes. Migração automática do projeto Batman **não** feita: medido contra a imagem de resultado, a diferença entre as versões é ~1 % (inconclusiva) — proposta ao usuário.
 
 `TEXT_EFFECTS` declara `extrude` (linhas 1938 e 5945) e `innerShadow` (2140 e 5833). Em um literal de objeto a segunda
 declaração substitui a primeira silenciosamente, e os esquemas são diferentes:
@@ -411,7 +413,9 @@ IndexedDB, sem base64).
 - No `#text-layer-template` falta um `</div>` na seção "Position/Rotation" (o navegador fecha no `</template>`).
 - `<img src="" … src="">` duplicado (`:108`); `<img></img>`; `<li class="tab">` fora de `<ul>`; `value` em `<select>`.
 
-### CM-21 — Filtros de imagem 🔎
+### CM-21 — Filtros de imagem 🔎 — ✅ corrigido (2026-10-23)
+
+Como ficou: opção `edges: Extend Edges` no Blur; padrão `Classic` (como antes). Os outros filtros cobrem a imagem inteira e não têm halo.
 
 Os efeitos `blur`, `grayscale`, `brightness`, … (`effectsRegistry.js`) e `blurImage` (`drawing.js:224`) aplicam
 `ctx.filter` desenhando o canvas **sobre ele mesmo**: o resultado é a imagem filtrada composta por cima da original.
@@ -420,14 +424,18 @@ antes ou desenhe a partir de uma cópia: `const src = cloneCanvas(canvas).canvas
 O app usa `ctx.filter` em 67 pontos; o suporte a `CanvasRenderingContext2D.filter` no Safari foi historicamente
 ausente — vale testar e, se necessário, oferecer *fallback* (o README declara "Safari 14.1+ ✅").
 
-### CM-22 — Resultados não reproduzíveis 🔎
+### CM-22 — Resultados não reproduzíveis 🔎 — ✅ corrigido (2026-10-23)
+
+Como ficou: parâmetro `seed` (0 = aleatório, como antes) nos 6 itens; o `crystallize` usava `Math.random` numa linha mesmo com semente.
 
 `comicLayout`, `glitchMosaic`, `cctv` (composições) e `mosaic`, `woodTexture`, `gummyCandy` (texto) usam
 `Math.random()` sem semente; outros efeitos caem em `Math.random` quando `seed` é vazio/0. O cache esconde isso
 durante a sessão, mas após recarregar/importar o mesmo projeto a imagem muda. Use `createSeededRandom(params.salt || 1)`
 (já existe em `textEffects.js:37`) e exponha `seed` onde faltar.
 
-### CM-23 — Variações de fonte 🔎
+### CM-23 — Variações de fonte 🔎 — ✅ corrigido (2026-10-23)
+
+Como ficou: faces reais carregadas só quando a família as tem (mapa local); opção para desligar.
 
 `loadFont` pede `css2?family=Nome` (só peso 400 normal). Ao escolher `bold`/`italic`, o navegador sintetiza.
 Peça os eixos disponíveis (ex.: `family=Nome:ital,wght@0,400;0,700;1,400;1,700` — a API retorna 400 se a variação não
@@ -480,7 +488,9 @@ eventos de mouse; troque por *Pointer Events* (`pointerdown/move/up` + `setPoint
 
 ## Segunda rodada
 
-### CM-28 — "Anime Speedlines" apaga o texto 🧪
+### CM-28 — "Anime Speedlines" apaga o texto 🧪 — ✅ corrigido (2026-10-23)
+
+Como ficou: texto copiado antes do `clearRect`; modo novo `Lines Only` reproduz pixel a pixel o antigo `Behind Text`.
 
 `actionSpeedlines.apply` faz `ctx.clearRect(0, 0, w, h)` **antes** de usar `canvas` como máscara e como fonte do texto
 (o `ctx` é do próprio `canvas`). No modo padrão "Inside Text" a máscara fica vazia e a camada some inteira; em
@@ -498,7 +508,9 @@ ctx.clearRect(0, 0, w, h);
 `rnd()` sem *fallback* → `TypeError: rnd is not a function` ao arrastar o Seed até 0. Correção:
 `const rnd = createSeededRandom(seedVal) ?? Math.random;` (como já fazem `channelTear` e `nordicRuneforge`).
 
-### CM-30 — Controles sem efeito e parâmetro `"undefined"` 🧪 — ◐ (2026-10-23: títulos e chave `"undefined"` corrigidos; `grout`/`bgColor` mudam a imagem e vão para a Fase 5)
+### CM-30 — Controles sem efeito e parâmetro `"undefined"` 🧪 — ✅ corrigido (2026-10-23)
+
+Como ficou: títulos e chave `"undefined"` corrigidos (Fase 2); `grout` passa a valer com `groutStyle: Use Grout Width` (padrão `Hairline`, idêntico ao de antes); `bgColor` do Blueprint mantido como referência (preencher o fundo cobriria a imagem atrás do texto).
 
 - `stainedGlass`: o slider **Grout Width** (`grout`) é lido e nunca usado (`textEffects.js:4829`).
 - `blueprint`: **Paper Color** (`bgColor`) nunca é lido (o próprio comentário diz que é "só referência").
@@ -508,7 +520,9 @@ ctx.clearRect(0, 0, w, h);
   `"undefined": ""` nos parâmetros (verificado no Chromium). Correção: em `renderParamsOptions`, tratar entradas sem
   `key` como títulos (renderizar um rótulo e pular `dataset.paramKey`), ou trocar por `group: 'Colors'` nos parâmetros.
 
-### CM-31 — Efeitos de texto lentos na thread principal 🧪
+### CM-31 — Efeitos de texto lentos na thread principal 🧪 — ◐ (2026-10-23)
+
+Como ficou: `stainedGlass`: grade espacial, **mesma saída**, Shard Size 5 de 34,7 s para 0,17 s; `longShadow`: um canvas de passo reaproveitado, mesma saída, 17–30 % mais rápido (recortar à área do texto mudava pixels e foi descartado). Os demais ficam como estão.
 
 Tempo de **um** efeito num canvas 1920×1080 (Chromium *headless*, renderização por software — numa máquina com GPU os
 números são menores, mas a proporção se mantém):
@@ -544,7 +558,9 @@ para buscas substituídas (`jellyfin_ui.js:258`).
 argumentos. Chamadas com três argumentos (como a do content-recommender) recebiam o sinal em `tempLimit` e
 `items.slice(0, 0 + signal)` devolvia `[]`. Agora só um número positivo substitui o tamanho da página.
 
-### CM-32 — Lint e casos-limite 🧪
+### CM-32 — Lint e casos-limite 🧪 — ◐ (2026-10-23)
+
+Como ficou: Skew X = Y = ±1 não some mais (só esse caso muda); `focusTabName`, `return` no `finally` (que também restaurava parâmetros nunca salvos) e `new Promise(async …)` corrigidos. Variáveis não usadas ficam para a lista de código morto.
 
 - `app.js:1084` — `focusTabName` é global implícita.
 - `slots.js:324` — `return items` dentro de `finally` engole exceções de `getRandomImages`.
