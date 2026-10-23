@@ -44,6 +44,8 @@ function stepHash(params, previousStepHash = 0) {
 }
 
 async function runStep(prevHash = 0, fn, ...params) {
+  // A newer render already started: stop here, before touching the shared step index and cache
+  if (extractAbortSignal(params)?.aborted) throw new DOMException('Render superseded by a newer one', 'AbortError');
   const index = lastStepIndex;
   lastStepIndex++;
   const newHash = stepHash({params, fnId: `${tagFn(fn)}_${index}`}, prevHash);
@@ -56,13 +58,11 @@ async function runStep(prevHash = 0, fn, ...params) {
   //   console.log(`Running step ${index}`, fn, params);
   // }
 
-  if (typeof params != 'object' || params === null)
-    params = [];
-  
   // console.log({fn, index, newHash, prevHash, ...params });
   const result = typeof fn == 'function' ? await fn(...params) : [...params];
   // console.log(`Caching step ${index}`, fn, result, params);
-  stepsCache[index] = { hash: newHash, ...result, index };
+  // The step's own hash must win over any `hash` field the step function returns
+  stepsCache[index] = { ...result, hash: newHash, index };
   return stepsCache[index];
 }
 
@@ -255,6 +255,7 @@ async function drawComposite(...params) {
   lastStepIndex = 0; // reset step index for caching
 
   const abortSignal = extractAbortSignal(params);
+  const isSuperseded = () => abortSignal?.aborted;
 
   const canvasSize = await runStep(null, null, window.composite.size, abortSignal);//This will create the initial canvas, only so we have something to draw on, and have a initial hash
   // after this point canvasSize alrady carry the abort signal and hash
@@ -267,17 +268,23 @@ async function drawComposite(...params) {
   
   window.Composites.Text = await drawCompositeText(canvasSize.hash, canvasSize[0].width, canvasSize[0].height, abortSignal); //canvasSize is passed, so if changed, it will force all steps to redraw
 
+  // Drop cached steps a smaller pipeline no longer uses (each holds full-size canvases)
+  stepsCache.length = Math.min(stepsCache.length, lastStepIndex);
+
   const newHash = stepHash({ imageHash: window.Composites.Image.hash, textHash: window.Composites.Text?.hash || 0 });
   if(composite.lastHash === newHash) {
     console.log('No changes detected, skipping redraw');
     return; // No changes, skip redraw
   }
+  if (isSuperseded()) return; // never paint an older frame over a newer one
   composite.lastHash = newHash;
 
   if(window.Composites.Text && window.Composites.Text.ctx && window.Composites.Text.canvas) {
     window.Composites.Merged = mergeCanvases(window.Composites.Image.canvas, window.Composites.Text.canvas, 0, 0, 1.0, ...params);
     await copyCompositeToMainCanvas({canvas: window.Composites.Merged}, ...params);//ctx not needed here
   } else {
+    // Merged always holds the final image, also when there is no text layer
+    window.Composites.Merged = window.Composites.Image.canvas;
     await copyCompositeToMainCanvas(window.Composites.Image, ...params);
   }
 }
@@ -316,18 +323,9 @@ async function applyImageEffects(canvas, ctx, hash, abortSignal) {
       const effectDef = EFFECTS_REGISTRY[eff.type];
       if (!effectDef) continue;
 
-      // 3. Clone the CURRENT state
-      // On the first loop, this clones the Original.
-      // On the second loop, this clones the Result of the first loop (e.g., the blurred image).
-      const cloned = cloneCanvas(canvas, abortSignal);
-      
-      // Update local references to point to the new clone
-      canvas = cloned.canvas;
-      ctx = cloned.ctx;
-      
-      // 4. Apply the effect to the clone
-      // The 'await' ensures we don't start the next loop until this is totally finished
-      const result = await runStep(hash, effectDef.apply, ctx, canvas, eff.params || {}, abortSignal, eff);
+      // 3. Apply the effect to a clone of the CURRENT state (made inside the step, so a cached
+      // step does not copy the canvas again). The 'await' keeps the effects in order.
+      const result = await runStep(hash, runImageEffectStep, eff.type, canvas, eff.params || {}, abortSignal, eff);
       // 5. Update the accumulators
       // The output of this step becomes the input for the next step
       canvas = result.canvas;
@@ -338,8 +336,37 @@ async function applyImageEffects(canvas, ctx, hash, abortSignal) {
     // Return the final result after all layers are applied
     return { canvas, ctx, hash, abortSignal };
   } catch (err) {
+    if (err?.name === 'AbortError') throw err;
     console.error('Error applying effect layers:', err);
   }
+}
+
+// Step functions clone their input, so the cached result of an earlier step is never modified.
+// A layout/effect that returns nothing keeps what it drew instead of stopping the pipeline.
+// They take the registry key (not the definition object) so the step hash stays small and stable.
+async function runImageEffectStep(type, sourceCanvas, params, abortSignal, eff) {
+  const { canvas, ctx } = cloneCanvas(sourceCanvas, abortSignal);
+  const result = await EFFECTS_REGISTRY[type].apply(ctx, canvas, params, abortSignal, eff);
+  return result?.canvas ? result : { ...(result || {}), canvas, ctx };
+}
+
+async function runCompositeStep(type, sourceCanvas, images, params, abortSignal, meta, eff) {
+  const { canvas, ctx } = cloneCanvas(sourceCanvas, abortSignal);
+  const result = await COMPOSITE_REGISTRY[type].apply(ctx, canvas, images, params, abortSignal, meta, eff);
+  return result?.canvas ? result : { ...(result || {}), canvas, ctx };
+}
+
+function isFontReady(fontStyle) {
+  try {
+    return typeof document === 'undefined' || !document.fonts ? true : document.fonts.check(fontStyle);
+  } catch (e) {
+    return true; // invalid font shorthand: the canvas falls back to its default font anyway
+  }
+}
+
+async function runTextEffectStep(sourceCanvas, text, x, y, params, abortSignal, eff) {
+  const { canvas, ctx } = cloneCanvas(sourceCanvas, abortSignal);
+  return applyTextEffect(ctx, canvas, text, x, y, params, abortSignal, eff);
 }
 
 /**
@@ -353,25 +380,26 @@ async function applyImageEffects(canvas, ctx, hash, abortSignal) {
  * @returns {boolean} True if a composite was applied, false if not.
  */
 async function applyComposite(canvas, ctx, options = {}, slotsImages = [], hash, abortSignal) {
-  const cloned = cloneCanvas(canvas, abortSignal);
-  canvas = cloned.canvas;
-  ctx = cloned.ctx;
+  // Without a usable layout the background is kept, so text and effects still render
+  const background = { canvas, ctx, hash };
   try {
     if (typeof ensureCompositeDefaults === 'function') try { ensureCompositeDefaults(abortSignal); } catch(e) {}
     const eff = projectConfig.canvas.composite || {};
 
-    if (eff.enabled === false) return false;
+    if (eff.enabled === false) return background;
 
     const type = options.type || eff.type || projectConfig.canvas.type;
     const params = options.params || eff.params || {};
 
     const effectDef = (typeof COMPOSITE_REGISTRY !== 'undefined') ? COMPOSITE_REGISTRY[type] : undefined;
-    if (!effectDef) return false;
+    if (!effectDef) return background;
 
-    return await runStep(hash, effectDef.apply, ctx, canvas, slotsImages, params, abortSignal, { srcOnly: slotsImages.map(img => fnv1a(img?.src  || '')) }, eff);
+    // The hash covers the layout params, the slot image sources (srcOnly) and the composite config (eff)
+    return await runStep(hash, runCompositeStep, type, canvas, slotsImages, params, abortSignal, { srcOnly: slotsImages.map(img => fnv1a(img?.src  || '')) }, eff);
   } catch (err) {
+    if (err?.name === 'AbortError') throw err;
     console.error('Error applying composite effect:', err);
-    return {};
+    return background;
   }
 }
 
@@ -468,10 +496,12 @@ async function drawCompositeText(canvasHash, width, height, abortSignal) {
         layer.position,
         layer.fontStyle,
         layer.fillStyle,
-        abortSignal
+        abortSignal,
+        // Not used by createBaseTextLayer: makes the step redraw once a late web font finishes loading
+        isFontReady(layer.fontStyle)
       );
 
-      let { canvas, ctx, hash, meta } = baseResult;
+      let { canvas, hash, meta } = baseResult;
       const { text, x, y } = meta;
       layerHash = hash;
 
@@ -484,10 +514,6 @@ async function drawCompositeText(canvasHash, width, height, abortSignal) {
         const effectDef = TEXT_EFFECTS[eff.type];
         if (!effectDef) continue;
 
-        // Clone the TEXT canvas (not the main background)
-        const clonedText = cloneCanvas(canvas, abortSignal);
-        canvas = clonedText.canvas;
-        ctx = clonedText.ctx;
 
         // const res = await runStep(
         //   layerHash,
@@ -502,10 +528,10 @@ async function drawCompositeText(canvasHash, width, height, abortSignal) {
         //   eff
         // );
 
+        // The step clones the TEXT canvas (not the main background) before applying the effect
         const res = await runStep(
           layerHash,
-          applyTextEffect,
-          ctx,
+          runTextEffectStep,
           canvas,
           text,
           x,
@@ -516,7 +542,6 @@ async function drawCompositeText(canvasHash, width, height, abortSignal) {
         );
 
         canvas = res.canvas;
-        ctx = res.ctx;
         layerHash = res.hash;
       }
 
@@ -545,6 +570,7 @@ async function drawCompositeText(canvasHash, width, height, abortSignal) {
       abortSignal
     };
   } catch (err) {
+    if (err?.name === 'AbortError') throw err;
     console.error('Error in drawCompositeText:', err);
     return canvasHash; // Return original state on error
   }
@@ -565,14 +591,15 @@ async function createBackgroundCanvas(abortSignal) {
 
 async function drawCompositeImage(canvasHash, abortSignal) {
   try {
-    const canvas = await runStep(canvasHash, createBackgroundCanvas, abortSignal);
-    const imageCanvas = await runStep(canvas.hash, applyComposite, canvas.canvas, canvas.ctx, {}, slotsImages, canvasHash, abortSignal);
-    
-    // await applyComposite(canvas.canvas, canvas.ctx, {}, slotsImages, canvasHash, abortSignal);
+    // The background color is passed only so a change to it gives the step a new hash
+    const canvas = await runStep(canvasHash, createBackgroundCanvas, abortSignal, projectConfig.canvas.backgroundColor || '#000000');
+    // applyComposite runs its own cached step (keyed by layout, params and slot images)
+    const imageCanvas = await applyComposite(canvas.canvas, canvas.ctx, {}, slotsImages, canvas.hash, abortSignal);
 
     return await applyImageEffects( imageCanvas.canvas, imageCanvas.ctx, imageCanvas.hash, abortSignal);
   } catch (err) {
-    const type = Setup?.Settings?.canvas?.composite?.type || Setup?.Settings?.canvas?.type;
+    if (err?.name === 'AbortError') throw err;
+    const type = projectConfig?.canvas?.composite?.type || projectConfig?.canvas?.type;
     const msg = `Error applying composite "${type}" via COMPOSITE_REGISTRY: ${err?.message || err}`;
     console.error(msg, err);
     if (typeof toastMessage === 'function') {
