@@ -484,6 +484,12 @@
                         </div>
                       </div>
                     </div>
+                    <div class="field">
+                      <label for="loadFontVariants" title="Off: only the regular face is loaded and the browser imitates bold/italic (how it worked before)">
+                        <input type="checkbox" id="loadFontVariants" checked onchange="updateFontVariantsSetting(this)">
+                        Load real bold/italic (Google Fonts)
+                      </label>
+                    </div>
                     <div class="field export-config-buttons full100W flex row space-between">
                       <!-- buttons to export and import Config -->
                       <button id="importConfigBtn">Import Config</button>

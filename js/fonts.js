@@ -164,11 +164,80 @@ function extractNameFromUrl(url) {
  * Main loading function. 
  * Handles Local (Blob), Custom (URL), and External (CSS Link)
  */
-async function loadFont(source, fontName) {
+// Canvas weights are keywords relative to 400 (lighter → 100, bold/bolder → 700)
+const FONT_WEIGHT_NUMBERS = { lighter: 100, normal: 400, bold: 700, bolder: 700 };
+
+// Faces each Google family has ("400,400i,700"), from fonts/google-fonts-variants.json (generated from
+// https://fonts.google.com/metadata/fonts on 2026-10-23). Loaded the first time a variant is needed.
+let googleFontVariants = null;
+async function getGoogleFontVariants() {
+  if (!googleFontVariants) {
+    googleFontVariants = fetch('fonts/google-fonts-variants.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  }
+  return googleFontVariants;
+}
+
+// Fetched in the background at page load, so the first text layer does not wait for it
+if (typeof window !== 'undefined') window.addEventListener('load', () => { getGoogleFontVariants(); });
+
+// The face the browser picks for a weight among the available ones (CSS font matching), or null when that is the
+// regular 400 face already loaded
+function chooseFontVariant(available, wght, ital) {
+  const faces = available.split(',').map(k => ({ w: parseInt(k), i: k.endsWith('i') ? 1 : 0 }));
+  const weights = [...new Set(faces.map(f => f.w))].sort((a, b) => a - b);
+  let chosen;
+  if (wght > 500) chosen = weights.find(w => w >= wght) ?? [...weights].reverse().find(w => w > 400);
+  else if (wght < 400) chosen = [...weights].reverse().find(w => w <= wght) ?? weights.find(w => w < 400);
+  chosen ??= 400;
+  const hasItalic = faces.some(f => f.w === chosen && f.i === 1);
+  const useItalic = ital && hasItalic ? 1 : 0;
+  if (!faces.some(f => f.w === chosen && f.i === useItalic)) return null;
+  if (chosen === 400 && !useItalic) return null;
+  return { wght: chosen, ital: useItalic };
+}
+
+// Loads the real face for a weight/style other than regular 400 (Google Fonts only). Only faces the family has are
+// requested; without one, nothing changes and the browser synthesizes bold/italic, as it always did.
+async function loadFontVariant(source, fontName, weight, style) {
+  if (source !== 'Google' || !fontSources[source] || Setup?.Fonts?.loadVariants === false) return false;
+  const requestedWeight = FONT_WEIGHT_NUMBERS[weight] ?? (parseInt(weight) || 400);
+  const requestedItalic = (style === 'italic' || style === 'oblique') ? 1 : 0;
+  if (requestedWeight === 400 && !requestedItalic) return false;
+  const available = (await getGoogleFontVariants())[fontName];
+  if (!available) return false;
+  const variant = chooseFontVariant(available, requestedWeight, requestedItalic);
+  if (!variant) return false;
+  const { wght, ital } = variant;
+  const key = `${fontName.trim().toLowerCase().replace(/\s+/g, '-')}:${ital},${wght}`;
+  if (!document.querySelector(`link[data-font-variant="${key}"]`)) {
+    const ok = await new Promise((resolve) => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = `${fontSources[source].cssUrl}${encodeURIComponent(fontName)}:ital,wght@${ital},${wght}`;
+      link.dataset.fontVariant = key;
+      link.onload = () => resolve(true);
+      link.onerror = () => { link.remove(); resolve(false); };
+      document.head.appendChild(link);
+    });
+    if (!ok) return false;
+  }
+  await document.fonts.load(`${ital ? 'italic' : 'normal'} ${wght} 1em "${fontName}"`);
+  return true;
+}
+
+// Turning the option off removes the faces loaded by loadFontVariant (their @font-face rules go with the links)
+function unloadFontVariants() {
+  document.querySelectorAll('link[data-font-variant]').forEach(link => link.remove());
+}
+
+async function loadFont(source, fontName, weight = 'normal', style = 'normal') {
   if (!fontName || !source) return false;
 
   const cacheKey = `${source}::${fontName}`;
-  if (loadedFonts.has(cacheKey)) return true;
+  if (loadedFonts.has(cacheKey)) {
+    try { await loadFontVariant(source, fontName, weight, style); } catch (e) { /* keep the regular face */ }
+    return true;
+  }
 
   try {
     // --- STRATEGY 1: LOCAL OS FONTS ---
@@ -232,6 +301,7 @@ async function loadFont(source, fontName) {
     await document.fonts.load(`1em "${fontName}"`);
     
     loadedFonts.add(cacheKey);
+    try { await loadFontVariant(source, fontName, weight, style); } catch (e) { /* keep the regular face */ }
     return true;
 
   } catch (err) {

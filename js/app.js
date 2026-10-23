@@ -967,6 +967,18 @@ function applySetupToUI() {
     exportImageImagesFormatSelectElement.value = Setup.Export.Canvas.format || 'webp';
     exportImageImagesQualityElement.value = Setup.Export.Canvas.quality || 0.95;
   }
+  const variantsCheckbox = document.getElementById('loadFontVariants');
+  if (variantsCheckbox) variantsCheckbox.checked = Setup?.Fonts?.loadVariants !== false;
+}
+
+// Options → "Load real bold/italic (Google Fonts)"
+function updateFontVariantsSetting(checkbox) {
+  Setup.Fonts ??= {};
+  Setup.Fonts.loadVariants = checkbox.checked;
+  if (!checkbox.checked) unloadFontVariants();
+  saveSetup();
+  clearStepsCache(); // the text must be drawn again with the other faces
+  updateTextSettings();
 }
 
 function loadprojectConfig() {
@@ -1102,6 +1114,9 @@ function loadTextLayers(layersData) {
 // ======================
 // Tab Functions
 // ======================
+// Name of the active tab (was an implicit global)
+var focusTabName;
+
 function changeTab(e) {
   if (!e) return;
   for (const tabName in window.Tabs) {
@@ -1155,7 +1170,7 @@ async function updateTextSettings(...args) {
       `${newLayer.font.style} ${newLayer.font.weight} ${newLayer.font.size}px "${newLayer.font.family}"`;
     
     // Await font loading
-    await loadFont(newLayer.font.source, newLayer.font.family);
+    await loadFont(newLayer.font.source, newLayer.font.family, newLayer.font.weight, newLayer.font.style);
     if (signal?.aborted) return;
 
     // Build main fillStyle
