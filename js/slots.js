@@ -3,8 +3,10 @@
 // ======================
 function loadImageIntoSlot(image, slotIndex) {
   slotIndex ??= slotsImages.findIndex(img => !img);
-  if (slotIndex === -1)
+  if (slotIndex === -1) {
     alert('All slots filled! Remove an image or add more slots.');
+    return;
+  }
   
   // Store reference to old image to revoke AFTER new one is fully set
   const oldImage = slotsImages[slotIndex];
@@ -180,8 +182,19 @@ function addImageSlot() {
   // add that id to the img element with img prefix
   clone.querySelector('.preview').setAttribute('id', `img-${slotId}`);
   imageSlots.appendChild(clone);
+  renumberSlotIds();
   imageSlots.setAttribute('slotsCount', slotsImages.length)
   updateImageBaseAndDirty();
+}
+
+// Slot ids always follow the slot position (slot-0, slot-1, …). pageMemory restores each preview by its id
+// into slots recreated in that order, so unique and positional ids keep every image in its own slot.
+function renumberSlotIds() {
+  [...imageSlots.children].forEach((slot, i) => {
+    slot.id = `slot-${i}`;
+    const preview = slot.querySelector('.preview');
+    if (preview) preview.id = `img-slot-${i}`;
+  });
 }
 
 function deleteImageSlot(index = -1) {
@@ -197,6 +210,7 @@ function deleteImageSlot(index = -1) {
     slotsImages.splice(index, 1);
     const slot = getSlotByIndex(index);
     slot.remove();
+    renumberSlotIds();
     imageSlots.setAttribute('slotsCount', slotsImages.length)
     updateImageBaseAndDirty();
   } catch (error) {
@@ -231,6 +245,7 @@ function moveImageSlot(indexSource, indexTarget) {
   
   const img = slotsImages.splice(indexSource, 1)[0];
   slotsImages.splice(indexTarget, 0, img);
+  renumberSlotIds();
   updateImageBaseAndDirty();
 }
 
@@ -264,12 +279,15 @@ function swapImageSlots(indexA, indexB) {
   slotsImages[indexB] = tempImage;
   
   console.log(`After swap: [${indexA}] = ${slotsImages[indexA]?.src?.substring(0, 60)}, [${indexB}] = ${slotsImages[indexB]?.src?.substring(0, 60)}`);
+  renumberSlotIds();
   
   // Redraw canvas with new order
   updateImageBaseAndDirty();
 }
 
 function clearImageSlot(index) {
+  // A click outside a slot gives no index; never create slotsImages["undefined"]
+  if (!Number.isInteger(index) || index < 0 || index >= slotsImages.length) return;
   // Revoke Blob URL before clearing
   if (slotsImages[index]) {
     revokeBlobUrl(slotsImages[index]);
@@ -302,9 +320,10 @@ function reloadSlotImage(el) {
 
 async function getRandomImages(count) {
   let items;
+  // Checked before the try: the finally below restores search params that, at this point, were never backed up
+  if (!jellyfin.areLibrariesLoaded)
+    return [];
   try {
-    if (!jellyfin.areLibrariesLoaded)
-      return [];
     jellyfin.backupSearchParams();
 
     jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[0]
@@ -321,8 +340,9 @@ async function getRandomImages(count) {
   } finally {
     jellyfin.restoreSearchParams();
     fillJellyfinContainerAttr()
-    return items;
   }
+  // (a return inside finally used to swallow exceptions and override the early return)
+  return items;
 }
 
 function isSlotPinned(index) {
@@ -354,6 +374,7 @@ async function fillSlotsRandomly() {
     if(!previews[i])
       continue;
     const item = items[i];
+    if (!item) continue; // fewer random items than free slots
     const imageUrl = jellyfin.makeImageUrl(item.Id, null, null, null);
     if (!imageUrl)
       continue;
@@ -368,10 +389,11 @@ async function radomizeSlotImage(el) {
   const preview = getSlotPreviewByIndex(index);
   preview.src = Setup.Images.loading;
   const items = await getRandomImages(1);
-  const item = items[0];
+  const item = items?.[0];
   if (!item) {
     jellyfin.restoreSearchParams();
     preview.src = Setup.Images.error;
+    return;
   }
   setSlotImage(index, jellyfin.makeImageUrl(item.Id, null, null, null));
 }
@@ -419,7 +441,7 @@ function localImageInputChanged(el) {
       .catch((err) => {
         console.error(err);
         alert("An error occurred loading the image.");
-      }).finally(() => delete el.files[0])
+      }).finally(() => { el.value = ''; }) // FileList is read-only; clearing the value lets the same file be picked again
   }
 
 }
@@ -487,7 +509,9 @@ function clearButtonClick(e) {
 }
 
 function deleteButtonClick(e) {
-  deleteImageSlot(getIndexFromButtonClick(e));
+  const index = getIndexFromButtonClick(e);
+  // deleteImageSlot() without an index removes the last slot, so a missing index must not reach it
+  if (Number.isInteger(index) && index >= 0) deleteImageSlot(index);
 }
 function deleteAllSlots() {
   // Revoke all Blob URLs before deleting

@@ -119,6 +119,6 @@
     "author": "jeffersoncgo",
     "page": "https://github.com/jeffersoncgo/CoverMaker",
     "setup": "gallery/projects/series-rough/project.json",
-    "project": "gallery/projects/series-rough/series.rough.project.zip"
+    "project": "gallery/projects/series-rough/series-rough.project.zip"
   }
 ]

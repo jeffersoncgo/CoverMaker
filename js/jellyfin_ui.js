@@ -1,32 +1,45 @@
 // ======================
 // Jellyfin Functions
 // ======================
+// Shows the login window and hides the Jellyfin panels
+function showJellyfinLoggedOut(message) {
+  jellyfinloginActionBtn.removeAttribute('inactive')
+  showWindow("loginBox");
+  document.querySelector("#rightSide").style.display = "none";
+  document.getElementById("loginBtn").setAttribute('logged-in', 'false')
+  document.querySelector("#jellyfinContent").style.display = "none";
+  document.getElementById('loginErrorMessage').innerText = message;
+  if (jellyfinLogoutBtn) jellyfinLogoutBtn.hidden = true;
+}
+
 function CreateJellyfin() {
   const server = document.getElementById("Server").value;
   const username = document.getElementById("Username").value;
   const password = document.getElementById("Password").value;
-  const OnFail = (message) => {
-    jellyfinloginActionBtn.removeAttribute('inactive')
-    showWindow("loginBox");
-    document.querySelector("#rightSide").style.display = "none";
-    document.getElementById("loginBtn").setAttribute('logged-in', 'false')
-    document.querySelector("#jellyfinContent").style.display = "none";
-    document.getElementById('loginErrorMessage').innerText = message;
-  }
+  const OnFail = showJellyfinLoggedOut;
   window.jellyfin = new Jellyfin(server, username, password, {
-    onLoginError: () => {
-      OnFail("Authentication failed. Please check your credentials.")
+    onLoginError: (err, response) => {
+      // A password the server rejects is useless: never keep it (older versions saved it)
+      if (response?.status === 401) forgetSavedPassword();
+      OnFail(err?.name === 'MissingCredentialsError'
+        ? "Enter your Jellyfin username and password."
+        : "Authentication failed. Please check your credentials.")
     },
     onServerSetupError: () => {
       OnFail("Server is offline. Please check the address.")
     },
     onLoginSuccess: () => {
       hideWindow("loginBox");
+      // The Jellyfin class saved the session token: the password is no longer needed anywhere
+      forgetSavedPassword();
+      jellyfinloginActionBtn.removeAttribute('inactive');
+      if (jellyfinLogoutBtn) jellyfinLogoutBtn.hidden = false;
+      document.getElementById('loginErrorMessage').innerText = "";
 
       document.getElementById("loginBtn").setAttribute('logged-in', 'true')      
       document.querySelector("#rightSide").style.display = "block";
       document.querySelector("#jellyfinContent").style.display = "block";
-      setTimeout(() => Setup.loadingType = window.jellyfin.Server.Speed.time > 100 ? 'lazy' : 'eager', 200);
+      setTimeout(() => Setup.loadingType = (window.jellyfin.Server.Speed?.time ?? 0) > 100 ? 'lazy' : 'eager', 200);
     },
     onLibraryLoad: () => {
       makeDetailList(jellyfinsearchInput, jellyfin.searchParams.Genres, true);
@@ -49,7 +62,15 @@ function Login() {
   const username = document.getElementById("Username").value
   const password = document.getElementById("Password").value
   jellyfinloginActionBtn.setAttribute('inactive', 'true')
+  // With an empty password, the saved session (if any) is used
   jellyfin.UpdateConfig(server, username, password)
+}
+
+async function Logout() {
+  if (!window.jellyfin) return;
+  await jellyfin.logout();
+  clearJellyfinWindow();
+  showJellyfinLoggedOut("Signed out. Enter your username and password to connect again.");
 }
 
 function loadLibraries(el) {
@@ -255,7 +276,9 @@ async function searchOnLibrary(Qry, force = false, useDelay = false) {
     } else
       jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[1]
   }
-  fillposters(await jellyfin.searchItems(searchQuery, Setup.Library.loadedLibrary, null, null), true)
+  const items = await jellyfin.searchItems(searchQuery, Setup.Library.loadedLibrary, null, null);
+  if (!items) return; // superseded by a newer search
+  fillposters(items, true)
 }
 
 function filterRandom() {
@@ -296,7 +319,7 @@ async function returnToSearch() {
   jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[1]
   Setup.Library.loadedLibrary = jellyfin.searchParams.Library;
   clearJellyfinWindow();
-  jellyfinContainer.value = jellyfin.searchParams.Name;
+  jellyfinsearchInput.value = jellyfin.searchParams.Name ?? '';
   searchOnLibrary(null, null);
 }
 
@@ -321,7 +344,7 @@ function addVideoposter(item) {
   const clone = posterTemplate.content.cloneNode(true);
   const preview = clone.querySelector('.preview');
   const label = clone.querySelector('span');
-  label.innerHTML = item.Name;
+  label.textContent = item.Name; // names come from server metadata: text, never HTML
   const image = jellyfin.makeImageUrl(item.Id, Setup.Sizes.poster.width, Setup.Sizes.poster.height, Setup.Sizes.poster.quality)
   preview.setAttribute('item-id', item.Id);
   preview.setAttribute('item-name', item.Name);
@@ -335,7 +358,7 @@ function addLibrarycover(id, name) {
   const clone = coverTemplate.content.cloneNode(true);
   const preview = clone.querySelector('.preview');
   const label = clone.querySelector('span');
-  label.innerHTML = name;
+  label.textContent = name; // names come from server metadata: text, never HTML
   const image = jellyfin.makeImageUrl(id, Setup.Sizes.cover.width, Setup.Sizes.cover.height, Setup.Sizes.cover.quality)
   preview.setAttribute('library-id', id);
   preview.setAttribute('library-name', name);

@@ -10,6 +10,9 @@
 ![Cache](https://img.shields.io/badge/cache-IndexedDB-green.svg)
 ![State](https://img.shields.io/badge/state-localStorage-blue.svg)
 [![Contributing](https://img.shields.io/badge/contribute-Guide-brightgreen.svg)](CONTRIBUTING.md)
+
+📚 **Technical docs (pt-BR):** [Architecture](docs/ARQUITETURA.md) · [Layouts & effects reference](docs/REFERENCIA-EFEITOS.md) · [Code audit & known issues](docs/AUDITORIA.md)
+
 ---
 
 ## 🚀 Quick Start
@@ -92,7 +95,7 @@ Tip: Numeric controls (range/number) support double‑click to switch input mode
 
 ## 🖼️ Gallery Directory
 
-This project includes a `gallery` folder with a structure intended to host gallery content for the web app. To populate it, you can manually copy ZIP files and their `project.json` into `gallery/projects/<id>/`. See `gallery/GALLERY.md` for manual extraction and contribution instructions.
+This project includes a `gallery` folder with a structure intended to host gallery content for the web app. To populate it, you can manually copy ZIP files and their `project.json` into `gallery/projects/<id>/` and add an entry for it in `gallery/gallery.json` (title, image, `setup` and `project` paths).
 
 
 ### Demo: movies.metal (Metallic Headline)
@@ -156,7 +159,7 @@ Your examples will be featured here and help inspire other users!
 
 ### Text Layer Effects
 
-Create unlimited text layers with professional typography and many built-in text effects. Available text effect types (as used by the app) include:
+Create unlimited text layers with professional typography and many built-in text effects (88 in total — the full list with every parameter is in [`docs/REFERENCIA-EFEITOS.md`](docs/REFERENCIA-EFEITOS.md)). Some of them:
 
 - `opacity` (Opacity)
 - `fade` (Fade)
@@ -184,7 +187,7 @@ In addition to these named effects, text layers support common typography contro
 - Custom font size, weight, and style
 - Gradient fills (linear/radial with multiple color stops)
 - Opacity control and blend modes
-- Multiple strokes and shadows per layer
+- Any number of effects stacked per layer (e.g. several outlines and shadows)
 - Rotation, scale and skew transforms
 - Layer visibility and reordering
 
@@ -198,7 +201,7 @@ In addition to these named effects, text layers support common typography contro
 - **Cover** (16:9): Wide horizontal format, perfect for collection banners
 - **Poster** (9:16): Vertical format, ideal for movie/series posters
 - **Square** (1:1): Balanced format for social media
-- **Custom**: Define any dimensions (width/height in pixels)
+- **Custom**: Define any proportion (width × height); the longest side is rendered at 1920 px
 
 (*Other canvas and layout-specific settings — salt, base scale, reflections, spacing, effects — are configurable inside the app UI. See the in‑app controls for exact ranges.*)
 
@@ -206,7 +209,8 @@ In addition to these named effects, text layers support common typography contro
 
 ### Text Layer Effects
 
-Create unlimited text layers with professional typography:
+Create unlimited text layers with professional typography. Strokes, shadows, 3D depth and glow are text effects
+(`outline`, `longShadow`, `extrude`, `neon`/`glowEdge`…) that can be stacked in any order:
 
 **Basic Settings:**
 - 800+ Google Fonts available
@@ -253,7 +257,7 @@ Create unlimited text layers with professional typography:
 ## 🧠 Current Features
 
 **Core Rendering:**
-- ✅ OffscreenCanvas rendering for non-blocking UI
+- ✅ Step cache: only the steps that changed are drawn again
 - ✅ Several layout algorithms
 - ✅ Custom canvas dimensions and aspect ratios
 - ✅ PNG and JPEG export with quality control
@@ -264,7 +268,7 @@ Create unlimited text layers with professional typography:
 - ✅ 800+ Google Fonts with async loading
 - ✅ 3D effects with adjustable depth and angle
 - ✅ Gradient fills (linear and radial) with multiple color stops
-- ✅ Multiple strokes and shadows per layer
+- ✅ Stack any number of effects per layer (outlines, shadows, glow, 3D…)
 - ✅ Glow effects with customizable intensity
 - ✅ Transform controls (rotation, scale, skew)
 - ✅ Blend modes and opacity control
@@ -281,16 +285,16 @@ Create unlimited text layers with professional typography:
 
 
 **Jellyfin Integration:**
-- ✅ Server authentication with fastest-address auto-detection
+- ✅ Server authentication with fastest-address auto-detection; only a session token is kept (never the password), with Sign out
 - ✅ Multiple library support with metadata caching
 - ✅ IndexedDB persistent cache for offline access
-- ✅ Incremental cache updates (delta sync)
+- ✅ Cached libraries pick up items edited on the server (full reload when the item count changes)
 - ✅ Meilisearch plugin auto-detection
 - ✅ Advanced search filters (tags, genres, studios) (some filters may be activated/deactivated in-app for faster searches) 
 - ✅ Pagination with configurable page size
 
 **Project Management:**
-- ✅ Complete project save/load as JSON files
+- ✅ Complete project save/load as `.covermaker.zip` (images included); setup-only `.covermaker.setup.json` too
 - ✅ Automatic localStorage persistence for settings
 - ✅ Session restore on page reload
 
@@ -303,7 +307,7 @@ Create unlimited text layers with professional typography:
 
 ---
 
-**Available Text Effects (in-app names):**
+**Available Text Effects (in-app names — some of them; all 88 in [`docs/REFERENCIA-EFEITOS.md`](docs/REFERENCIA-EFEITOS.md)):**
 
 - `opacity` (Opacity)
 - `fade` (Fade)
@@ -350,7 +354,7 @@ Create unlimited text layers with professional typography:
 
 **Core Technologies:**
 - Pure Vanilla JavaScript (ES6+)
-- HTML5 Canvas API with OffscreenCanvas
+- HTML5 Canvas API (rendering runs on the main thread)
 - CSS3 with Grid and Flexbox
 - IndexedDB for data caching
 - localStorage for preferences
@@ -363,13 +367,13 @@ Create unlimited text layers with professional typography:
 ### Performance
 
 **Rendering:**
-- OffscreenCanvas prevents UI thread blocking
-- Incremental redraw pipeline
+- Incremental redraw pipeline (cached steps; a newer render cancels an older one)
+- Heavy text effects with extreme values can still take a few seconds
 - Image preprocessing and caching
 
 **Data Management:**
 - IndexedDB stores 50MB+ of library metadata
-- Smart delta sync for library updates
+- Edited items refreshed from the server on each visit
 - Debounced search prevents redundant API calls
 
 ---
@@ -384,7 +388,7 @@ Create unlimited text layers with professional typography:
 | Edge | 90+ | ✅ Full Support |
 | IE 11 | - | ❌ Not Supported |
 
-**Required APIs:** Canvas, OffscreenCanvas, Fetch, IndexedDB, localStorage
+**Required APIs:** Canvas (with `ctx.filter`), Fetch, IndexedDB, localStorage
 
 ---
 

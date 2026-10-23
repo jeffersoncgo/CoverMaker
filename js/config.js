@@ -112,6 +112,11 @@ var Setup = {
     },
     customFonts: {}
   },
+  Fonts: {
+    // Google Fonts: also load the real bold/light/italic face a text layer uses (CM-23). Off = only the regular face,
+    // with bold/italic synthesized by the browser, as before 2026-10-23.
+    loadVariants: true
+  },
   Export: {
     Project: {
       Images: {

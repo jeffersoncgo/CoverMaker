@@ -1,0 +1,904 @@
+{
+ "composites": {
+  "line@1": {
+   "sig": "80daaf0f",
+   "deterministic": true
+  },
+  "line@2": {
+   "sig": "b2cdadda",
+   "deterministic": true
+  },
+  "line@6": {
+   "sig": "731fd839",
+   "deterministic": true
+  },
+  "grid@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "grid@2": {
+   "sig": "6b0738a3",
+   "deterministic": true
+  },
+  "grid@6": {
+   "sig": "284b0d4c",
+   "deterministic": true
+  },
+  "mosaic@1": {
+   "sig": "2697a922",
+   "deterministic": true
+  },
+  "mosaic@2": {
+   "sig": "e85154aa",
+   "deterministic": true
+  },
+  "mosaic@6": {
+   "sig": "76834e77",
+   "deterministic": true
+  },
+  "circle@1": {
+   "sig": "d86a4ba2",
+   "deterministic": true
+  },
+  "circle@2": {
+   "sig": "acb8ea93",
+   "deterministic": true
+  },
+  "circle@6": {
+   "sig": "ce607454",
+   "deterministic": true
+  },
+  "carousel@1": {
+   "sig": "13367888",
+   "deterministic": true
+  },
+  "carousel@2": {
+   "sig": "8565ad52",
+   "deterministic": true
+  },
+  "carousel@6": {
+   "sig": "1244bea0",
+   "deterministic": true
+  },
+  "mondrian@1": {
+   "sig": "f6670c2d",
+   "deterministic": true
+  },
+  "mondrian@2": {
+   "sig": "a7544121",
+   "deterministic": true
+  },
+  "mondrian@6": {
+   "sig": "26ac7777",
+   "deterministic": true
+  },
+  "collage@1": {
+   "sig": "2697a922",
+   "deterministic": true
+  },
+  "collage@2": {
+   "sig": "d7cd044b",
+   "deterministic": true
+  },
+  "collage@6": {
+   "sig": "e8af649b",
+   "deterministic": true
+  },
+  "shrink@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "shrink@2": {
+   "sig": "e7640441",
+   "deterministic": true
+  },
+  "shrink@6": {
+   "sig": "aa1f5ae7",
+   "deterministic": true
+  },
+  "fanSpread@1": {
+   "sig": "4efaa7c1",
+   "deterministic": true
+  },
+  "fanSpread@2": {
+   "sig": "69aa61f",
+   "deterministic": true
+  },
+  "fanSpread@6": {
+   "sig": "a1ad6dc6",
+   "deterministic": true
+  },
+  "scatteredStack@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "scatteredStack@2": {
+   "sig": "f29f564e",
+   "deterministic": true
+  },
+  "scatteredStack@6": {
+   "sig": "28eb91d9",
+   "deterministic": true
+  },
+  "spiral@1": {
+   "sig": "b548a7b5",
+   "deterministic": true
+  },
+  "spiral@2": {
+   "sig": "4f50e6b0",
+   "deterministic": true
+  },
+  "spiral@6": {
+   "sig": "4335bb1d",
+   "deterministic": true
+  },
+  "waves@1": {
+   "sig": "1e089470",
+   "deterministic": true
+  },
+  "waves@2": {
+   "sig": "f1369079",
+   "deterministic": true
+  },
+  "waves@6": {
+   "sig": "b1f984be",
+   "deterministic": true
+  },
+  "bookStack@1": {
+   "sig": "4efaa7c1",
+   "deterministic": true
+  },
+  "bookStack@2": {
+   "sig": "25f37c7a",
+   "deterministic": true
+  },
+  "bookStack@6": {
+   "sig": "f70122ea",
+   "deterministic": true
+  },
+  "polaroidWall@1": {
+   "sig": "e50aeb96",
+   "deterministic": true
+  },
+  "polaroidWall@2": {
+   "sig": "78d871fd",
+   "deterministic": true
+  },
+  "polaroidWall@6": {
+   "sig": "80404a7",
+   "deterministic": true
+  },
+  "scatteredPhotos@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "scatteredPhotos@2": {
+   "sig": "babda94c",
+   "deterministic": true
+  },
+  "scatteredPhotos@6": {
+   "sig": "706af29f",
+   "deterministic": true
+  },
+  "cardFan@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "cardFan@2": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "cardFan@6": {
+   "sig": "46f473a7",
+   "deterministic": true
+  },
+  "framedGrid@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "framedGrid@2": {
+   "sig": "125badf",
+   "deterministic": true
+  },
+  "framedGrid@6": {
+   "sig": "8618b3c0",
+   "deterministic": true
+  },
+  "filmStrip@1": {
+   "sig": "e50aeb96",
+   "deterministic": true
+  },
+  "filmStrip@2": {
+   "sig": "f3ecbb5e",
+   "deterministic": true
+  },
+  "filmStrip@6": {
+   "sig": "8d8c4c22",
+   "deterministic": true
+  },
+  "honeycomb@1": {
+   "sig": "b723cd3f",
+   "deterministic": true
+  },
+  "honeycomb@2": {
+   "sig": "82b1f5f4",
+   "deterministic": true
+  },
+  "honeycomb@6": {
+   "sig": "276c4caf",
+   "deterministic": true
+  },
+  "perspectiveWall@1": {
+   "sig": "4efaa7c1",
+   "deterministic": true
+  },
+  "perspectiveWall@2": {
+   "sig": "9bd8250e",
+   "deterministic": true
+  },
+  "perspectiveWall@6": {
+   "sig": "2704da89",
+   "deterministic": true
+  },
+  "pyramid@1": {
+   "sig": "e50aeb96",
+   "deterministic": true
+  },
+  "pyramid@2": {
+   "sig": "c24072e0",
+   "deterministic": true
+  },
+  "pyramid@6": {
+   "sig": "5b376b24",
+   "deterministic": true
+  },
+  "diagonalSlash@1": {
+   "sig": "e50aeb96",
+   "deterministic": true
+  },
+  "diagonalSlash@2": {
+   "sig": "aae6396f",
+   "deterministic": true
+  },
+  "diagonalSlash@6": {
+   "sig": "5feb7ced",
+   "deterministic": true
+  },
+  "editorial@1": {
+   "sig": "b723cd3f",
+   "deterministic": true
+  },
+  "editorial@2": {
+   "sig": "bdc9dccb",
+   "deterministic": true
+  },
+  "editorial@6": {
+   "sig": "def29420",
+   "deterministic": true
+  },
+  "cctv@1": {
+   "sig": "54dc763b",
+   "deterministic": true
+  },
+  "cctv@2": {
+   "sig": "58f661a3",
+   "deterministic": false
+  },
+  "cctv@6": {
+   "sig": "bcb39a5",
+   "deterministic": false
+  },
+  "bubbles@1": {
+   "sig": "d50de4db",
+   "deterministic": true
+  },
+  "bubbles@2": {
+   "sig": "bbf4eb33",
+   "deterministic": true
+  },
+  "bubbles@6": {
+   "sig": "ef5d9c5f",
+   "deterministic": true
+  },
+  "shattered@1": {
+   "sig": "f6acd4e2",
+   "deterministic": true
+  },
+  "shattered@2": {
+   "sig": "55061a1e",
+   "deterministic": true
+  },
+  "shattered@6": {
+   "sig": "e29279b0",
+   "deterministic": true
+  },
+  "comicLayout@1": {
+   "sig": "7a02276a",
+   "deterministic": true
+  },
+  "comicLayout@2": {
+   "sig": "6fe96f09",
+   "deterministic": true
+  },
+  "comicLayout@6": {
+   "sig": "f1ab0b86",
+   "deterministic": false
+  },
+  "isometricGrid@1": {
+   "sig": "b723cd3f",
+   "deterministic": true
+  },
+  "isometricGrid@2": {
+   "sig": "cb3390c",
+   "deterministic": true
+  },
+  "isometricGrid@6": {
+   "sig": "93541aaf",
+   "deterministic": true
+  },
+  "radialBurst@1": {
+   "sig": "13367888",
+   "deterministic": true
+  },
+  "radialBurst@2": {
+   "sig": "b4cea4d",
+   "deterministic": true
+  },
+  "radialBurst@6": {
+   "sig": "317432d7",
+   "deterministic": true
+  },
+  "glitchMosaic@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "glitchMosaic@2": {
+   "sig": "62486c95",
+   "deterministic": false
+  },
+  "glitchMosaic@6": {
+   "sig": "ec1bbaca",
+   "deterministic": false
+  },
+  "versus@1": {
+   "sig": "54dc763b",
+   "deterministic": true
+  },
+  "versus@2": {
+   "sig": "fd18c583",
+   "deterministic": true
+  },
+  "versus@6": {
+   "sig": "574dffcd",
+   "deterministic": true
+  },
+  "barcode@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "barcode@2": {
+   "sig": "db6a99f1",
+   "deterministic": true
+  },
+  "barcode@6": {
+   "sig": "1f6eda3e",
+   "deterministic": true
+  },
+  "triptych@1": {
+   "sig": "c5ca74cc",
+   "deterministic": true
+  },
+  "triptych@2": {
+   "sig": "eafe695e",
+   "deterministic": true
+  },
+  "triptych@6": {
+   "sig": "8c716e96",
+   "deterministic": true
+  },
+  "chessboard@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "chessboard@2": {
+   "sig": "1c4d069f",
+   "deterministic": true
+  },
+  "chessboard@6": {
+   "sig": "10038d1e",
+   "deterministic": true
+  },
+  "doubleExposure@1": {
+   "sig": "d9fe1f74",
+   "deterministic": true
+  },
+  "doubleExposure@2": {
+   "sig": "518c8837",
+   "deterministic": true
+  },
+  "doubleExposure@6": {
+   "sig": "ce91714d",
+   "deterministic": true
+  },
+  "filmRoll3D@1": {
+   "sig": "95ca9829",
+   "deterministic": true
+  },
+  "filmRoll3D@2": {
+   "sig": "23f70763",
+   "deterministic": true
+  },
+  "filmRoll3D@6": {
+   "sig": "1aeec8e4",
+   "deterministic": true
+  },
+  "jigsawPuzzle@1": {
+   "sig": "a3cfdf1e",
+   "deterministic": true
+  },
+  "jigsawPuzzle@2": {
+   "sig": "77f8f03b",
+   "deterministic": true
+  },
+  "jigsawPuzzle@6": {
+   "sig": "96f2b01",
+   "deterministic": true
+  },
+  "kaleidoscope@1": {
+   "sig": "4cbb981e",
+   "deterministic": true
+  },
+  "kaleidoscope@2": {
+   "sig": "cc3f4bf5",
+   "deterministic": true
+  },
+  "kaleidoscope@6": {
+   "sig": "cc3f4bf5",
+   "deterministic": true
+  },
+  "cinematicBars@1": {
+   "sig": "4d5277d4",
+   "deterministic": true
+  },
+  "cinematicBars@2": {
+   "sig": "4d5277d4",
+   "deterministic": true
+  },
+  "cinematicBars@6": {
+   "sig": "4d5277d4",
+   "deterministic": true
+  },
+  "textSpace@1": {
+   "sig": "cd681cc5",
+   "deterministic": true
+  },
+  "textSpace@2": {
+   "sig": "cd681cc5",
+   "deterministic": true
+  },
+  "textSpace@6": {
+   "sig": "cd681cc5",
+   "deterministic": true
+  }
+ },
+ "imageEffects": {
+  "blur": {
+   "sig": "826b21f9",
+   "deterministic": true
+  },
+  "grayscale": {
+   "sig": "6bcdb15a",
+   "deterministic": true
+  },
+  "invert": {
+   "sig": "92e49ab7",
+   "deterministic": true
+  },
+  "brightness": {
+   "sig": "4cb17a17",
+   "deterministic": true
+  },
+  "contrast": {
+   "sig": "4cb17a17",
+   "deterministic": true
+  },
+  "saturate": {
+   "sig": "4cb17a17",
+   "deterministic": true
+  },
+  "sepia": {
+   "sig": "4cb17a17",
+   "deterministic": true
+  },
+  "hueRotate": {
+   "sig": "4cb17a17",
+   "deterministic": true
+  },
+  "vignette": {
+   "sig": "4e1e692b",
+   "deterministic": true
+  },
+  "overlay": {
+   "sig": "1b9ababc",
+   "deterministic": true
+  },
+  "scale": {
+   "sig": "82a622af",
+   "deterministic": true
+  },
+  "sharpen": {
+   "sig": "63aa973c",
+   "deterministic": true
+  },
+  "reflection": {
+   "sig": "c01518d5",
+   "deterministic": true
+  },
+  "flip": {
+   "sig": "7132d34a",
+   "deterministic": true
+  },
+  "pixelate": {
+   "sig": "b9e862d4",
+   "deterministic": true
+  },
+  "scanLines": {
+   "sig": "b8407e18",
+   "deterministic": true
+  }
+ },
+ "textEffects": {
+  "opacity": {
+   "sig": "d001f9d",
+   "deterministic": true
+  },
+  "fade": {
+   "sig": "ef4ba774",
+   "deterministic": true
+  },
+  "gradient": {
+   "sig": "fdcfb1f",
+   "deterministic": true
+  },
+  "neon": {
+   "sig": "21e6529e",
+   "deterministic": true
+  },
+  "outerGlow": {
+   "sig": "1ca16498",
+   "deterministic": true
+  },
+  "glowEdge": {
+   "sig": "97d083ed",
+   "deterministic": true
+  },
+  "longShadow": {
+   "sig": "1a2d4ad8",
+   "deterministic": true
+  },
+  "outline": {
+   "sig": "78c66366",
+   "deterministic": true
+  },
+  "glitch": {
+   "sig": "563a300",
+   "deterministic": false
+  },
+  "chromatic": {
+   "sig": "fd79bc29",
+   "deterministic": true
+  },
+  "ripple": {
+   "sig": "83f32372",
+   "deterministic": false
+  },
+  "waves": {
+   "sig": "5a4c810b",
+   "deterministic": true
+  },
+  "pixelMatrix": {
+   "sig": "ae11c4da",
+   "deterministic": true
+  },
+  "skew": {
+   "sig": "6d4e9140",
+   "deterministic": true
+  },
+  "flip": {
+   "sig": "90b6d747",
+   "deterministic": true
+  },
+  "distress": {
+   "sig": "c36d3754",
+   "deterministic": true
+  },
+  "melt": {
+   "sig": "6fc79f8",
+   "deterministic": true
+  },
+  "paintBrush": {
+   "sig": "4687bee9",
+   "deterministic": false
+  },
+  "lightning": {
+   "sig": "4b68ee0e",
+   "deterministic": true
+  },
+  "scanLines": {
+   "sig": "cbd54138",
+   "deterministic": true
+  },
+  "glassRefraction": {
+   "sig": "be18741a",
+   "deterministic": true
+  },
+  "vectorWarp": {
+   "sig": "502c4493",
+   "deterministic": true
+  },
+  "reflection": {
+   "sig": "c2811810",
+   "deterministic": true
+  },
+  "stereo": {
+   "sig": "2f3cc258",
+   "deterministic": true
+  },
+  "stitch": {
+   "sig": "20556131",
+   "deterministic": true
+  },
+  "pattern": {
+   "sig": "f92a79b4",
+   "deterministic": true
+  },
+  "crystallize": {
+   "sig": "c69610d0",
+   "deterministic": true
+  },
+  "mosaic": {
+   "sig": "d8f5a5ff",
+   "deterministic": false
+  },
+  "arch": {
+   "sig": "98e058b2",
+   "deterministic": true
+  },
+  "box": {
+   "sig": "fc6019a4",
+   "deterministic": true
+  },
+  "extrudeShaded": {
+   "sig": "c9ceeda7",
+   "deterministic": true
+  },
+  "slice": {
+   "sig": "4a522d52",
+   "deterministic": true
+  },
+  "perspective": {
+   "sig": "4f7eec6",
+   "deterministic": true
+  },
+  "innerShadowOffset": {
+   "sig": "edbd9350",
+   "deterministic": true
+  },
+  "motionBlur": {
+   "sig": "7939b418",
+   "deterministic": true
+  },
+  "chrome": {
+   "sig": "bfd575fc",
+   "deterministic": true
+  },
+  "echo": {
+   "sig": "b4f9739d",
+   "deterministic": true
+  },
+  "bulge": {
+   "sig": "98e9e660",
+   "deterministic": true
+  },
+  "ring": {
+   "sig": "65f690bc",
+   "deterministic": true
+  },
+  "roughen": {
+   "sig": "c41be723",
+   "deterministic": true
+  },
+  "scale": {
+   "sig": "d001f9d",
+   "deterministic": true
+  },
+  "blur": {
+   "sig": "d001f9d",
+   "deterministic": true
+  },
+  "rotate": {
+   "sig": "d001f9d",
+   "deterministic": true
+  },
+  "adjustments": {
+   "sig": "d001f9d",
+   "deterministic": true
+  },
+  "invert": {
+   "sig": "cdff0f8f",
+   "deterministic": true
+  },
+  "splatter": {
+   "sig": "262bf995",
+   "deterministic": true
+  },
+  "sauronFire": {
+   "sig": "d24eec96",
+   "deterministic": true
+  },
+  "chiseledMetal": {
+   "sig": "e048e19e",
+   "deterministic": true
+  },
+  "engravedMetal": {
+   "sig": "980934a5",
+   "deterministic": true
+  },
+  "plasma": {
+   "sig": "fc3a52cf",
+   "deterministic": true
+  },
+  "frozen": {
+   "sig": "22fe6172",
+   "deterministic": true
+  },
+  "matrix": {
+   "sig": "8cc44435",
+   "deterministic": true
+  },
+  "carbonFiber": {
+   "sig": "acec97e9",
+   "deterministic": true
+  },
+  "toxicSlime": {
+   "sig": "929fd549",
+   "deterministic": true
+  },
+  "brokenMirror": {
+   "sig": "f7fab723",
+   "deterministic": true
+  },
+  "retroWave": {
+   "sig": "cb79965f",
+   "deterministic": true
+  },
+  "blueprint": {
+   "sig": "b17c50ca",
+   "deterministic": true
+  },
+  "inkBleed": {
+   "sig": "36ded7fe",
+   "deterministic": true
+  },
+  "smoke": {
+   "sig": "e4981f13",
+   "deterministic": true
+  },
+  "stainedGlass": {
+   "sig": "1b7641b3",
+   "deterministic": true
+  },
+  "infernoForge": {
+   "sig": "c5ad2a9",
+   "deterministic": true
+  },
+  "nordicRuneforge": {
+   "sig": "73fbfe77",
+   "deterministic": true
+  },
+  "innerShadow": {
+   "sig": "ca8621b7",
+   "deterministic": true
+  },
+  "bevelEmboss": {
+   "sig": "7d405054",
+   "deterministic": true
+  },
+  "extrude": {
+   "sig": "ab589af9",
+   "deterministic": true
+  },
+  "inlineCut": {
+   "sig": "62ff0f8f",
+   "deterministic": true
+  },
+  "specular": {
+   "sig": "66d7984e",
+   "deterministic": true
+  },
+  "rimLight": {
+   "sig": "cc402c4f",
+   "deterministic": true
+  },
+  "gradientMap": {
+   "sig": "d001f9d",
+   "deterministic": true
+  },
+  "channelTear": {
+   "sig": "e53ea56",
+   "deterministic": true
+  },
+  "hologram": {
+   "sig": "8a12ccfe",
+   "deterministic": true
+  },
+  "topographic": {
+   "sig": "7c79b8f",
+   "deterministic": true
+  },
+  "fluffy": {
+   "sig": "c00d5568",
+   "deterministic": true
+  },
+  "balloon": {
+   "sig": "b5f28be8",
+   "deterministic": true
+  },
+  "woodTexture": {
+   "sig": "1b5be520",
+   "deterministic": true
+  },
+  "concreteTexture": {
+   "sig": "2e596715",
+   "deterministic": true
+  },
+  "leatherTexture": {
+   "sig": "efc0db65",
+   "deterministic": true
+  },
+  "glitterTexture": {
+   "sig": "65f279fe",
+   "deterministic": false
+  },
+  "mangaScreentone": {
+   "sig": "621cc847",
+   "deterministic": true
+  },
+  "actionSpeedlines": {
+   "sig": "8592d078",
+   "deterministic": true
+  },
+  "cosmicNebula": {
+   "sig": "9a7feeea",
+   "deterministic": true
+  },
+  "acidCorrosion": {
+   "sig": "76cc4805",
+   "deterministic": true
+  },
+  "stickerPeel": {
+   "sig": "6d9ebe8f",
+   "deterministic": true
+  },
+  "gummyCandy": {
+   "sig": "6c74cd46",
+   "deterministic": false
+  },
+  "pcbCircuit": {
+   "sig": "e456237f",
+   "deterministic": true
+  },
+  "origamiFold": {
+   "sig": "3a38bb9",
+   "deterministic": true
+  },
+  "voxelIso": {
+   "sig": "3047a18f",
+   "deterministic": true
+  },
+  "liquidMercury": {
+   "sig": "c3e892af",
+   "deterministic": true
+  }
+ }
+}

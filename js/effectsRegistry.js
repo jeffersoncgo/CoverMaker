@@ -6,11 +6,41 @@ const EFFECTS_REGISTRY = {
     name: 'Blur',
     params: [
       // Expanded blur range for more intense effect where desired
-      { key: 'amount', label: 'Blur Amount', type: 'range', min: 0, max: 100, step: 1, default: 5 }
+      { key: 'amount', label: 'Blur Amount', type: 'range', min: 0, max: 100, step: 1, default: 5 },
+      // 'Classic' draws the blurred image over the sharp one (how this effect always looked: the sharp image shows
+      // through the soft borders). 'Extend Edges' repeats the border pixels outward before blurring, so the
+      // whole frame is evenly blurred, with no sharp halo and no transparent border.
+      { key: 'edges', label: 'Edges', type: 'select', options: ['Classic', 'Extend Edges'], default: 'Classic' }
     ],
     apply: (ctx, canvas, params, abortSignal) => {
+      const amount = params.amount ?? 0;
+      if (params.edges === 'Extend Edges' && amount > 0) {
+        const w = canvas.width, h = canvas.height;
+        const pad = Math.ceil(amount * 3);
+        const padded = createCanvas(w + pad * 2, h + pad * 2);
+        const pCtx = padded.getContext('2d');
+        pCtx.drawImage(canvas, pad, pad);
+        // stretch the outermost row/column of pixels into the padding (sides, then corners)
+        pCtx.drawImage(canvas, 0, 0, w, 1, pad, 0, w, pad);
+        pCtx.drawImage(canvas, 0, h - 1, w, 1, pad, pad + h, w, pad);
+        pCtx.drawImage(canvas, 0, 0, 1, h, 0, pad, pad, h);
+        pCtx.drawImage(canvas, w - 1, 0, 1, h, pad + w, pad, pad, h);
+        pCtx.drawImage(canvas, 0, 0, 1, 1, 0, 0, pad, pad);
+        pCtx.drawImage(canvas, w - 1, 0, 1, 1, pad + w, 0, pad, pad);
+        pCtx.drawImage(canvas, 0, h - 1, 1, 1, 0, pad + h, pad, pad);
+        pCtx.drawImage(canvas, w - 1, h - 1, 1, 1, pad + w, pad + h, pad, pad);
+        const blurred = createCanvas(padded.width, padded.height);
+        const bCtx = blurred.getContext('2d');
+        bCtx.filter = `blur(${amount}px)`;
+        bCtx.drawImage(padded, 0, 0);
+        ctx.save();
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(blurred, pad, pad, w, h, 0, 0, w, h);
+        ctx.restore();
+        return { canvas, ctx, abortSignal }
+      }
       ctx.save();
-      ctx.filter = `blur(${params.amount ?? 0}px)`;
+      ctx.filter = `blur(${amount}px)`;
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
       return { canvas, ctx, abortSignal }

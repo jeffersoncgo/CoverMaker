@@ -120,6 +120,19 @@
   border-left: 4px solid var(--c-primary);
 }
 
+/* Types the app also uses (they had no style and showed without the colored strip) */
+.toast-accent-warning {
+  border-left: 4px solid var(--c-warning);
+}
+
+.toast-accent-error {
+  border-left: 4px solid var(--c-danger);
+}
+
+.toast-accent-info {
+  border-left: 4px solid var(--c-primary);
+}
+
 /* Spinner for loading toasts */
 .toast .spinner {
   width: 18px;

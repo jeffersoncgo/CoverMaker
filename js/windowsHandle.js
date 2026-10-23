@@ -1,13 +1,25 @@
+// Windows stay above everything else, as with the old z-index = Date.now() (which the browser clamped to the 32-bit
+// maximum, so every window got the same value and "bring to front" did nothing). A counter keeps the click order.
+let floatWindowZ = 2147483000;
+function bringWindowToFront(windowEl) {
+  floatWindowZ = Math.min(floatWindowZ + 1, 2147483647);
+  windowEl.style.zIndex = floatWindowZ;
+}
+
 function makeDraggable(windowEl) {
   const bar = windowEl.querySelector('.windowBar');
   const closeBtn = windowEl.querySelector('.closeBtn');
   let isDragging = false;
   let offsetX = 0, offsetY = 0;
 
-  bar.addEventListener('mousedown', (e) => {
+  // Pointer events: the same for the mouse, and dragging also works with touch and pens
+  bar.style.touchAction = 'none';
+  bar.addEventListener('pointerdown', (e) => {
     if (e.target === closeBtn) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return; // like before: only the main button drags
 
     isDragging = true;
+    try { bar.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone */ }
     const rect = windowEl.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
     offsetY = e.clientY - rect.top;
@@ -15,12 +27,12 @@ function makeDraggable(windowEl) {
     // Reset transform to avoid positional conflicts
     windowEl.style.transform = 'none';
     windowEl.style.position = 'absolute';
-    windowEl.style.zIndex = Date.now(); // bring to front
+    bringWindowToFront(windowEl);
     windowEl.style.cursor = 'grabbing';
     windowEl.style.userSelect = 'none';
   });
 
-  document.addEventListener('mousemove', (e) => {
+  document.addEventListener('pointermove', (e) => {
     if (!isDragging) return;
 
     let x = e.clientX - offsetX;
@@ -37,11 +49,14 @@ function makeDraggable(windowEl) {
     windowEl.style.top = `${y}px`;
   });
 
-  document.addEventListener('mouseup', () => {
+  const endDrag = () => {
+    if (!isDragging) return;
     isDragging = false;
     windowEl.style.cursor = '';
     windowEl.style.userSelect = '';
-  });
+  };
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
 
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
@@ -71,8 +86,14 @@ function showWindow(windowId) {
   windowEl.style.left = '50%';
   windowEl.style.top = '50%';
   windowEl.style.transform = 'translate(-50%, -50%)';
-  windowEl.style.zIndex = Date.now(); // bring to front
+  bringWindowToFront(windowEl);
   windowEl.style.display = 'block';
+  // Opened by the user (click/key): move focus into the window for keyboard and screen reader users. Not when the
+  // page opens it by itself (e.g. the login window at startup), so a phone keyboard does not pop up uninvited.
+  if (navigator.userActivation?.isActive) {
+    const first = windowEl.querySelector('input:not([type="hidden"]), select, textarea, button:not(.closeBtn)');
+    first?.focus({ preventScroll: true });
+  }
 }
 
 function hideWindow(windowId) {
@@ -82,20 +103,21 @@ function hideWindow(windowId) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.floatWindow').forEach(window => {
-    makeDraggable(window);
+  // (the element was called `window`, hiding the global one: window.innerWidth was undefined here)
+  document.querySelectorAll('.floatWindow').forEach(win => {
+    makeDraggable(win);
     // Ensure fit to viewport
     const margin = 32; // pixels
     const maxW = Math.max(200, window.innerWidth - margin);
     const maxH = Math.max(200, window.innerHeight - margin);
-    window.style.maxWidth = `calc(100vw - 2rem)`;
-    window.style.maxHeight = `calc(100vh - 2rem)`;
-    const cw = window.offsetWidth;
-    const ch = window.offsetHeight;
-    if (cw > maxW) window.style.width = `${maxW}px`;
-    if (ch > maxH) window.style.height = `${maxH}px`;
-    window.style.left = '50%';
-    window.style.top = '50%';
-    window.style.transform = 'translate(-50%, -50%)';
+    win.style.maxWidth = `calc(100vw - 2rem)`;
+    win.style.maxHeight = `calc(100vh - 2rem)`;
+    const cw = win.offsetWidth;
+    const ch = win.offsetHeight;
+    if (cw > maxW) win.style.width = `${maxW}px`;
+    if (ch > maxH) win.style.height = `${maxH}px`;
+    win.style.left = '50%';
+    win.style.top = '50%';
+    win.style.transform = 'translate(-50%, -50%)';
   });
 });

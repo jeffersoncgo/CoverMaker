@@ -8,7 +8,8 @@ class Jellyfin {
     onLoginError: () => { },
     onLibraryLoad: () => { },
     onSearchFinish: () => { },
-  }, needsUserData = false) {
+  }, needsUserData = false, options = {}) {
+    // options.preferCredentials: log in with Username/Pw even if a saved session exists (an explicit "Connect")
     const defaultEvents = {
       onServerSetupError: () => { },
       onLoginSuccess: () => { },
@@ -118,40 +119,159 @@ class Jellyfin {
       },
       "maxTotalHits": 20000
     }
-    this.init();
+    this.init({ preferCredentials: options?.preferCredentials === true });
   }
 
-  async init() {
+  // Connects and loads the libraries. Resolves true when logged in; every failure is reported through the
+  // events (onServerSetupError / onLoginError) instead of an unhandled rejection.
+  // On page load the saved session token is tried first, so no password is needed (and none is sent);
+  // `preferCredentials` (an explicit "Connect" with a typed password) logs in with the password instead.
+  async init({ preferCredentials = false } = {}) {
     await this.getPublicInfo();
     if (!this.Server.isOnline)
-      throw new Error("Server is offline. Please check the address.")
+      return false; // getPublicInfo already reported it
 
     await this.setFastestAddress();
+    if (!this.Server.isOnline)
+      return false; // setFastestAddress already reported it
 
-    if (this.User.Username && this.User.Pw) {
-      this.login().then(async () => {
-        this.isAuthenticated = true;
-        this.updateAuthHeader();
-        await this.setupMeiliSearch();
-        setTimeout(async () => {
-          await this.getLibraries();
-        }, 1000);
-        this.searchReady = true;
-      }).catch(err => console.error(err))
-    } else
-      throw new Error("Username and password are required for authentication.")
-    return;
+    const hasCredentials = Boolean(this.User.Username && this.User.Pw);
+    let session = null;
+    if (preferCredentials && hasCredentials) {
+      session = await this.login();
+    } else {
+      session = await this.loginWithSavedToken();
+      if (!session && hasCredentials)
+        session = await this.login();
+    }
+
+    if (!session) {
+      // login() reports its own failures; without credentials nothing was tried yet
+      if (!hasCredentials) {
+        const error = new Error("Username and password are required for authentication.");
+        error.name = "MissingCredentialsError";
+        this.events.onLoginError(error);
+      }
+      return false;
+    }
+
+    this.isAuthenticated = true;
+    this.updateAuthHeader();
+    try {
+      await this.setupMeiliSearch();
+    } catch (error) {
+      // An unusable Meilisearch (non-admin user, index not reachable from the browser) must not block the libraries
+      console.warn("Meilisearch unavailable, loading the libraries from Jellyfin:", error);
+      this.Meilisearch.isAvailable = false;
+    }
+    setTimeout(async () => {
+      await this.getLibraries();
+    }, 1000);
+    this.searchReady = true;
+    return true;
   }
 
   UpdateConfig(host, username, password) {
     this.Server.ExternalAddress = this.SanitizeServer(host);
     this.User.Username = username;
     this.User.Pw = password;
-    this.init();
+    return this.init({ preferCredentials: true });
   }
 
   SanitizeServer(server) {
-    return (server.endsWith("/") ? server.slice(0, -1) : server).trim()
+    return Jellyfin.normalizeServer(server);
+  }
+
+  static normalizeServer(server) {
+    server = String(server ?? "").trim();
+    return server.endsWith("/") ? server.slice(0, -1) : server;
+  }
+
+  // ---- Saved session ----
+  // Only { server, serverId, userId, token } is kept (localStorage "jellyfinAuth"), never the password. Every app on
+  // this origin (CoverMaker, content-recommender) shares it, as they already shared the server address.
+  static AUTH_STORAGE_KEY = "jellyfinAuth";
+
+  static getSavedAuth(server = null) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(Jellyfin.AUTH_STORAGE_KEY) || "null");
+      if (!saved?.token || !saved?.userId) return null;
+      if (server && Jellyfin.normalizeServer(saved.server) !== Jellyfin.normalizeServer(server)) return null;
+      return saved;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  static clearSavedAuth() {
+    try { localStorage.removeItem(Jellyfin.AUTH_STORAGE_KEY); } catch (error) { /* storage unavailable */ }
+  }
+
+  saveAuth() {
+    try {
+      localStorage.setItem(Jellyfin.AUTH_STORAGE_KEY, JSON.stringify({
+        server: this.Server.ExternalAddress,
+        serverId: this.Server.Id,
+        userId: this.User.Id,
+        token: this.User.Token,
+      }));
+    } catch (error) {
+      console.warn("Could not save the Jellyfin session:", error);
+    }
+  }
+
+  // Reuses the saved token when it belongs to this server (same address, or same server id under another address).
+  // Resolves like login(): the session data, or null.
+  async loginWithSavedToken() {
+    const saved = Jellyfin.getSavedAuth();
+    if (!saved || (saved.server !== this.Server.ExternalAddress && saved.serverId !== this.Server.Id))
+      return null;
+
+    this.User.Token = saved.token;
+    this.User.Id = saved.userId;
+    this.updateAuthHeader();
+
+    let response;
+    try {
+      response = await fetch(`${this.Server.Address}/Users/${saved.userId}`, { method: "GET", headers: this.headers });
+    } catch (error) {
+      response = null; // network failure: keep the saved session for the next attempt
+    }
+
+    if (!response || !response.ok) {
+      // 401 = token revoked or expired: forget it, so the password (or the login window) takes over
+      if (response?.status === 401)
+        Jellyfin.clearSavedAuth();
+      this.User.Token = "";
+      this.User.Id = "";
+      this.isAuthenticated = false;
+      this.updateAuthHeader();
+      return null;
+    }
+
+    const user = await response.json();
+    this.User.Username = user?.Name ?? this.User.Username;
+    this.isAuthenticated = true;
+    const data = { User: user, AccessToken: saved.token, ServerId: saved.serverId, fromSavedToken: true };
+    this.events.onLoginSuccess(data);
+    return data;
+  }
+
+  // Ends the session on the server (the token stops working everywhere) and forgets it in this browser
+  async logout() {
+    try {
+      if (this.User.Token && this.Server.Address)
+        await fetch(`${this.Server.Address}/Sessions/Logout`, { method: "POST", headers: this.headers });
+    } catch (error) {
+      console.warn("Jellyfin logout request failed:", error);
+    }
+    Jellyfin.clearSavedAuth();
+    this.User.Token = "";
+    this.User.Id = "";
+    this.User.Pw = "";
+    this.isAuthenticated = false;
+    this.searchReady = false;
+    this.updateAuthHeader();
   }
 
   onFetchError(response) {
@@ -159,7 +279,8 @@ class Jellyfin {
       this.isAuthenticated = false;
       console.error("Authentication failed. Please check your credentials.");
     } else {
-      console.error("Fetch error:", response.statusText);
+      // Called with a Response or, when the request itself failed, with the Error
+      console.error("Fetch error:", response?.statusText || response?.message || response);
     }
   }
 
@@ -168,43 +289,75 @@ class Jellyfin {
     this.headers.authorization = `MediaBrowser Client="${this.Server.Client}", Device="${this.Server.Device}", DeviceId="${this.Name}", Version="${this.Server.Version}"${TokenBit}`;
   }
 
+  // One shared connection per database. Opening a new connection for every read/write and never closing it
+  // blocked the version upgrade needed to create the next store, which stalled the first library load until
+  // the browser happened to garbage-collect the old connections.
   openDB(dbName, storeName) {
+    this._idb ??= {};
+    const entry = this._idb[dbName] ??= { db: null, queue: Promise.resolve() };
+    const opened = entry.queue.then(() => this._openStore(entry, dbName, storeName));
+    entry.queue = opened.catch(() => { });
+    return opened;
+  }
+
+  _openStore(entry, dbName, storeName) {
     return new Promise((resolve, reject) => {
-      let db;
+      const use = (db) => {
+        // Let other tabs (or a newer CoverMaker/content-recommender) upgrade the database
+        db.onversionchange = () => {
+          db.close();
+          if (entry.db === db) entry.db = null;
+        };
+        entry.db = db;
+        resolve(db);
+      };
+
+      const upgrade = (db) => {
+        const version = db.version + 1;
+        db.close();
+        if (entry.db === db) entry.db = null;
+
+        const upgradeRequest = indexedDB.open(dbName, version);
+        upgradeRequest.onupgradeneeded = (event) => {
+          const upgradeDb = event.target.result;
+          if (!upgradeDb.objectStoreNames.contains(storeName)) upgradeDb.createObjectStore(storeName);
+        };
+        upgradeRequest.onsuccess = () => use(upgradeRequest.result);
+        upgradeRequest.onerror = () => reject(upgradeRequest.error);
+        upgradeRequest.onblocked = () => console.warn(`IndexedDB "${dbName}" upgrade is waiting for another tab to release it`);
+      };
+
+      if (entry.db) {
+        if (entry.db.objectStoreNames.contains(storeName)) return resolve(entry.db);
+        return upgrade(entry.db);
+      }
 
       const checkRequest = indexedDB.open(dbName);
       checkRequest.onsuccess = () => {
-        db = checkRequest.result;
-
-        if (db.objectStoreNames.contains(storeName)) {
-          return resolve(db);
-        }
-
-        const version = db.version + 1;
-        db.close();
-
-        const upgradeRequest = indexedDB.open(dbName, version);
-
-        upgradeRequest.onupgradeneeded = (event) => {
-          const upgradeDb = event.target.result;
-          upgradeDb.createObjectStore(storeName);
-        };
-
-        upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
-        upgradeRequest.onerror = () => reject(upgradeRequest.error);
+        const db = checkRequest.result;
+        if (db.objectStoreNames.contains(storeName)) use(db);
+        else upgrade(db);
       };
-
       checkRequest.onerror = () => reject(checkRequest.error);
     });
   }
 
 
+  // Resolves true when the write is committed, false (and logs) if it fails
   async saveData(dbName, storeName, key = "result", data) {
-    const db = await this.openDB(dbName, storeName);
-    const tx = db.transaction(storeName, "readwrite");
-    const store = tx.objectStore(storeName);
-    store.put(JSON.stringify(data), key);
-    return tx.complete;
+    try {
+      const db = await this.openDB(dbName, storeName);
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, "readwrite");
+        tx.objectStore(storeName).put(JSON.stringify(data), key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } catch (error) {
+      console.error(`Could not save ${storeName} to IndexedDB:`, error);
+      return false;
+    }
   }
 
   async loadData(dbName, storeName, key = "result") {
@@ -316,8 +469,10 @@ class Jellyfin {
 
   async setFastestAddress() {
     const controller = new AbortController();
-    const signal = controller.signal;
-    signal.timeout = 5000;
+    // Stop waiting for an address after 5 s (AbortSignal.any keeps the "first answer wins" abort as well)
+    const signal = (typeof AbortSignal.any === 'function' && typeof AbortSignal.timeout === 'function')
+      ? AbortSignal.any([controller.signal, AbortSignal.timeout(5000)])
+      : controller.signal;
 
     const checkAddress = async (address) => {
       try {
@@ -392,6 +547,9 @@ class Jellyfin {
       this.isAuthenticated = true;
 
       this.updateAuthHeader();
+      // From now on the token is used; the password is not kept (not even in memory)
+      this.saveAuth();
+      this.User.Pw = "";
       this.events.onLoginSuccess(data);
       return data;
     } catch (error) {
@@ -401,11 +559,12 @@ class Jellyfin {
       this.updateAuthHeader();
       if (response) {
         this.events.onLoginError(error, response);
-        this.onFetchError(error, response);
+        this.onFetchError(response);
       } else {
         this.events.onLoginError(error);
         this.onFetchError(error);
       }
+      return null;
     }
   }
 
@@ -492,6 +651,11 @@ class Jellyfin {
               this.Libraries[library.Name].Locations = library.Locations;
               toReagroupd.push(library.Id);
               console.log(`${loadedData.Name} loaded from cache.`)
+              // Same item count, but items may have been edited on the server since the cache was written
+              const hadSync = Boolean(loadedData.LastSync);
+              const refreshed = await this.refreshChangedItems(library.Id);
+              if (refreshed > 0 || (!hadSync && refreshed === 0))
+                await this.saveData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
               continue;
             }
           }
@@ -519,6 +683,8 @@ class Jellyfin {
         this.showLoadingLibraries();
         
         this.Libraries[library.Name].Count = Count;
+        // Taken before loading, so edits made while loading are picked up by the next refreshChangedItems
+        const loadStartedAt = new Date().toISOString();
         const items = await this.loadLibraryItems(library.Id);
         if (!items || items.length == 0) {
           this.Libraries[library.Name].Status = 'Loading Error';
@@ -527,6 +693,7 @@ class Jellyfin {
         console.log(`Loaded ${items.length} items from library ${library.Name}`)
         this.Libraries[library.Name].Items = items;
         this.Libraries[library.Name].Count = items.length;
+        this.Libraries[library.Name].LastSync = loadStartedAt;
 
         this.saveData(this.Server.Id, library.Id, "result", this.Libraries[library.Name]);
         this.Libraries[library.Name].Status = 'Loaded';
@@ -660,7 +827,8 @@ class Jellyfin {
   }
 
   isPlayed(item) {
-    return item.UserData && ((item.UserData.Played) || (item.UserData.PlayedPercentage >= 70) || (item.UserData.PlayCount > 0)) && item.CollectionType != "BoxSet";
+    // Items carry Type (CollectionType is a library property): collections never count as watched
+    return item.UserData && ((item.UserData.Played) || (item.UserData.PlayedPercentage >= 70) || (item.UserData.PlayCount > 0)) && item.Type != "BoxSet" && item.CollectionType != "BoxSet";
   }
 
   extractInfoByTitle(title) {
@@ -723,7 +891,7 @@ class Jellyfin {
 
     const sortKey = this.searchParams.sortBy;
     if (sortKey === "Random") {
-      items = items.sort(() => 0.5 - Math.random());
+      items = Jellyfin.shuffle([...items]);
     } else {
       items = items.sort((a, b) => {
         if (this.searchParams.order === "desc") {
@@ -751,7 +919,9 @@ class Jellyfin {
     this.searchParams.hasPreviousPage = this.hasPreviousPage();
     this.searchParams.hasNextPage = this.hasNextPage(items);
 
-    const mLimit = tempLimit || this.searchParams.limit;
+    // Only a positive number overrides the page size: callers that pass fewer arguments get the
+    // Controller's AbortSignal in this position (content-recommender calls searchItems('', '', {}))
+    const mLimit = (typeof tempLimit === 'number' && tempLimit > 0) ? tempLimit : this.searchParams.limit;
 
     items = items.slice(this.searchParams.offset, this.searchParams.offset + mLimit);
 
@@ -852,11 +1022,17 @@ class Jellyfin {
 
   async loadLibraryItems(libraryId, fastLoading = false) {
     if (this.shouldUseMeiliSearch(libraryId)) {
-      return await this.loadLibraryItemsMeiliSearch(libraryId, fastLoading);
-    } else {
-      return await this.loadLibraryItemsVanilla(libraryId, fastLoading);
+      try {
+        return await this.loadLibraryItemsMeiliSearch(libraryId, fastLoading);
+      } catch (error) {
+        // e.g. the Meilisearch URL configured in the plugin is not reachable from the browser
+        console.warn("Meilisearch search failed, loading the library from Jellyfin instead:", error);
+        this.Meilisearch.isAvailable = false;
+        const library = this.Libraries[this.libaryNameById(libraryId)];
+        if (library?.Items) library.Items.length = 0; // drop a partial Meilisearch result (the loader below appends)
+      }
     }
-    
+    return await this.loadLibraryItemsVanilla(libraryId, fastLoading);
   }
 
   async loadLibraryItemsMeiliSearch(libraryId, fastLoading = false) {
@@ -880,8 +1056,9 @@ class Jellyfin {
 
     let startsWithFilters = "";
     if(library.Locations?.length > 0) {
+      // Meilisearch filter strings are double-quoted: escape \ and " (Windows paths like C:\Media)
       startsWithFilters = library.Locations
-      .map(loc => `(path STARTS WITH "${loc}")`)
+      .map(loc => `(path STARTS WITH "${String(loc).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`)
       .join(" OR ");
       startsWithFilters = ` AND (${startsWithFilters})`;
     }
@@ -941,15 +1118,97 @@ class Jellyfin {
   }
 
 
+  // The fields kept per item in the library cache
+  static toLibraryItem(item) {
+    return {
+      Id: item.Id,
+      Name: item.Name,
+      ImageId: item.ImageTags?.Primary,
+      PremiereDate: item.PremiereDate,
+      OfficialRating: item.OfficialRating,
+      CommunityRating: item.CommunityRating,
+      ProductionYear: item.ProductionYear,
+      Genres: item.Genres,
+      Studios: item.Studios,
+      Tags: item.Tags,
+      Overview: item.Overview,
+      Type: item.Type,
+      ItemsCount: item.RecursiveItemCount || item.ChildCount || item.MediaSources?.length,
+      UserData: Jellyfin.pickUserData(item.UserData),
+      ParentId: item.ParentId,
+      Path: item.Path,
+      originalData: item
+    };
+  }
+
+  // PlayedPercentage is kept too: isPlayed() counts an item watched to 70 % or more
+  static pickUserData(userData) {
+    return {
+      IsFavorite: userData?.IsFavorite,
+      Played: userData?.Played,
+      PlayCount: userData?.PlayCount,
+      LastPlayedDate: userData?.LastPlayedDate,
+      PlayedPercentage: userData?.PlayedPercentage
+    };
+  }
+
+  // Jellyfin ids are GUIDs; some sources (e.g. Meilisearch) write them with dashes or in another case
+  static itemKey(id) {
+    return String(id ?? "").replace(/-/g, "").toLowerCase();
+  }
+
+  // Fisher-Yates: every order is equally likely (sort(() => 0.5 - Math.random()) is biased)
+  static shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  // Fields requested for every library item (also used to refresh edited items)
+  libraryItemFields(fastLoading = false) {
+    const Fields = ["OriginalTitle"];
+    if (!fastLoading)
+      Fields.push(...[ "Overview", "Genres", "Studios", "Tags","ParentId", "Path" ])
+    return Fields;
+  }
+
+  // A cached library is reused while its item count is the same; items edited on the server since the last sync
+  // (title, cover, genres…) are fetched with MinDateLastSaved and replace their cached copy. Resolves the number of
+  // updated items, or -1 when the request failed (the cache is kept as it was).
+  async refreshChangedItems(libraryId) {
+    const library = this.Libraries[this.libaryNameById(libraryId)];
+    if (!library?.Items || !this.isAuthenticated) return 0;
+    const since = library.LastSync;
+    const startedAt = new Date().toISOString();
+    library.LastSync = startedAt;
+    if (!since) return 0; // cache written by an older version: edits are tracked from now on
+
+    const FieldsText = encodeURIComponent(this.libraryItemFields().join(","));
+    const IncludeItemsTypesText = encodeURIComponent(this.IncludeItemsTypes.join(","));
+    const url = `${this.Server.Address}/Users/${this.User.Id}/Items?SortBy=IndexNumber&Fields=${FieldsText}&ImageTypeLimit=1&EnableImageTypes=Primary&ParentId=${libraryId}&includeItemTypes=${IncludeItemsTypesText}&MinDateLastSaved=${encodeURIComponent(since)}`;
+    try {
+      const response = await fetch(url, { method: "GET", headers: this.headers });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const changed = (await response.json()).Items || [];
+      if (!changed.length) return 0;
+      const byKey = new Map(changed.map(item => [Jellyfin.itemKey(item.Id), Jellyfin.toLibraryItem(item)]));
+      library.Items = library.Items.map(item => byKey.get(Jellyfin.itemKey(item.Id)) ?? item);
+      console.log(`${library.Name}: ${changed.length} edited item(s) refreshed from the server.`);
+      return changed.length;
+    } catch (error) {
+      library.LastSync = since;
+      console.warn(`Could not check ${library.Name} for edited items:`, error);
+      return -1;
+    }
+  }
+
   async loadLibraryItemsVanilla(libraryId, fastLoading = false) {
     if (!this.isAuthenticated) return [];
 
-    const Fields = ["OriginalTitle"];
+    const Fields = this.libraryItemFields(fastLoading);
     // const IncludeItemsTypes = ["Audio", "Video", "BoxSet", "Book", "Channel", "Movie", "LiveTvChannel", "Playlist", "Series", "TvChannel"]
-
-    if (!fastLoading)
-      Fields.push(...[ "Overview", "Genres", "Studios", "Tags","ParentId", "Path" ])
-      
 
     const libraryName = this.libaryNameById(libraryId);
     const librarySize = this.Libraries[libraryName].Count;
@@ -984,42 +1243,14 @@ class Jellyfin {
                 if (item.Genres) this.searchParams.Genres.push(...item.Genres.map(g => g.toLowerCase() + '\uFEFF'));
                 if (item.Studios) this.searchParams.Studios.push(...item.Studios.map(s => s.Name.toLowerCase() + '\uFEFF'));
 
-                this.Libraries[libraryName].Items.push({
-                  Id: item.Id,
-                  Name: item.Name,
-                  ImageId: item.ImageTags?.Primary,
-                  PremiereDate: item.PremiereDate,
-                  OfficialRating: item.OfficialRating,
-                  CommunityRating: item.CommunityRating,
-                  ProductionYear: item.ProductionYear,
-                  Genres: item.Genres,
-                  Studios: item.Studios,
-                  Tags: item.Tags,
-                  Overview: item.Overview,
-                  Type: item.Type,
-                  ItemsCount: item.RecursiveItemCount || item.ChildCount || item.MediaSources?.length,
-                  UserData: {
-                    IsFavorite: item.UserData?.IsFavorite,
-                    Played: item.UserData?.Played,
-                    PlayCount: item.UserData?.PlayCount,
-                    LastPlayedDate: item.UserData?.LastPlayedDate
-                  },
-                  ParentId: item.ParentId,
-                  Path: item.Path,
-                  originalData: item
-                });
+                this.Libraries[libraryName].Items.push(Jellyfin.toLibraryItem(item));
               }
             } else {
               for (const item of items) {
                 this.Libraries[libraryName].Items.push({
                   Id: item.Id,
                   ImageId: item.ImageTags?.Primary,
-                  UserData: {
-                    IsFavorite: item.UserData?.IsFavorite,
-                    Played: item.UserData?.Played,
-                    PlayCount: item.UserData?.PlayCount,
-                    LastPlayedDate: item.UserData?.LastPlayedDate
-                  }
+                  UserData: Jellyfin.pickUserData(item.UserData)
                 });
               }
             }
@@ -1068,12 +1299,7 @@ class Jellyfin {
           for (const item of items) {
             allItems.push({
               Id: item.Id,
-              UserData: {
-                IsFavorite: item.UserData?.IsFavorite,
-                Played: item.UserData?.Played,
-                PlayCount: item.UserData?.PlayCount,
-                LastPlayedDate: item.UserData?.LastPlayedDate
-              }
+              UserData: Jellyfin.pickUserData(item.UserData)
             });
           }
           resolve();
@@ -1085,10 +1311,12 @@ class Jellyfin {
       );
     });
 
+    // One lookup per item (a find() per item was O(n²) on large libraries)
+    const userDataByKey = new Map(allItems.map(fetchedItem => [Jellyfin.itemKey(fetchedItem.Id), fetchedItem.UserData]));
     library.Items = library.Items.map(existingItem => {
-      const updatedUserData = allItems.find(fetchedItem => fetchedItem.Id === existingItem.Id);
+      const updatedUserData = userDataByKey.get(Jellyfin.itemKey(existingItem.Id));
       if (updatedUserData) {
-        return { ...existingItem, UserData: updatedUserData.UserData };
+        return { ...existingItem, UserData: updatedUserData };
       }
       return existingItem;
     });
@@ -1149,13 +1377,14 @@ class Jellyfin {
       `;
 
         wrapper.innerHTML = `
-        <div style="margin-bottom: 0.25rem; font-weight: bold;">
-          ${lib.Name} — ${lib.Items.length} / ${lib.Count}
-        </div>
+        <div style="margin-bottom: 0.25rem; font-weight: bold;"></div>
         <div style="background: #2d3748; border-radius: 0.25rem; overflow: hidden; height: 0.5rem;">
           <div style="width: ${progress}%; background: var(--primary, #3b82f6); height: 100%; transition: width 0.3s ease;"></div>
         </div>
       `;
+
+        // The library name comes from the server: shown as text, never parsed as HTML
+        wrapper.firstElementChild.textContent = `${lib.Name} — ${lib.Items.length} / ${lib.Count}`;
 
         container.appendChild(wrapper);
       } catch (error) {}
@@ -1193,7 +1422,12 @@ class Jellyfin {
     await this.checkForMeiliSearch();
     if (!this.Meilisearch.isAvailable)
       return false;
-    await this.getMeiliSearchApiKey();
+    // The plugin page is public, but its configuration (URL + API key) needs an administrator
+    if (!await this.getMeiliSearchApiKey() || !this.Meilisearch.Url) {
+      console.warn("Meilisearch plugin found, but its configuration is not available to this user. Using Jellyfin search.");
+      this.Meilisearch.isAvailable = false;
+      return false;
+    }
     this.Meilisearch.client = new meilisearch.Meilisearch({
       host: this.Meilisearch.Url,
       apiKey: this.Meilisearch.ApiKey,

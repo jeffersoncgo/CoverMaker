@@ -495,11 +495,13 @@ const TEXT_EFFECTS = {
       siCtx.fillRect(0, 0, canvas.width, canvas.height);
 
       // STEP RENDERING – isolated per-frame blur
+      // One step canvas, cleared before each step: same pixels as a new canvas per step, without allocating
+      // length + 1 full-size canvases (49 × ~8 MB with the default text layer)
+      const pass = createCanvas(canvas.width, canvas.height);
+      const pCtx = pass.getContext('2d');
       for (let i = 0; i <= length; i++) {
-
-        // Each shadow step gets separate isolated canvas
-        const pass = createCanvas(canvas.width, canvas.height);
-        const pCtx = pass.getContext('2d');
+        pCtx.filter = 'none';
+        pCtx.clearRect(0, 0, pass.width, pass.height);
 
         const t = i / length;
         const blur = t * maxBlur;
@@ -735,7 +737,8 @@ const TEXT_EFFECTS = {
       const axis = params.axis ?? 'y';
 
       // Use seed to shift the phase globally, rather than calculating random per pixel (which is slow and noisy)
-      const seeded = typeof createSeededRandom === 'function' ? createSeededRandom(params.seed) : Math.random;
+      // Seed 0 means "random" (createSeededRandom returns null)
+      const seeded = (typeof createSeededRandom === 'function' ? createSeededRandom(params.seed) : null) ?? Math.random;
       const phaseShift = (seeded() * 2 * Math.PI);
 
       // 3. Pre-calculate the Wave Offsets (Lookup Table)
@@ -838,8 +841,11 @@ const TEXT_EFFECTS = {
       { key: 'y', label: 'Skew Y', type: 'range', min: -1, max: 1, step: 0.05, default: 0 }
     ],
     apply: (ctx, canvas, text, x, y, params, abortSignal) => {
-      const sx = params.x ?? -0.2;
-      const sy = params.y ?? 0;
+      let sx = params.x ?? -0.2;
+      let sy = params.y ?? 0;
+      // X = Y = ±1 makes the matrix singular (determinant 1 − sx·sy = 0) and the text vanished; every other value is
+      // drawn exactly as before
+      if (Math.abs(1 - sx * sy) < 1e-6) { sx *= 0.95; sy *= 0.95; }
       const tempCanvas = createCanvas(canvas.width, canvas.height);
       const tCtx = tempCanvas.getContext('2d');
 
@@ -1202,7 +1208,8 @@ const TEXT_EFFECTS = {
       const seedVal = params.seed ?? 123;
 
       // Initialize the deterministic random function
-      const rnd = createSeededRandom(seedVal);
+      // Seed 0 means "random" (createSeededRandom returns null)
+      const rnd = createSeededRandom(seedVal) ?? Math.random;
 
       const w = canvas.width;
       const h = canvas.height;
@@ -1706,7 +1713,7 @@ const TEXT_EFFECTS = {
               const drawY = Math.floor(py + by);
               if (drawX < w && drawY < h) {
                 // A simple distance check to make it look jagged/polygonal
-                if (Math.random() > 0.3) { // Noise to break boxes
+                if (rnd() > 0.3) { // Noise to break boxes (seeded like the rest, so a seed gives a repeatable result)
                   out[drawY * w + drawX] = colorVal;
                 }
               }
@@ -1734,9 +1741,13 @@ const TEXT_EFFECTS = {
     params: [
       { key: 'tileSize', label: 'Tile Size', type: 'range', min: 2, max: 64, step: 1, default: 16 },
       { key: 'randomness', label: 'Randomness', type: 'range', min: 0, max: 1, step: 0.01, default: 0.3 },
-      { key: 'colorVariation', label: 'Color Variation', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 }
+      { key: 'colorVariation', label: 'Color Variation', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 },
+      // 0 = a new random result on every render (how this always worked); any other value = always the same result
+      { key: 'seed', label: 'Seed (0 = random)', type: 'range', min: 0, max: 1000, step: 1, default: 0 }
     ],
     apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      // Seed 0 keeps Math.random (createSeededRandom returns null for 0)
+      const effectRandom = (typeof createSeededRandom === 'function' ? createSeededRandom(params?.seed) : null) ?? Math.random;
       const tileSize = Math.max(2, params.tileSize ?? 16);
       const randomness = params.randomness ?? 0.3;
       const colorVariation = params.colorVariation ?? 0.2;
@@ -1774,22 +1785,22 @@ const TEXT_EFFECTS = {
 
             // Add variation
             if (colorVariation > 0) {
-              r = clamp(r + (Math.random() - 0.5) * 255 * colorVariation, 0, 255);
-              g = clamp(g + (Math.random() - 0.5) * 255 * colorVariation, 0, 255);
-              b = clamp(b + (Math.random() - 0.5) * 255 * colorVariation, 0, 255);
+              r = clamp(r + (effectRandom() - 0.5) * 255 * colorVariation, 0, 255);
+              g = clamp(g + (effectRandom() - 0.5) * 255 * colorVariation, 0, 255);
+              b = clamp(b + (effectRandom() - 0.5) * 255 * colorVariation, 0, 255);
             }
 
             // Random tile offset
-            const offsetX = Math.random() * randomness * tileSize - (randomness * tileSize / 2);
-            const offsetY = Math.random() * randomness * tileSize - (randomness * tileSize / 2);
+            const offsetX = effectRandom() * randomness * tileSize - (randomness * tileSize / 2);
+            const offsetY = effectRandom() * randomness * tileSize - (randomness * tileSize / 2);
 
             // Draw mosaic tile
             mCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
             mCtx.fillRect(
               tx + offsetX,
               ty + offsetY,
-              tileSize * (0.8 + Math.random() * 0.4),
-              tileSize * (0.8 + Math.random() * 0.4)
+              tileSize * (0.8 + effectRandom() * 0.4),
+              tileSize * (0.8 + effectRandom() * 0.4)
             );
           }
         }
@@ -1935,8 +1946,10 @@ const TEXT_EFFECTS = {
     }
   },
 
-  extrude: {
-    name: '3D Extrude',
+  // First definition of the 3D extrude (a later `extrude` replaced it and silently hid this one, CM-07).
+  // Restored under its own key so it is available again; `extrude` keeps rendering exactly as before.
+  extrudeShaded: {
+    name: '3D Extrude (Shaded)',
     params: [
       { key: 'depth', label: 'Depth', type: 'range', min: 0, max: 50, step: 1, default: 10 },
       { key: 'angle', label: 'Angle', type: 'range', min: 0, max: 360, step: 1, default: 45 },
@@ -2137,8 +2150,10 @@ const TEXT_EFFECTS = {
     }
   },
 
-  innerShadow: {
-    name: 'Inner Shadow',
+  // First definition of the inner shadow, with X/Y offsets (a later `innerShadow` with distance/angle hid it, CM-07).
+  // Restored under its own key ("Inner Shadow (Offset)"); `innerShadow` keeps rendering exactly as before.
+  innerShadowOffset: {
+    name: 'Inner Shadow (Offset)',
     params: [
       { key: 'color', label: 'Color', type: 'color', default: '#000000' },
       { key: 'blur', label: 'Blur', type: 'range', min: 0, max: 20, step: 1, default: 5 },
@@ -4820,6 +4835,9 @@ const TEXT_EFFECTS = {
     params: [
       { key: 'size', label: 'Shard Size', type: 'range', min: 5, max: 100, step: 1, default: 20 },
       { key: 'grout', label: 'Grout Width', type: 'range', min: 0.1, max: 10, step: 0.5, default: 2 },
+      // 'Hairline' is how this effect always looked (1 px leading, the width slider had no effect);
+      // 'Use Grout Width' makes the leading as wide as the slider
+      { key: 'groutStyle', label: 'Grout', type: 'select', options: ['Hairline', 'Use Grout Width'], default: 'Hairline' },
       { key: 'color', label: 'Grout Color', type: 'color', default: '#000000' },
       { key: 'variance', label: 'Color Variance', type: 'range', min: 0.1, max: 1, step: 0.1, default: 0.3 },
       { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 1 }
@@ -4827,6 +4845,7 @@ const TEXT_EFFECTS = {
     apply: (ctx, canvas, text, x, y, params) => {
       const size = params.size ?? 20;
       const grout = params.grout ?? 2;
+      const useGroutWidth = params.groutStyle === 'Use Grout Width';
       const groutColor = hexToRgb(params.color ?? '#000000');
       const variance = params.variance ?? 0.3;
       const seed = params.seed ?? 1;
@@ -4846,6 +4865,42 @@ const TEXT_EFFECTS = {
       const outImg = ctx.createImageData(w, h);
       const out = outImg.data;
 
+      // Spatial grid of the points (cell = shard size). The nearest point is searched ring by ring around the pixel's
+      // cell instead of over every point (46 s with Shard Size 5 before). It picks exactly the point the full scan
+      // picked: the smallest squared distance, ties → lowest index, nothing replaces points[0] unless d < 999999.
+      const cell = Math.max(1, size);
+      const gw = Math.ceil(w / cell) + 1, gh = Math.ceil(h / cell) + 1;
+      const grid = Array.from({ length: gw * gh }, () => []);
+      for (let k = 0; k < points.length; k++) {
+        const gx = Math.min(gw - 1, Math.max(0, Math.floor(points[k].x / cell)));
+        const gy = Math.min(gh - 1, Math.max(0, Math.floor(points[k].y / cell)));
+        grid[gy * gw + gx].push(k);
+      }
+      const nearestPoint = (px, py) => {
+        let bestD = 999999, bestK = 0;
+        const cx = Math.floor(px / cell), cy = Math.floor(py / cell);
+        const maxRing = Math.max(gw, gh);
+        const visit = (gx, gy) => {
+          if (gx < 0 || gy < 0 || gx >= gw || gy >= gh) return;
+          for (const k of grid[gy * gw + gx]) {
+            const dx = px - points[k].x;
+            const dy = py - points[k].y;
+            const d = dx * dx + dy * dy;
+            if (d < bestD || (d === bestD && d < 999999 && k < bestK)) { bestD = d; bestK = k; }
+          }
+        };
+        for (let r = 0; r <= maxRing; r++) {
+          if (r === 0) visit(cx, cy);
+          else {
+            for (let gx = cx - r; gx <= cx + r; gx++) { visit(gx, cy - r); visit(gx, cy + r); }
+            for (let gy = cy - r + 1; gy <= cy + r - 1; gy++) { visit(cx - r, gy); visit(cx + r, gy); }
+          }
+          // every point in a farther ring is at least r cells away: none can be closer or tie
+          if (bestD < (r * cell) * (r * cell)) break;
+        }
+        return points[bestK];
+      };
+
       // 2. Pixel Scan
       // For each pixel, find closest point.
       // Check distance to 2nd closest point to calculate "Edge" (Grout)
@@ -4862,22 +4917,7 @@ const TEXT_EFFECTS = {
           if (srcData[idx + 3] < 128) continue; // Skip transparency
 
           // Find Closest
-          let d1 = 999999;
-          let bestP = points[0];
-
-          // Optimization: Only check points roughly nearby?
-          // JS loops are fast enough for <100 points. If >100, might lag.
-          // Let's just iterate all for quality (this is "Boss Level" after all).
-          for (let k = 0; k < points.length; k++) {
-            const p = points[k];
-            const dx = px - p.x;
-            const dy = py - p.y;
-            const d = dx * dx + dy * dy;
-            if (d < d1) {
-              d1 = d;
-              bestP = p;
-            }
-          }
+          const bestP = nearestPoint(px, py);
 
           // Grout Logic:
           // True Voronoi border math is (dist1 - dist2). 
@@ -4929,6 +4969,37 @@ const TEXT_EFFECTS = {
             fData[idx + 2] = out[idx + 2];
             fData[idx + 3] = 255;
           }
+        }
+      }
+
+      if (useGroutWidth && grout > 1) {
+        // Widen the 1 px leading to `grout` px: every glass pixel within grout/2 of an edge becomes grout
+        const radius = Math.max(1, Math.round(grout / 2));
+        const edge = new Uint8Array(w * h);
+        for (let py = 1; py < h - 1; py++) {
+          for (let px = 1; px < w - 1; px++) {
+            const i = py * w + px;
+            // same edge test as the hairline pass above
+            if (out[i * 4 + 3] !== 0 && (vData[i] !== vData[i + 1] || vData[i] !== vData[i + w])) edge[i] = 1;
+          }
+        }
+        // separable square dilation (horizontal, then vertical)
+        const tmp = new Uint8Array(w * h);
+        for (let py = 0; py < h; py++) {
+          let run = -1;
+          for (let px = 0; px < w; px++) { if (edge[py * w + px]) run = px; if (run >= 0 && px - run <= radius) tmp[py * w + px] = 1; }
+          run = -1;
+          for (let px = w - 1; px >= 0; px--) { if (edge[py * w + px]) run = px; if (run >= 0 && run - px <= radius) tmp[py * w + px] = 1; }
+        }
+        for (let px = 0; px < w; px++) {
+          let run = -1;
+          for (let py = 0; py < h; py++) { if (tmp[py * w + px]) run = py; if (run >= 0 && py - run <= radius) edge[py * w + px] = 1; }
+          run = -1;
+          for (let py = h - 1; py >= 0; py--) { if (tmp[py * w + px]) run = py; if (run >= 0 && run - py <= radius) edge[py * w + px] = 1; }
+        }
+        for (let i = 0; i < w * h; i++) {
+          const o = i * 4;
+          if (edge[i] && fData[o + 3]) { fData[o] = gR; fData[o + 1] = gG; fData[o + 2] = gB; }
         }
       }
 
@@ -6810,9 +6881,13 @@ const TEXT_EFFECTS = {
       { key: 'baseColor', label: 'Glitter Color', type: 'color', default: '#ff0077' },
       { key: 'density', label: 'Flake Density', type: 'range', min: 0.1, max: 1, step: 0.1, default: 0.7 },
       { key: 'rainbow', label: 'Iridescence', type: 'range', min: 0, max: 1, step: 0.1, default: 0.3 },
-      { key: 'size', label: 'Flake Size', type: 'range', min: 1, max: 4, step: 1, default: 2 }
+      { key: 'size', label: 'Flake Size', type: 'range', min: 1, max: 4, step: 1, default: 2 },
+      // 0 = a new random result on every render (how this always worked); any other value = always the same result
+      { key: 'seed', label: 'Seed (0 = random)', type: 'range', min: 0, max: 1000, step: 1, default: 0 }
     ],
     apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      // Seed 0 keeps Math.random (createSeededRandom returns null for 0)
+      const effectRandom = (typeof createSeededRandom === 'function' ? createSeededRandom(params?.seed) : null) ?? Math.random;
       const cBase = hexToRgb(params.baseColor ?? '#ff0077');
       const density = params.density ?? 0.7;
       const rainbow = params.rainbow ?? 0.3;
@@ -6831,7 +6906,7 @@ const TEXT_EFFECTS = {
       const imgData = gCtx.getImageData(0, 0, w, h);
       const data = imgData.data;
 
-      const rng = () => Math.random();
+      const rng = () => effectRandom();
 
       for (let py = 0; py < h; py += flakeSize) {
         for (let px = 0; px < w; px += flakeSize) {
@@ -6988,11 +7063,13 @@ const TEXT_EFFECTS = {
       { key: 'density', label: 'Line Density', type: 'range', min: 10, max: 200, step: 1, default: 80 },
       { key: 'thickness', label: 'Thickness', type: 'range', min: 1, max: 20, step: 1, default: 4 },
       { key: 'centerClear', label: 'Clear Center', type: 'range', min: 0, max: 1, step: 0.1, default: 0.3 },
-      { key: 'mode', label: 'Masking', type: 'select', options: ['Behind Text', 'Inside Text'], default: 'Inside Text' },
+      // 'Lines Only' keeps what 'Behind Text' drew before 2026-10-23 (the text was erased, only the lines were left)
+      { key: 'mode', label: 'Masking', type: 'select', options: ['Behind Text', 'Inside Text', 'Lines Only'], default: 'Inside Text' },
       { key: 'seed', label: 'Seed', type: 'range', min: 1, max: 100, step: 1, default: 99 }
     ],
     apply: (ctx, canvas, text, x, y, params, abortSignal) => {
       const color = params.color ?? '#ffffff';
+      const linesOnly = params.mode === 'Lines Only';
       const density = params.density ?? 80;
       const thickness = params.thickness ?? 4;
       const centerClear = params.centerClear ?? 0.3;
@@ -7039,17 +7116,21 @@ const TEXT_EFFECTS = {
         lCtx.restore();
       }
 
+      // The text must be copied before clearing: `ctx` draws on `canvas` itself, so clearing first erased the text
+      // that is used below as mask and as the visible text (CM-28: "Inside Text" made the whole layer vanish)
+      const textSource = linesOnly ? canvas : cloneCanvas(canvas, abortSignal).canvas;
+
       ctx.clearRect(0, 0, w, h);
 
       if (isInside) {
         // As linhas preenchem o texto
         lCtx.globalCompositeOperation = 'destination-in';
-        lCtx.drawImage(canvas, 0, 0);
+        lCtx.drawImage(textSource, 0, 0);
 
         // Mantém uma borda ou fundo sutil do texto original para legibilidade
         ctx.save();
         ctx.globalAlpha = 0.2;
-        ctx.drawImage(canvas, 0, 0);
+        ctx.drawImage(textSource, 0, 0);
         ctx.restore();
 
         ctx.drawImage(linesCanvas, 0, 0);
@@ -7058,11 +7139,12 @@ const TEXT_EFFECTS = {
         ctx.drawImage(linesCanvas, 0, 0);
 
         // Borda grossa preta/branca no texto ajuda a separar do fundo caótico
+        // ('Lines Only' draws the cleared canvas, i.e. the lines again, exactly as the old 'Behind Text' did)
         ctx.save();
         ctx.shadowColor = '#000000';
         ctx.shadowBlur = 10;
-        ctx.drawImage(canvas, 0, 0);
-        ctx.drawImage(canvas, 0, 0); // Desenha duas vezes para endurecer a sombra
+        ctx.drawImage(textSource, 0, 0);
+        ctx.drawImage(textSource, 0, 0); // Desenha duas vezes para endurecer a sombra
         ctx.restore();
       }
 
@@ -7378,9 +7460,13 @@ const TEXT_EFFECTS = {
     params: [
       { key: 'color', label: 'Flavor Color', type: 'color', default: '#ff0066' },
       { key: 'thickness', label: 'Thickness', type: 'range', min: 1, max: 50, step: 1, default: 20 },
-      { key: 'sugar', label: 'Sugar Coating', type: 'range', min: 0, max: 1, step: 0.1, default: 0.8 }
+      { key: 'sugar', label: 'Sugar Coating', type: 'range', min: 0, max: 1, step: 0.1, default: 0.8 },
+      // 0 = a new random result on every render (how this always worked); any other value = always the same result
+      { key: 'seed', label: 'Seed (0 = random)', type: 'range', min: 0, max: 1000, step: 1, default: 0 }
     ],
     apply: (ctx, canvas, text, x, y, params, abortSignal) => {
+      // Seed 0 keeps Math.random (createSeededRandom returns null for 0)
+      const effectRandom = (typeof createSeededRandom === 'function' ? createSeededRandom(params?.seed) : null) ?? Math.random;
       const color = hexToRgb(params.color ?? '#ff0066');
       const thickness = params.thickness ?? 20;
       const sugar = params.sugar ?? 0.8;
@@ -7405,7 +7491,7 @@ const TEXT_EFFECTS = {
       const outImg = ctx.createImageData(w, h);
       const out = outImg.data;
 
-      const rng = () => Math.random();
+      const rng = () => effectRandom();
 
       for (let i = 0; i < srcData.length; i += 4) {
         const alpha = srcData[i + 3];

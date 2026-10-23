@@ -102,12 +102,23 @@
     // Accept both schema array or registry-def object
     const schemaList = Array.isArray(schemaParams) ? schemaParams : (schemaParams.params || []);
 
-    // build param keys union with paramsObj keys (preserve any custom keys in paramsObject)
-    const allKeys = new Set((schemaList || []).map(p => p.key));
-    if (paramsObj) Object.keys(paramsObj).forEach(k => allKeys.add(k));
+    // Render in schema order. Entries without a key are section titles (e.g. { type: 'span', label: 'Colors' }):
+    // every one of them is shown, and none is stored as a parameter. Keys only present in paramsObj (custom keys)
+    // come after the schema; "undefined" was only ever written by older versions for those titles, so it is skipped.
+    const entries = [];
+    const seenKeys = new Set();
+    for (const p of schemaList || []) {
+      if (!p || (p.key && seenKeys.has(p.key))) continue;
+      if (p.key) seenKeys.add(p.key);
+      entries.push({ paramKey: p.key, param: p });
+    }
+    if (paramsObj) Object.keys(paramsObj).forEach(k => {
+      if (seenKeys.has(k) || k === 'undefined') return;
+      seenKeys.add(k);
+      entries.push({ paramKey: k });
+    });
 
-    Array.from(allKeys).forEach(paramKey => {
-      let param = schemaList.find(p => p.key === paramKey);
+    entries.forEach(({ paramKey, param }) => {
       if (!param) {
         // Optionally skip unknown params (if the caller wants strict schema rendering)
         if (opts.skipUnknown) return;
@@ -136,8 +147,9 @@
       // replace placeholder with control
       if (placeholder && placeholder.parentElement) placeholder.parentElement.replaceChild(control, placeholder);
 
-      // attach dataset info
-      control.dataset.paramKey = param.key;
+      // attach dataset info (section titles have no key, so they are never read back as a parameter)
+      if (param.key) control.dataset.paramKey = param.key;
+      else control.classList.add('effect-param-title');
       (opts.extraDataset || []).forEach(([k, v]) => { control.dataset[k] = v; });
 
       // attach events

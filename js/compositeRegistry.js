@@ -2323,9 +2323,13 @@ const COMPOSITE_REGISTRY = {
     name: 'CCTV / Security',
     params: [
       { key: 'columns', label: 'Columns', type: 'range', min: 2, max: 5, step: 1, default: 2 },
-      { key: 'noise', label: 'Static Noise', type: 'range', min: 0, max: 100, step: 10, default: 20 }
+      { key: 'noise', label: 'Static Noise', type: 'range', min: 0, max: 100, step: 10, default: 20 },
+      // 0 = a new random result on every render (how this always worked); any other value = always the same result
+      { key: 'seed', label: 'Seed (0 = random)', type: 'range', min: 0, max: 1000, step: 1, default: 0 }
     ],
     apply: (ctx, canvas, images, params, abortSignal) => {
+      // Seed 0 keeps Math.random (createSeededRandom returns null for 0)
+      const effectRandom = (typeof createSeededRandom === 'function' ? createSeededRandom(params?.seed) : null) ?? Math.random;
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -2379,9 +2383,9 @@ const COMPOSITE_REGISTRY = {
         
         for (let i = 0; i < buffer.length; i++) {
            // Random gray value
-           const gray = (Math.random() * 255) | 0;
+           const gray = (effectRandom() * 255) | 0;
            // Alpha based on noiseLevel (max ~255)
-           const alpha = (Math.random() * (noiseLevel * 2.55)) | 0; 
+           const alpha = (effectRandom() * (noiseLevel * 2.55)) | 0; 
            
            // Little-endian (ABGR)
            buffer[i] = (alpha << 24) | (gray << 16) | (gray << 8) | gray;
@@ -2778,9 +2782,13 @@ const COMPOSITE_REGISTRY = {
     name: 'Comic Page',
     params: [
       { key: 'gutter', label: 'Gutter Size', type: 'range', min: 0, max: 20, step: 1, default: 8 },
-      { key: 'border', label: 'Border Width', type: 'range', min: 0, max: 10, step: 1, default: 3 }
+      { key: 'border', label: 'Border Width', type: 'range', min: 0, max: 10, step: 1, default: 3 },
+      // 0 = a new random result on every render (how this always worked); any other value = always the same result
+      { key: 'seed', label: 'Seed (0 = random)', type: 'range', min: 0, max: 1000, step: 1, default: 0 }
     ],
     apply: (ctx, canvas, images, params, abortSignal) => {
+      // Seed 0 keeps Math.random (createSeededRandom returns null for 0)
+      const effectRandom = (typeof createSeededRandom === 'function' ? createSeededRandom(params?.seed) : null) ?? Math.random;
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -2819,7 +2827,7 @@ const COMPOSITE_REGISTRY = {
       while (used < count) {
         // Randomly decide col count for this row (1, 2, or 3)
         let remaining = count - used;
-        let cols = 1 + Math.floor(Math.random() * 3); // 1-3
+        let cols = 1 + Math.floor(effectRandom() * 3); // 1-3
         if (cols > remaining) cols = remaining;
 
         // Don't leave 1 orphan at the end if we can help it
@@ -2848,7 +2856,7 @@ const COMPOSITE_REGISTRY = {
         let widths = [];
         let totalRatio = 0;
         for (let c = 0; c < cols; c++) {
-          let r = 1 + Math.random() * 0.5; // 1.0 to 1.5 variation
+          let r = 1 + effectRandom() * 0.5; // 1.0 to 1.5 variation
           widths.push(r);
           totalRatio += r;
         }
@@ -3152,9 +3160,13 @@ const COMPOSITE_REGISTRY = {
     name: 'Glitch Mosaic',
     params: [
       { key: 'intensity', label: 'Chaos', type: 'range', min: 1, max: 20, step: 1, default: 5 },
-      { key: 'scale', label: 'Block Size', type: 'range', min: 10, max: 100, step: 5, default: 40 }
+      { key: 'scale', label: 'Block Size', type: 'range', min: 10, max: 100, step: 5, default: 40 },
+      // 0 = a new random result on every render (how this always worked); any other value = always the same result
+      { key: 'seed', label: 'Seed (0 = random)', type: 'range', min: 0, max: 1000, step: 1, default: 0 }
     ],
     apply: (ctx, canvas, images, params, abortSignal) => {
+      // Seed 0 keeps Math.random (createSeededRandom returns null for 0)
+      const effectRandom = (typeof createSeededRandom === 'function' ? createSeededRandom(params?.seed) : null) ?? Math.random;
       const N = images.length;
       if (!N) return;
       const cw = canvas.width;
@@ -3184,30 +3196,30 @@ const COMPOSITE_REGISTRY = {
       const numBlocks = (cw / blockSize) * (ch / blockSize) * (intensity / 10);
 
       for (let i = 0; i < numBlocks; i++) {
-        const img = glitchImages[Math.floor(Math.random() * count)];
+        const img = glitchImages[Math.floor(effectRandom() * count)];
         if (!img) continue;
 
         // Dest rect
-        const dx = Math.floor(Math.random() * (cw / blockSize)) * blockSize;
-        const dy = Math.floor(Math.random() * (ch / blockSize)) * blockSize;
-        const w = blockSize * (1 + Math.floor(Math.random() * 3)); // 1-3 blocks wide
-        const h = blockSize * (1 + Math.floor(Math.random() * 2)); // 1-2 blocks high
+        const dx = Math.floor(effectRandom() * (cw / blockSize)) * blockSize;
+        const dy = Math.floor(effectRandom() * (ch / blockSize)) * blockSize;
+        const w = blockSize * (1 + Math.floor(effectRandom() * 3)); // 1-3 blocks wide
+        const h = blockSize * (1 + Math.floor(effectRandom() * 2)); // 1-2 blocks high
 
         // Source rect (random part of image)
-        const sx = Math.random() * (img.width - w);
-        const sy = Math.random() * (img.height - h);
+        const sx = effectRandom() * (img.width - w);
+        const sy = effectRandom() * (img.height - h);
 
         ctx.save();
         // Random blend mode for glitch feel
         const blendModes = ['source-over', 'overlay', 'hard-light', 'screen', 'difference'];
-        ctx.globalCompositeOperation = blendModes[Math.floor(Math.random() * blendModes.length)];
-        ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+        ctx.globalCompositeOperation = blendModes[Math.floor(effectRandom() * blendModes.length)];
+        ctx.globalAlpha = 0.7 + effectRandom() * 0.3;
 
         ctx.drawImage(img, sx, sy, w, h, dx, dy, w, h);
 
         // Occasional Color Shift border
-        if (Math.random() > 0.8) {
-          ctx.strokeStyle = Math.random() > 0.5 ? '#0ff' : '#f0f';
+        if (effectRandom() > 0.8) {
+          ctx.strokeStyle = effectRandom() > 0.5 ? '#0ff' : '#f0f';
           ctx.lineWidth = 1;
           ctx.strokeRect(dx, dy, w, h);
         }
