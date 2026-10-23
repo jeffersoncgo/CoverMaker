@@ -53,6 +53,11 @@ button:active, .button:active {
   transform: translateY(0);
 }
 
+/* The [hidden] attribute must win over the display rule above */
+button[hidden], .button[hidden] {
+  display: none;
+}
+
 /* Disabled States */
 button[disabled="true"], .button[disabled="true"], #loginAction[inactive="true"], i[disabled="true"] {
   opacity: 0.5;

@@ -690,6 +690,7 @@ const jellyfinloadLibraryBtn = document.getElementById('loadLibraryBtn');
 const jellyfinsearchInput = document.getElementById('searchInput');
 const jellyfinpostersLimit = document.getElementById('posterslimit')
 const jellyfinloginActionBtn = document.getElementById('loginAction');
+const jellyfinLogoutBtn = document.getElementById('logoutAction');
 const jellyfinPreviousPageBtn = document.getElementById('previousPage');
 const jellyfinNextPageBtn = document.getElementById('nextPage');
 
@@ -697,25 +698,36 @@ const jellyfinNextPageBtn = document.getElementById('nextPage');
 // ======================
 // Storage Functions
 // ======================
+// Only the server address is saved here. The login is kept as a session token by the Jellyfin class
+// (localStorage "jellyfinAuth"); username and password are never stored.
 function saveFieldsToStorage() {
   if (document.getElementById("Server").value.endsWith("/")) {
     document.getElementById("Server").value = document.getElementById("Server").value.slice(0, -1);
   }
   const server = document.getElementById("Server").value;
-  const username = document.getElementById("Username").value;
-  const password = document.getElementById("Password").value;
   localStorage.setItem("server", server);
-  localStorage.setItem("username", username);
-  localStorage.setItem("password", password);
 }
 
 function loadFieldsFromStorage() {
   const server = localStorage.getItem("server");
+  // Saved by older versions: used one last time to get a session token, then removed (forgetSavedPassword)
   const username = localStorage.getItem("username");
   const password = localStorage.getItem("password");
   if (server) document.getElementById("Server").value = server;
   if (username) document.getElementById("Username").value = username;
   if (password) document.getElementById("Password").value = password;
+}
+
+// Removes the username/password older versions kept in localStorage and (through the [save] attribute the login
+// fields no longer have) in the pageMemory record. The session token makes them unnecessary.
+function forgetSavedPassword() {
+  localStorage.removeItem("password");
+  localStorage.removeItem("username");
+  const passwordInput = document.getElementById("Password");
+  if (passwordInput) passwordInput.value = "";
+  // Rewrites the pageMemory record without the login fields. pageMemory only saves after its restore finished,
+  // so this never overwrites the saved page with defaults.
+  try { window.memory?.savePageInfo?.(); } catch (e) { /* not ready yet: the next save rewrites the record */ }
 }
 
 /**
@@ -2112,6 +2124,7 @@ jellyfinsearchInput.addEventListener('input', () => {
 })
 
 jellyfinloginActionBtn.addEventListener('click', Login)
+jellyfinLogoutBtn?.addEventListener('click', Logout)
 
 function addSettingListeners() {
   // This single listener handles ALL dynamic text inputs

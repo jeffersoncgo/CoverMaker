@@ -48,7 +48,11 @@ function toastMessage(message, options = {}) {
   else if (config.type === 'loading') icon = '<span class="spinner" aria-hidden="true"></span>';
   else icon = '<svg width="20" height="20" fill="none" stroke="var(--c-primary)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>';
 
-  toast.innerHTML = `${icon} <span>${message}</span>`;
+  // The icon is markup from this file; the message is text (it can carry server data or error messages)
+  toast.innerHTML = `${icon} `;
+  const messageEl = document.createElement('span');
+  messageEl.textContent = `${message}`;
+  toast.appendChild(messageEl);
 
   // 4. Insert into DOM
   if (config.position === 'cursorPos') {

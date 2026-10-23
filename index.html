@@ -38,10 +38,12 @@
       <label for="Server">Server URL</label>
       <input type="text" id="Server" placeholder="http://yourserver:8096" value="http://localhost:8096" save>
       <label for="Username">Username</label>
-      <input type="text" id="Username" placeholder="Your username" value="admin" save>
+      <input type="text" id="Username" placeholder="Your username" value="admin" autocomplete="username">
       <label for="Password">Password</label>
-      <input type="password" id="Password" placeholder="Your password" value="password" save>
+      <!-- Not saved: after the first login only the session token is kept (see Jellyfin.getSavedAuth) -->
+      <input type="password" id="Password" placeholder="Your password" autocomplete="current-password">
       <button id="loginAction">Connect</button>
+      <button id="logoutAction" type="button" hidden title="End the Jellyfin session saved in this browser">Sign out</button>
       <label id="loginErrorMessage"></label>
     </div>
   </div>

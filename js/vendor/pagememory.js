@@ -263,7 +263,9 @@ class pageMemory {
         this.lastSaveTime = null;
         this.saveAttempts = 0; // Tracks attempted saves (including debounced/throttled)
 
-        this.canSave = true;
+        // Saving waits until init() has restored the saved state: a save before that (an input event, or a call
+        // from the page) would overwrite the stored record with the page's defaults
+        this.canSave = false;
 
 
         // Wrap methods with Controller for debouncing and preventing concurrent runs.
@@ -314,8 +316,11 @@ class pageMemory {
         
         this.setOriginalPageInfo();
         // this.startAutoSave();
-        await this.restorePageInfo();
-        this.canSave = true;
+        try {
+            await this.restorePageInfo();
+        } finally {
+            this.canSave = true;
+        }
     }
 
 
@@ -389,8 +394,12 @@ class pageMemory {
     }
 
     // Get elements marked with 'save' attribute
+    getSaveTargets() {
+        return [...document.querySelectorAll('[save]'), ...document.querySelectorAll('[data-save]')];
+    }
+
     getElementsToSave() {
-        return [...document.querySelectorAll('[save]'), ...document.querySelectorAll('[data-save]')].map(this.getElementInfo);
+        return this.getSaveTargets().map(this.getElementInfo);
     }
 
     /**
@@ -524,14 +533,22 @@ class pageMemory {
             const title = document.title;
             const url = window.location.href;
             const dom = document.documentElement.outerHTML;
-            const savedElements = this.getElementsToSave();
+            const saveTargets = this.getSaveTargets();
+            const savedElements = saveTargets.map(this.getElementInfo);
 
 
             // Process Blob URLs and convert to Base64 for persistence
-            for (const elementInfo of savedElements) {
+            for (const [index, elementInfo] of savedElements.entries()) {
+                // A newer save started (the page changed): stop instead of reading images that may be gone
+                if (signal?.aborted) {
+                    throw new DOMException('Save operation aborted', 'AbortError');
+                }
                 if (elementInfo.hasBlobUrl && elementInfo.blobUrl) {
                     try {
-                        const element = elementInfo.identifier ? document.querySelector(elementInfo.identifier) : null;
+                        const element = saveTargets[index];
+                        // The image left the page or changed while this save ran: its Blob URL may already be revoked,
+                        // so it is not fetched (that only logs ERR_FILE_NOT_FOUND). The change schedules a newer save.
+                        const changedMeanwhile = !element.isConnected || element.src !== elementInfo.blobUrl;
 
                         // 1) Try exact blob URL hit
                         const cachedByUrl = this.blobCache.get(elementInfo.blobUrl);
@@ -541,7 +558,7 @@ class pageMemory {
                         } else {
                             // 2) Try to fetch the blob or fall back to drawing from the rendered image
                             // We prioritize this over stored info to ensure we capture changes
-                            const blob = await this.blobUrlToBlob(elementInfo.blobUrl, element);
+                            const blob = changedMeanwhile ? null : await this.blobUrlToBlob(elementInfo.blobUrl, element);
                             
                             if (blob) {
                                 const signature = await this.blobSignature(blob);
@@ -574,6 +591,11 @@ class pageMemory {
                 }
             }
 
+            // Check abort signal before saving (and before this state becomes the "previous" one)
+            if (signal?.aborted) {
+                throw new DOMException('Save operation aborted', 'AbortError');
+            }
+
             this.setPreviousPageInfo(title, url, dom, savedElements);
             
             const data = {
@@ -581,11 +603,6 @@ class pageMemory {
                 dom,
                 savedElements
             };
-
-            // Check abort signal before saving
-            if (signal?.aborted) {
-                throw new DOMException('Save operation aborted', 'AbortError');
-            }
 
             await this.db.save(url, data);
             
