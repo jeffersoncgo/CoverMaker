@@ -16,7 +16,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Checks without a browser (tests/unit.test.js); the site is only deployed when they pass
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit tests (syntax, gallery paths, effect registries, fonts, Jellyfin helpers)
+        run: node --test "tests/*.test.js"
+
   deploy:
+    needs: test
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
