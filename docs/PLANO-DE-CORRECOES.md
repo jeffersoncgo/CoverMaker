@@ -117,11 +117,23 @@ Sem mudança visual nos casos que já funcionam.
   O mock passou a validar o token como o Jellyfin (`GET /Users/{id}` → 401 com token inválido; `POST /Sessions/Logout`
   revoga o token).
 
-### Fase 4 — content-recommender e dados do Jellyfin
+### Fase 4 — content-recommender e dados do Jellyfin ✅ (2026-10-23)
 
-- [ ] `CR-01`/`CR-02` — `UserData` atualizado; servidores com Meilisearch.
-- [ ] `CR-05` — fixar versões das dependências remotas (decisão D3).
-- [ ] `CR-06`…`CR-12`, `CM-16` — busca por gosto, scroll infinito, exceções, imagens, cache incremental.
+- [x] `CR-01`/`CR-02` — `UserData` atualizado a cada carga (também com a biblioteca em cache); IDs normalizados para
+      itens vindos do Meilisearch.
+- [x] `CR-05` — dependências copiadas para `content-recommender/js/vendor/` (opção 1 da auditoria, como o CoverMaker
+      já faz com o `cdn`).
+- [x] `CR-08` scroll infinito com trava e lote vazio sem apagar a página; `CR-09` tipos recomendados (filtro na
+      montagem das listas — carregar menos tipos faria os dois apps recarregarem o cache compartilhado um do outro);
+      `CR-10` exceções; `CR-11` tokenizer Unicode (igual para ASCII), Fisher-Yates, `isPlayed`, troca de conta;
+      `CR-12` imagens em retrato 360×540.
+- [x] `CM-16` — itens editados no servidor entram no cache (`MinDateLastSaved`), `UserData` com `Map`,
+      `PlayedPercentage`, filtro do Meilisearch escapado, Fisher-Yates.
+- [ ] `CR-06` — **decisão do usuário**: só entraram as correções sem efeito no resultado. Corrigir os operadores do
+      perfil de gosto (`between` → `..`, `all` → `any`) muda as recomendações; sem um critério de pontuação novo, o
+      filtro ficaria quase sem efeito. Proposta: implementar como opção, com o atual como padrão, e o usuário compara
+      na biblioteca real.
+- `CR-07` (README cita atores/diretores/estúdios que o cálculo não usa) vai com a documentação na Fase 6.
 
 ### Fase 5 — Mudanças visuais (só com aprovação; opção antiga mantida)
 
@@ -149,13 +161,15 @@ Sem mudança visual nos casos que já funcionam.
 | D2 | Versionar os testes em `tests/`? | Não respondida diretamente; adotado o padrão **sim** (é só adição e os testes se perderiam com o contêiner). |
 | D3 | Como publicar? | **Merge na `main` feito por mim**, sem PR. Depois do merge, conferir o deploy do GitHub Pages e os arquivos no ar. |
 | D4 | Senha salva → token? | **Sim.** A senha é a da conta Jellyfin digitada na janela de login; o app a usa uma última vez para obter o token e então a apaga do navegador. |
+| D5 | Perfil de gosto do content-recommender (`CR-06`) | **Pendente.** Hoje só a nota mínima filtra (os filtros de gênero, tag e ano não têm efeito). Recomendação: criar um modo novo como opção, mantendo o atual como padrão, para comparar na biblioteca real. |
 
 ## Checklist "mudei X, mexo em Y"
 
 | Mudei | Também preciso |
 |---|---|
-| `cdn/js/*.js` | Copiar para `CoverMaker/js/vendor/` (mesmo conteúdo) e testar o content-recommender, que carrega o `cdn` do `main` ao vivo |
-| `CoverMaker/js/jellyfin.js` ou `windowsHandle.js` | Testar o content-recommender (carrega esses arquivos do GitHub Pages do CoverMaker) |
+| `cdn/js/*.js` | Copiar para `CoverMaker/js/vendor/` e `content-recommender/js/vendor/` (mesmo conteúdo) e testar os dois apps |
+| `CoverMaker/js/jellyfin.js` ou `windowsHandle.js` | Copiar para `content-recommender/js/vendor/` (mesmo conteúdo) e testar o content-recommender |
+| `cdn/js/*.js` usados pelo content-recommender | Copiar também para `content-recommender/js/vendor/` |
 | Parâmetros em `compositeRegistry.js`, `effectsRegistry.js` ou `textEffects.js` | Regenerar `docs/REFERENCIA-EFEITOS.md` e abrir os projetos da galeria |
 | Formato de `projectConfig` ou do ZIP | Manter leitura do formato antigo; atualizar `docs/ARQUITETURA.md` §7 |
 | Chaves de `localStorage`/IndexedDB | Lembrar que os três apps compartilham a origem `jeffersoncgo.github.io` |
@@ -180,6 +194,15 @@ Sem mudança visual nos casos que já funcionam.
   partir da segunda visita. Ver `CM-31`.
 - Inventário: 0 remoções, 18 adições.
 
+### Depois da Fase 4 (2026-10-23)
+
+- Verificações da fase: **8/8** — item editado no servidor aparece com a biblioteca vinda do cache (na recarga só 4
+  pedidos de itens: 2 contagens + 2 consultas de editados, em vez de baixar tudo) e fica no cache; item assistido
+  depois da primeira visita passa a contar como assistido (19 → 20); 10 eventos de scroll seguidos carregam 1 lote
+  (3 grupos); tokenizer igual ao antigo para títulos ASCII; coleções/playlists fora das recomendações; Fisher-Yates
+  uniforme (20 000 sorteios, desvio < 7,5 %).
+- content-recommender: mesmas recomendações da Fase 3 (lista e notas idênticas). Login 6/6; CoverMaker login 10/10.
+
 ### Depois da Fase 3 (2026-10-23)
 
 - Login (CoverMaker, 10 cenários): migração a partir do app antigo **na mesma origem** (o antigo grava a senha no
@@ -201,3 +224,4 @@ Sem mudança visual nos casos que já funcionam.
 | 2026-10-23 | 1b | Concluída: TableSorter, popup/treelist, themeControl verificados no Chromium. |
 | 2026-10-23 | 2 | Concluída. CM-09 antecipado; achado e corrigido o conflito de assinatura de imagens no `pageMemory`. Medições acima. Observação: a porta do proxy do contêiner mudou no meio da rodada (imagens externas falhavam); os testes passaram a ler `HTTPS_PROXY`. |
 | 2026-10-23 | 3 | Concluída. Achados extras no `pageMemory` (trava `canSave`, gravação superada). Teste e2e: aviso da galeria acompanhado durante a espera e "Failed to fetch" (sem Jellyfin em `localhost:8096`) tratado como erro conhecido, como já era "Fetch error: undefined". |
+| 2026-10-23 | 4 | Concluída, exceto `CR-06` (decisão do usuário). Observação: um mock caiu no meio dos testes por um `cd` que valia só para o primeiro comando; o cenário foi refeito com o mock no ar. |

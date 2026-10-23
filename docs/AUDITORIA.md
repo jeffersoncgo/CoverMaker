@@ -33,7 +33,7 @@
 | CM-13 ✅ | Média | vários | Exceções não tratadas e IDs/elementos errados (lista) 🧪/🔎 |
 | CM-14 ✅ | Média | `drawing.js:65,322,488,569` | Cache de etapas só funciona por acidente; clones de canvas a cada redesenho 🧪 |
 | CM-15 ✅ | **Alta** | `jellyfin.js:171-208,317-334` | IndexedDB do Jellyfin: conexões nunca fechadas **travam o primeiro carregamento das bibliotecas** (40 s+ medidos); timeout inexistente 🧪 |
-| CM-16 | Média | `jellyfin.js:476-504,1039-1099` | Cache de bibliotecas só invalida por contagem; `UserData` nunca atualiza por padrão 🔎 |
+| CM-16 ◐ | Média | `jellyfin.js:476-504,1039-1099` | Cache de bibliotecas só invalida por contagem; `UserData` nunca atualiza por padrão 🔎 |
 | CM-17 ✅ | Média | `app.js:2021`, `vendor/controller.js` | Corrida em `updateTextSettings` pode duplicar camadas (potencial) 🔎 |
 | CM-18 | Média | `index.html`, `vendor/pagememory.js` | `pageMemory` pesado: ~340 KB de `outerHTML` por gravação, varre o painel inteiro a cada clique 🧪 |
 | CM-19 ✅ | Baixa | `app.js:1851-1897`, `gallery.js:164-220` | Importar ZIP descarta slots vazios do fim; fluxo "Use Json" inconsistente 🔎 |
@@ -341,7 +341,13 @@ conexões esquecidas) destravou um passo. Em navegadores reais a coleta acontece
 - `signal.timeout = 5000` (`:320`) não cria timeout. Use `AbortSignal.timeout(5000)`
   (ou `AbortSignal.any([controller.signal, AbortSignal.timeout(5000)])`).
 
-### CM-16 — Cache de bibliotecas 🔎
+### CM-16 — Cache de bibliotecas 🔎 — ◐ (2026-10-23)
+
+Feito: itens editados no servidor entram no cache (`refreshChangedItems`: `LastSync` + `MinDateLastSaved`; a contagem
+continua decidindo a recarga completa); `UserData` com `Map` e IDs normalizados (também para itens do Meilisearch) e com
+`PlayedPercentage` (a regra "≥ 70 %" passa a valer); filtro do Meilisearch escapa `\` e `"`; "Random" usa Fisher-Yates.
+**Mantido de propósito:** a busca em todos os campos (é como se busca por gênero/tag/estúdio na lista do campo de
+busca); o redesenho do painel de progresso por quadro; `isLibrarySizeChanged` (código morto, listado no `CM-25`).
 
 - O cache só é invalidado se a **quantidade** de itens mudar (`jellyfin.js:485`): troca de capas, títulos, gêneros ou
   itens substituídos não são percebidos. Para sincronização incremental, guarde a data da última carga e peça só o que

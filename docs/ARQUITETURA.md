@@ -299,9 +299,15 @@ Fluxo de `new Jellyfin(host, usuário, senha, eventos, needsUserData = false, { 
    desligado e as bibliotecas carregam pelo Jellyfin; se uma busca no Meilisearch falhar depois, a biblioteca é
    recarregada pelo Jellyfin (`loadLibraryItems`).
 5. `getLibraries()` (1 s depois) → `GET /UserViews`, `GET /Library/VirtualFolders`; para cada biblioteca de tipo suportado:
-   - se o cache IndexedDB tiver o mesmo número de itens, usa o cache;
+   - se o cache IndexedDB tiver o mesmo número de itens, usa o cache e pede ao servidor só os itens **editados**
+     desde a última sincronização (`LastSync` gravado na biblioteca + `MinDateLastSaved`), que substituem a cópia
+     guardada (`refreshChangedItems`). Caches de versões antigas, sem `LastSync`, passam a ser acompanhados a partir
+     da primeira visita;
    - senão baixa todos os itens (Meilisearch ou `GET /Users/{id}/Items` paginado em blocos de `loadLimit` via `FetchQueue`).
-   - agrega Tags/Genres/Studios (para o `<datalist>` da busca).
+   - agrega Tags/Genres/Studios (para o `<datalist>` da busca);
+   - com `needsUserData = true` (content-recommender), atualiza o `UserData` de todos os itens a cada carga
+     (`updateLibraryUserData`: `IsFavorite`, `Played`, `PlayCount`, `LastPlayedDate`, `PlayedPercentage`).
+     `isPlayed(item)` = `Played`, `PlayCount > 0` ou `PlayedPercentage ≥ 70`, e nunca para coleções (`Type: BoxSet`).
 6. `onLibraryLoad` → a UI lista as bibliotecas; clique abre a biblioteca; a caixa de busca filtra (`searchInArray`
    sobre todos os campos do item) com paginação (10/20/50/100/personalizado).
 
