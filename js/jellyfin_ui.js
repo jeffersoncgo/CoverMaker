@@ -26,7 +26,7 @@ function CreateJellyfin() {
       document.getElementById("loginBtn").setAttribute('logged-in', 'true')      
       document.querySelector("#rightSide").style.display = "block";
       document.querySelector("#jellyfinContent").style.display = "block";
-      setTimeout(() => Setup.loadingType = window.jellyfin.Server.Speed.time > 100 ? 'lazy' : 'eager', 200);
+      setTimeout(() => Setup.loadingType = (window.jellyfin.Server.Speed?.time ?? 0) > 100 ? 'lazy' : 'eager', 200);
     },
     onLibraryLoad: () => {
       makeDetailList(jellyfinsearchInput, jellyfin.searchParams.Genres, true);
@@ -298,7 +298,7 @@ async function returnToSearch() {
   jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[1]
   Setup.Library.loadedLibrary = jellyfin.searchParams.Library;
   clearJellyfinWindow();
-  jellyfinContainer.value = jellyfin.searchParams.Name;
+  jellyfinsearchInput.value = jellyfin.searchParams.Name ?? '';
   searchOnLibrary(null, null);
 }
 

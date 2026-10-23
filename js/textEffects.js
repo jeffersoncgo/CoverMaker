@@ -735,7 +735,8 @@ const TEXT_EFFECTS = {
       const axis = params.axis ?? 'y';
 
       // Use seed to shift the phase globally, rather than calculating random per pixel (which is slow and noisy)
-      const seeded = typeof createSeededRandom === 'function' ? createSeededRandom(params.seed) : Math.random;
+      // Seed 0 means "random" (createSeededRandom returns null)
+      const seeded = (typeof createSeededRandom === 'function' ? createSeededRandom(params.seed) : null) ?? Math.random;
       const phaseShift = (seeded() * 2 * Math.PI);
 
       // 3. Pre-calculate the Wave Offsets (Lookup Table)
@@ -1202,7 +1203,8 @@ const TEXT_EFFECTS = {
       const seedVal = params.seed ?? 123;
 
       // Initialize the deterministic random function
-      const rnd = createSeededRandom(seedVal);
+      // Seed 0 means "random" (createSeededRandom returns null)
+      const rnd = createSeededRandom(seedVal) ?? Math.random;
 
       const w = canvas.width;
       const h = canvas.height;
