@@ -167,6 +167,19 @@ Sem mudança visual nos casos que já funcionam.
       no CI — no cdn e no CoverMaker o deploy só roda se passarem; `CoverMaker/tests/browser/` com a suíte do
       Playwright e o Jellyfin simulado.
 
+### Publicação ✅ (2026-10-23)
+
+- Merge na `main` (commit de merge próprio, para poder reverter tudo de uma vez se preciso), na ordem
+  content-recommender → CoverMaker → cdn: o content-recommender passou primeiro a usar as próprias cópias, então não
+  ficou nenhum intervalo carregando bibliotecas novas com código velho.
+- Deploys conferidos: os 5 jobs (`static.yml` do CoverMaker e do cdn, "pages build and deployment" dos três) com
+  sucesso; testes do CI verdes nos três; arquivos novos servidos ~40 s depois do push; teste rápido nos sites publicados
+  sem erros (só a conexão recusada ao Jellyfin padrão `localhost:8096`, esperada).
+- **Atenção:** no CoverMaker e no cdn cada push dispara **dois** deploys — o `static.yml` e o automático
+  "pages build and deployment" do GitHub Pages (já era assim antes). O job de teste só segura o primeiro. Para os testes
+  realmente bloquearem a publicação, em *Settings → Pages → Build and deployment → Source* deixe só **GitHub Actions**
+  (decisão D8).
+
 ## Decisões (respondidas em 2026-10-23)
 
 | ID | Pergunta | Decisão |
@@ -175,6 +188,7 @@ Sem mudança visual nos casos que já funcionam.
 | D2 | Versionar os testes em `tests/`? | Não respondida diretamente; adotado o padrão **sim** (é só adição e os testes se perderiam com o contêiner). |
 | D3 | Como publicar? | **Merge na `main` feito por mim**, sem PR. Depois do merge, conferir o deploy do GitHub Pages e os arquivos no ar. |
 | D4 | Senha salva → token? | **Sim.** A senha é a da conta Jellyfin digitada na janela de login; o app a usa uma última vez para obter o token e então a apaga do navegador. |
+| D8 | Deploy duplo no CoverMaker e no cdn | **Pendente (configuração do GitHub, só o usuário pode mudar).** Recomendação: Pages com fonte "GitHub Actions", para o teste bloquear publicações com erro. |
 | D7 | Código morto (`CM-25`) | **Pendente.** Lista conferida na auditoria (`factory.js`, `vendor/search.js` no CoverMaker, `pipelineManager`, `libraryImagetoCanvas`, ajudantes de depuração, `isLibrarySizeChanged`, bloco morto no content-recommender, variáveis não usadas). Recomendação: remover `factory.js`, `pipelineManager`/`PipelineStep` e `libraryImagetoCanvas`; manter os ajudantes de depuração. |
 | D6 | Projeto "Batman" da galeria (`CM-07`) | **Pendente.** Usar o efeito restaurado "Inner Shadow (Offset)" com os valores originais do arquivo (`offsetX 9`, `offsetY -1`)? Medição inconclusiva (~1 %). Recomendação: manter como está; o efeito antigo fica disponível para quem quiser. |
 | D5 | Perfil de gosto do content-recommender (`CR-06`) | **Pendente.** Hoje só a nota mínima filtra (os filtros de gênero, tag e ano não têm efeito). Recomendação: criar um modo novo como opção, mantendo o atual como padrão, para comparar na biblioteca real. |
@@ -262,3 +276,4 @@ Sem mudança visual nos casos que já funcionam.
 | 2026-10-23 | 4 | Concluída, exceto `CR-06` (decisão do usuário). Observação: um mock caiu no meio dos testes por um `cd` que valia só para o primeiro comando; o cenário foi refeito com o mock no ar. |
 | 2026-10-23 | 5 | Concluída. Pendentes de decisão: D6 (Batman). O processo de trabalho foi reiniciado no meio da fase (servidores de teste caíram e foram reabertos). Um e2e deu 41/42 (export na abertura) enquanto o lint rodava em paralelo: as duas versões estabilizam o canvas antes dos 9 s do teste; o mapa de variações de fonte passou a ser baixado em paralelo no carregamento e o e2e, rodado sozinho, deu 42/42. |
 | 2026-10-23 | 6 | Concluída. Pendentes de decisão: D5 (perfil de gosto), D6 (Batman), D7 (código morto). |
+| 2026-10-23 | Merge | Três repositórios na `main`, deploys conferidos (ver "Publicação"). |
