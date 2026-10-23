@@ -47,7 +47,7 @@ class SearchEngine {
     const cacheKey = JSON.stringify({ queryOrQueries, sort, isLaxQuery });
 
     if (cache.results.has(cacheKey)) {
-      return cache.results.get(cacheKey);
+      return cache.results.get(cacheKey).slice(); // a copy, so callers cannot change the cached list
     }
 
     let results = isComplex
@@ -70,7 +70,13 @@ class SearchEngine {
     }
 
     cache.results.set(cacheKey, results);
-    return results;
+    return results.slice();
+  }
+
+  // The cache is keyed by array identity; call this after changing an array in place (push, splice, …)
+  clearCache(dataArray) {
+    if (dataArray) this._searchCache.delete(dataArray);
+    else this._searchCache = new WeakMap();
   }
 
   sort(results, sort) {
@@ -177,9 +183,10 @@ class SearchEngine {
             )
           );
         case '!=': {
+          // Matches when none of the selected fields equals any of the given values
           const queryValues = new Set(queries.map(lower));
-          return flatItem.some(({ path, value }) =>
-            (!fields.length || fields.some(f => path.startsWith(f))) && !queryValues.has(lower(value))
+          return !flatItem.some(({ path, value }) =>
+            (!fields.length || fields.some(f => path.startsWith(f))) && queryValues.has(lower(value))
           );
         }
         case '=':
@@ -232,12 +239,10 @@ class SearchEngine {
         }
         case '!=': {
           const queryValues = new Set(queries.map(lower));
-          flatItem.forEach(({ path, value }) => {
-            if ((!fields.length || fields.some(f => path.startsWith(f))) && !queryValues.has(lower(value))) {
-              score++;
-            }
-          });
-          return score;
+          const hasExcluded = flatItem.some(({ path, value }) =>
+            (!fields.length || fields.some(f => path.startsWith(f))) && queryValues.has(lower(value))
+          );
+          return hasExcluded ? 0 : 1;
         }
         case '=':
         case '>':

@@ -125,14 +125,14 @@ Sem mudança visual nos casos que já funcionam.
 - [ ] `CM-26`, `CDN-18` — README atualizados.
 - [ ] `CM-25` — lista de código morto para decisão do usuário (nada é removido sem ok).
 
-## Decisões pendentes
+## Decisões (respondidas em 2026-10-23)
 
-| ID | Pergunta | Recomendação |
+| ID | Pergunta | Decisão |
 |---|---|---|
-| D1 | Seguir sem pausas nas Fases 1–4 e parar só antes da Fase 5 (mudanças visuais)? | Sim |
-| D2 | Versionar os testes em `tests/` de cada repositório e rodá-los no workflow antes do deploy? | Sim (é só adição) |
-| D3 | Como publicar: um PR por repositório a partir de `claude/beautiful-davinci-nd8o1m`, com merge feito por você? | Sim. O merge no `cdn` vai ao ar na hora para o content-recommender. |
-| D4 | Senha salva: usar uma última vez para obter o token e então apagar `localStorage.password` e o campo salvo pelo `pageMemory`? | Sim (apagar dado salvo exige seu ok) |
+| D1 | Seguir sem pausas? | **Sim, todas as fases** ("pode corrigir tudo que precisar, alterar o que for preciso"). Mudanças visuais mantêm a opção antiga disponível, conforme o protocolo. |
+| D2 | Versionar os testes em `tests/`? | Não respondida diretamente; adotado o padrão **sim** (é só adição e os testes se perderiam com o contêiner). |
+| D3 | Como publicar? | **Merge na `main` feito por mim**, sem PR. Depois do merge, conferir o deploy do GitHub Pages e os arquivos no ar. |
+| D4 | Senha salva → token? | **Sim.** A senha é a da conta Jellyfin digitada na janela de login; o app a usa uma última vez para obter o token e então a apaga do navegador. |
 
 ## Checklist "mudei X, mexo em Y"
 
