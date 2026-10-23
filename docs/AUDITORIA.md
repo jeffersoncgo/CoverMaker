@@ -1,6 +1,7 @@
 # CoverMaker — Auditoria: erros, correções sugeridas e melhorias
 
 > Plano de correções em andamento: [`PLANO-DE-CORRECOES.md`](PLANO-DE-CORRECOES.md).
+> Status: ✅ corrigido · ◐ corrigido em parte (o que falta está indicado no item).
 
 > Revisão do código em `9928358`. Cada item indica **como foi verificado**:
 > 🧪 reproduzido no Chromium (Playwright) com o app servido localmente · 🔎 leitura de código.
@@ -17,25 +18,25 @@
 
 | ID | Sev. | Onde | Problema |
 |---|---|---|---|
-| CM-01 | Alta | `app.js:107` | Mexer nos parâmetros de um **efeito de imagem** não altera nada 🧪 |
-| CM-02 | Alta | `app.js:2213`, `:1066` | Primeira visita: camada de texto padrão não é criada e **nada é salvo** — tudo se perde ao recarregar 🧪 |
-| CM-03 | Alta | `compositeRegistry.js`, `effectsRegistry.js:320,446` | Com 0 ou 1 slot (ou Scanlines com opacidade 0) o canvas **congela** 🧪 |
-| CM-04 | Alta | `app.js:1641`, `:1936` | "Download" falha quando não há camada de texto (e pode exportar imagem antiga) 🧪 |
+| CM-01 ✅ | Alta | `app.js:107` | Mexer nos parâmetros de um **efeito de imagem** não altera nada 🧪 |
+| CM-02 ✅ | Alta | `app.js:2213`, `:1066` | Primeira visita: camada de texto padrão não é criada e **nada é salvo** — tudo se perde ao recarregar 🧪 |
+| CM-03 ✅ | Alta | `compositeRegistry.js`, `effectsRegistry.js:320,446` | Com 0 ou 1 slot (ou Scanlines com opacidade 0) o canvas **congela** 🧪 |
+| CM-04 ✅ | Alta | `app.js:1641`, `:1936` | "Download" falha quando não há camada de texto (e pode exportar imagem antiga) 🧪 |
 | CM-05 | Alta | `app.js:708`, `index.html:39-43` | Senha do Jellyfin gravada em texto puro (localStorage **e** IndexedDB) 🧪 |
 | CM-06 | Alta | `jellyfin_ui.js:324,338`, `jellyfin.js:1151`, `toast.js:51` | XSS: nomes vindos do Jellyfin inseridos com `innerHTML` 🔎 |
 | CM-07 | Alta | `textEffects.js:1938,2140,5833,5945` | `innerShadow` e `extrude` declarados duas vezes; o projeto da galeria "Batman" perde parâmetros 🔎 |
 | CM-08 | Alta | `jellyfin.js:124-143,372-410,1188-1221` | Login falho tratado como sucesso; com o plugin Meilisearch, usuário não-admin nunca carrega bibliotecas 🔎 |
-| CM-09 | Alta | `gallery/gallery.json:122` | "Series — Rough → Use Full Project" aponta para um ZIP que não existe 🧪 |
-| CM-10 | Média | `app.js:1440,1479,1489,941` | Export/Import Config incompatíveis; importação é sobrescrita pelo que estava salvo 🧪 |
-| CM-11 | Média | `slots.js:178` | IDs de slot duplicados após remover + adicionar (restauração troca imagens) 🧪 |
-| CM-12 | Média | `app.js:1185-1195` | `updateImageSettings` muta `Setup.Sizes`: miniaturas do Jellyfin passam a ser pedidas em 1920 px 🧪 |
-| CM-13 | Média | vários | Exceções não tratadas e IDs/elementos errados (lista) 🧪/🔎 |
-| CM-14 | Média | `drawing.js:65,322,488,569` | Cache de etapas só funciona por acidente; clones de canvas a cada redesenho 🧪 |
-| CM-15 | **Alta** | `jellyfin.js:171-208,317-334` | IndexedDB do Jellyfin: conexões nunca fechadas **travam o primeiro carregamento das bibliotecas** (40 s+ medidos); timeout inexistente 🧪 |
+| CM-09 ✅ | Alta | `gallery/gallery.json:122` | "Series — Rough → Use Full Project" aponta para um ZIP que não existe 🧪 |
+| CM-10 ✅ | Média | `app.js:1440,1479,1489,941` | Export/Import Config incompatíveis; importação é sobrescrita pelo que estava salvo 🧪 |
+| CM-11 ✅ | Média | `slots.js:178` | IDs de slot duplicados após remover + adicionar (restauração troca imagens) 🧪 |
+| CM-12 ✅ | Média | `app.js:1185-1195` | `updateImageSettings` muta `Setup.Sizes`: miniaturas do Jellyfin passam a ser pedidas em 1920 px 🧪 |
+| CM-13 ◐ | Média | vários | Exceções não tratadas e IDs/elementos errados (lista) 🧪/🔎 |
+| CM-14 ✅ | Média | `drawing.js:65,322,488,569` | Cache de etapas só funciona por acidente; clones de canvas a cada redesenho 🧪 |
+| CM-15 ✅ | **Alta** | `jellyfin.js:171-208,317-334` | IndexedDB do Jellyfin: conexões nunca fechadas **travam o primeiro carregamento das bibliotecas** (40 s+ medidos); timeout inexistente 🧪 |
 | CM-16 | Média | `jellyfin.js:476-504,1039-1099` | Cache de bibliotecas só invalida por contagem; `UserData` nunca atualiza por padrão 🔎 |
-| CM-17 | Média | `app.js:2021`, `vendor/controller.js` | Corrida em `updateTextSettings` pode duplicar camadas (potencial) 🔎 |
+| CM-17 ✅ | Média | `app.js:2021`, `vendor/controller.js` | Corrida em `updateTextSettings` pode duplicar camadas (potencial) 🔎 |
 | CM-18 | Média | `index.html`, `vendor/pagememory.js` | `pageMemory` pesado: ~340 KB de `outerHTML` por gravação, varre o painel inteiro a cada clique 🧪 |
-| CM-19 | Baixa | `app.js:1851-1897`, `gallery.js:164-220` | Importar ZIP descarta slots vazios do fim; fluxo "Use Json" inconsistente 🔎 |
+| CM-19 ✅ | Baixa | `app.js:1851-1897`, `gallery.js:164-220` | Importar ZIP descarta slots vazios do fim; fluxo "Use Json" inconsistente 🔎 |
 | CM-20 | Baixa | `index.html` | HTML inválido (`#app` sem fechamento, `div` faltando no template, `src` duplicado) 🧪 |
 | CM-21 | Baixa | `effectsRegistry.js`, `drawing.js:224` | Filtros redesenhados sobre o próprio canvas (bordas do blur); `ctx.filter` em Safari 🔎 |
 | CM-22 | Baixa | `compositeRegistry.js`, `textEffects.js` | Aleatoriedade sem semente: o mesmo projeto renderiza diferente após recarregar 🔎 |
@@ -45,8 +46,8 @@
 | CM-26 | Baixa | `README.md`, `CONTRIBUTING.md` | Documentação desatualizada ou incorreta 🔎 |
 | CM-27 | Baixa | `index.html`, `paramsRenderer.js:213` | Acessibilidade e consistência de idioma 🔎 |
 | CM-28 | Média | `textEffects.js` (`actionSpeedlines`) | "Anime Speedlines" apaga o texto com os valores padrão 🧪 |
-| CM-29 | Média | `textEffects.js:1205` (`lightning`) | "Lightning" com Seed = 0 (mínimo do slider) lança `rnd is not a function` 🧪 |
-| CM-30 | Média | `textEffects.js` | Controles que não fazem nada e parâmetro `"undefined"` salvo nos projetos 🧪 |
+| CM-29 ✅ | Média | `textEffects.js:1205` (`lightning`) | "Lightning" com Seed = 0 (mínimo do slider) lança `rnd is not a function` 🧪 |
+| CM-30 ◐ | Média | `textEffects.js` | Controles que não fazem nada e parâmetro `"undefined"` salvo nos projetos 🧪 |
 | CM-31 | Média | `textEffects.js` | Efeitos de texto travam a página por segundos (Stained Glass: 46 s no mínimo) 🧪 |
 | CM-32 | Baixa | vários | Achados de lint e casos-limite de parâmetros 🧪 |
 | CM-33 ✅ | Média | `app.js:2013` + `vendor/controller.js` | Busca do Jellyfin ignorava as últimas teclas digitadas (corrigido via `CDN-02`) 🧪 |
@@ -56,7 +57,7 @@
 
 ## Alta
 
-### CM-01 — Parâmetros de efeitos de imagem não têm efeito 🧪
+### CM-01 — Parâmetros de efeitos de imagem não têm efeito 🧪 — ✅ corrigido (2026-10-23)
 
 `onEffectParamChange` (`app.js:107`) escreve em `Setup.Settings.canvas.effects`, mas o pipeline lê
 `projectConfig.canvas.effects`. `Setup.Settings` só é o mesmo objeto que `projectConfig` logo após importar um projeto
@@ -81,7 +82,7 @@ const effects = projectConfig?.textLayers?.[layerIndex]?.effects;
 E eliminar o alias: remover `Setup.Settings` de `ensureCompositeDefaults` (852), `addtypeSelectOptions` (2313) e
 `drawing.js:575`, e não gravar `Settings` dentro de `localStorage.setup` (hoje o projeto inteiro é duplicado ali).
 
-### CM-02 — Primeira visita não persiste nada 🧪
+### CM-02 — Primeira visita não persiste nada 🧪 — ✅ corrigido (2026-10-23)
 
 - `dummyStart()` chama `loadTextLayers(Setup.defaults.textLayers)` (`app.js:2213`), mas `Setup.defaults.textLayers`
   é **um objeto**, não um array → o `for` não roda e nenhuma camada é criada.
@@ -106,7 +107,7 @@ if (layersData && !Array.isArray(layersData)) layersData = [layersData];
 window.memoryLoaded = true;
 ```
 
-### CM-03 — Canvas congela com 0/1 imagem ou em efeitos com retorno vazio 🧪
+### CM-03 — Canvas congela com 0/1 imagem ou em efeitos com retorno vazio 🧪 — ✅ corrigido (2026-10-23)
 
 O pipeline (`drawing.js:65`) guarda `{hash, ...resultado}`; quando um `apply` faz `return;`, o resultado fica sem
 `canvas`, `applyImageEffects`/`drawComposite` encerram e **o canvas visível para de atualizar** — inclusive o texto.
@@ -137,7 +138,7 @@ normalizeApplyResults(EFFECTS_REGISTRY);
 
 E, nos layouts, trocar `return;` por `return { canvas, ctx };` (com 1 imagem, desenhar ao menos o fundo/a imagem).
 
-### CM-04 — Exportação depende de existir texto 🧪
+### CM-04 — Exportação depende de existir texto 🧪 — ✅ corrigido (2026-10-23)
 
 `exportAsPNG` usa `Composites.Merged.toDataURL` (`app.js:1641`), mas `Merged` só é criado quando há canvas de texto
 (`drawing.js:277-279`). Na primeira visita (sem camadas, ver CM-02) o botão **Download** lança
@@ -227,7 +228,7 @@ async init() {
 Em `loadLibraryItems`, cair para `loadLibraryItemsVanilla` se a chamada ao Meilisearch falhar; pedir confirmação
 antes de alterar o índice.
 
-### CM-09 — Link quebrado na galeria 🧪
+### CM-09 — Link quebrado na galeria 🧪 — ✅ corrigido (2026-10-23)
 
 `gallery.json:122` aponta para `series.rough.project.zip`; o arquivo é `series-rough.project.zip`.
 Correção: `"project": "gallery/projects/series-rough/series-rough.project.zip"`. Um passo no workflow que valide
@@ -241,7 +242,7 @@ python3 -c "import json,os,sys;b=[(i['id'],k,i[k]) for i in json.load(open('gall
 
 ## Média
 
-### CM-10 — Export/Import Config 🧪
+### CM-10 — Export/Import Config 🧪 — ✅ corrigido (2026-10-23)
 
 - **Export Config** grava `JSON.stringify(Setup)` (chaves `Sizes, Library, Images, …`; `app.js:1440`).
 - **Import Config** exige `jsonData.Setup` (`app.js:1479`) → o arquivo exportado pelo próprio app é recusado
@@ -254,14 +255,14 @@ python3 -c "import json,os,sys;b=[(i['id'],k,i[k]) for i in json.load(open('gall
 Correção: exportar `{ Setup }` (ou aceitar os dois formatos na importação), aplicar o importado diretamente
 (`Setup = deepMerge(importado, window.defaultSetup)`), atualizar a UI a partir de `Setup` e só então `saveSetup()`.
 
-### CM-11 — IDs duplicados nos slots 🧪
+### CM-11 — IDs duplicados nos slots 🧪 — ✅ corrigido (2026-10-23)
 
 `addImageSlot` usa `slot-${slotsImages.length - 1}` (`slots.js:178`). Após remover o slot 1 de 4 e adicionar outro, os IDs
 ficam `slot-0, slot-2, slot-3, slot-3` (verificado). O `pageMemory` localiza `img-slot-3` por `#id` → duas prévias
 apontam para o mesmo registro e uma imagem é restaurada no slot errado ou perdida.
 Correção: contador monotônico (`let nextSlotId = 0; … slot-${nextSlotId++}`) ou o `ensureUniqueId` já existente em `app.js`.
 
-### CM-12 — `Setup.Sizes` mutado 🧪
+### CM-12 — `Setup.Sizes` mutado 🧪 — ✅ corrigido (2026-10-23)
 
 `updateImageSettings` faz `const _format = Setup.Sizes[format]` e altera `_format.width/height` (`app.js:1185-1195`).
 `Setup.Sizes.cover/poster` também definem o tamanho das **miniaturas** do painel do Jellyfin (480×270 / 270×480):
@@ -277,7 +278,7 @@ const size = ratio > 1 ? { width: 1920, height: Math.round(1920 / ratio) } : { w
 setCanvasSize(size.width, size.height);
 ```
 
-### CM-13 — Exceções e referências erradas
+### CM-13 — Exceções e referências erradas — ◐ (2026-10-23: tudo, exceto `jellyfin.js:127`, que vai com o CM-08 na Fase 3)
 
 | Local | Problema | Correção |
 |---|---|---|
@@ -293,7 +294,7 @@ setCanvasSize(size.width, size.height);
 | `app.js:1959` | `cropCanvas` devolve `null` para canvas vazio → `null.toBlob` | checar antes |
 | `slots.js:474-483` | `getIndexFromButtonClick` retorna `undefined` e `clearImageSlot(undefined)` cria `slotsImages.undefined` | validar índice |
 
-### CM-14 — Cache de etapas frágil e trabalho repetido 🧪
+### CM-14 — Cache de etapas frágil e trabalho repetido 🧪 — ✅ corrigido (2026-10-23)
 
 Instrumentando `runStep` no navegador:
 
@@ -310,7 +311,7 @@ Instrumentando `runStep` no navegador:
 - `stepsCache` mantém todos os canvases intermediários (dezenas de MB com várias camadas/efeitos) e nunca é aparado
   quando o número de etapas diminui: `stepsCache.length = lastStepIndex` ao final de `drawComposite`.
 
-### CM-15 — IndexedDB do cliente Jellyfin 🧪
+### CM-15 — IndexedDB do cliente Jellyfin 🧪 — ✅ corrigido (2026-10-23)
 
 **Confirmado em 2026-10-23** com um servidor Jellyfin simulado e perfil de navegador limpo: o carregamento das
 bibliotecas ficou parado por mais de 40 s logo após `getLibrarySize`; cada coleta de lixo forçada (`gc()`, que fecha as
@@ -344,7 +345,7 @@ conexões esquecidas) destravou um passo. Em navegadores reais a coleta acontece
   `searchInArray` nunca é aproveitado. Buscar em `Name`/`OriginalTitle` (opção "buscar em tudo" separada).
 - `sort(() => 0.5 - Math.random())` não embaralha uniformemente; use Fisher-Yates.
 
-### CM-17 — Corrida em `updateTextSettings` (potencial) 🔎
+### CM-17 — Corrida em `updateTextSettings` (potencial) 🔎 — ✅ corrigido (2026-10-23)
 
 `updateTextSettings` zera `projectConfig.textLayers` e depois faz `await loadFont(...)` por camada. Envolta por
 `Controller.wrap(..., true)` (`app.js:2021`), uma nova chamada "aborta" a anterior, mas a anterior continua rodando
@@ -374,7 +375,7 @@ IndexedDB, sem base64).
 
 ## Baixa
 
-### CM-19 — Importação 🔎
+### CM-19 — Importação 🔎 — ✅ corrigido (2026-10-23)
 
 - `importImagesFromZip` faz `setSlots(0)` e depois `setSlots(maiorÍndice + 1)`; como a importação de ZIP chama
   `loadFullProjectFromJson(…, true)` (ignora `imageSlots`), slots vazios no fim do projeto somem.
@@ -471,13 +472,13 @@ ctx.clearRect(0, 0, w, h);
 // … usar `src` no lugar de `canvas` em lCtx.drawImage(…) e ctx.drawImage(…)
 ```
 
-### CM-29 — "Lightning" com Seed 0 🧪
+### CM-29 — "Lightning" com Seed 0 🧪 — ✅ corrigido (2026-10-23)
 
 `createSeededRandom(0)` retorna `null` (semente 0 significa "aleatório"), e `lightning` (`textEffects.js:1205`) chama
 `rnd()` sem *fallback* → `TypeError: rnd is not a function` ao arrastar o Seed até 0. Correção:
 `const rnd = createSeededRandom(seedVal) ?? Math.random;` (como já fazem `channelTear` e `nordicRuneforge`).
 
-### CM-30 — Controles sem efeito e parâmetro `"undefined"` 🧪
+### CM-30 — Controles sem efeito e parâmetro `"undefined"` 🧪 — ◐ (2026-10-23: títulos e chave `"undefined"` corrigidos; `grout`/`bgColor` mudam a imagem e vão para a Fase 5)
 
 - `stainedGlass`: o slider **Grout Width** (`grout`) é lido e nunca usado (`textEffects.js:4829`).
 - `blueprint`: **Paper Color** (`bgColor`) nunca é lido (o próprio comentário diz que é "só referência").

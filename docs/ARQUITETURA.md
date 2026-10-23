@@ -62,14 +62,14 @@ Todos são scripts clássicos no fim do `<body>` (exceto `meilisearch_index.min.
 | `projectConfig` | `config.js` | O **projeto**: camadas de texto, layout, efeitos (ver §7) — é o que é renderizado |
 | `Setup` | `config.js` | Preferências da aplicação: tamanhos, padrões de camada/efeito, exportação |
 | `window.composite` | `config.js` | `{ size: {width, height}, lastHash }` — tamanho atual do canvas |
-| `window.Composites` | `drawing.js` | Últimos resultados: `.Image` (fundo + efeitos), `.Text` (texto), `.Merged` (final) |
+| `window.Composites` | `drawing.js` | Últimos resultados: `.Image` (fundo + efeitos), `.Text` (texto), `.Merged` (final, também sem texto) |
 | `window.memory` | `app.js` | Instância de `pageMemory` |
 | `window.jellyfin` | `jellyfin_ui.js` | Instância de `Jellyfin` |
 | `window.memoryLoaded` | `app.js` | Libera a gravação em `localStorage` (`saveSetup`/`saveprojectConfig` só gravam se `true`) |
 | `window.projectFileName` | `app.js` | Nome base para exportações, vindo do arquivo importado |
 
-> `Setup.Settings` também aparece no código como alias de `projectConfig`, mas só aponta para o mesmo objeto depois de
-> importar um projeto (ver `CM-01` na auditoria).
+> `Setup.Settings` pode existir em `Setup` (vem de projetos importados e de `localStorage.setup` antigos), mas é só uma
+> cópia: desde 2026-10-23 nenhum código lê ou escreve nele — tudo usa `projectConfig` (`CM-01`).
 
 ## 4. Inicialização (`window.load` em `app.js`)
 
@@ -83,8 +83,9 @@ Todos são scripts clássicos no fim do `<body>` (exceto `meilisearch_index.min.
 8. `await populateFontSelect()` → lista de fontes (locais + Google).
 9. `initTextLayers()` → limpa camadas de texto.
 10. `loadEssentials()` → cria `pageMemory`, registra eventos e chama `memory.init()`:
-    - **sem dados salvos** → `onMemoryIsEmpty` → `dummyStart()` (4 pôsteres de exemplo do IMDb + camada de texto
-      padrão — hoje a camada não é criada, ver `CM-02`);
+    - **sem dados salvos** → `onMemoryIsEmpty` → `dummyStart()` (4 pôsteres de exemplo do IMDb + uma cópia de
+      `Setup.defaults.textLayers` como camada de texto; `loadTextLayers` aceita uma camada ou uma lista e libera
+      `memoryLoaded`, então a primeira sessão já é salva);
     - **com dados salvos** → `onRestoreSucess` → `memoryLoaded = true`, `loadprojectConfig()`, `updateImageSettings()`,
       `renderEffectLayers()`, `searchOnLibrary()`.
     - também chama `addSettingListeners()` (listeners delegados no painel de configurações).
@@ -98,18 +99,20 @@ Todos são scripts clássicos no fim do `<body>` (exceto `meilisearch_index.min.
 drawComposite(signal)
  ├─ step 0  runStep(null, null, composite.size)           → hash base (muda com o tamanho)
  ├─ drawCompositeImage(hash)
- │   ├─ step  createBackgroundCanvas                        → canvas preenchido com backgroundColor (#000)
- │   ├─ step  applyComposite                                → clona e chama COMPOSITE_REGISTRY[type].apply
- │   │    └─ step  apply(ctx, canvas, slotsImages, params, signal, {srcOnly}, eff)
+ │   ├─ step  createBackgroundCanvas(signal, backgroundColor) → canvas preenchido com backgroundColor (#000)
+ │   ├─ applyComposite → step runCompositeStep(type, canvas, slotsImages, params, signal, {srcOnly}, eff)
+ │   │    (clona dentro da etapa e chama COMPOSITE_REGISTRY[type].apply; desligado/inexistente/erro → mantém o fundo)
  │   └─ applyImageEffects: para cada efeito habilitado
- │        └─ clona o canvas → step EFFECTS_REGISTRY[type].apply(ctx, canvas, params, signal, eff)
+ │        └─ step runImageEffectStep(type, canvas, params, signal, eff) → clona e chama EFFECTS_REGISTRY[type].apply
  ├─ drawCompositeText(hash, w, h)
  │   ├─ para cada camada habilitada:
- │   │    ├─ step createBaseTextLayer(w, h, texto, posição, font, fillStyle) → texto puro em canvas transparente
- │   │    └─ para cada efeito de texto: clona → step applyTextEffect(ctx, canvas, texto, x, y, params, signal, eff)
+ │   │    ├─ step createBaseTextLayer(w, h, texto, posição, font, fillStyle, signal, fonteCarregada?)
+ │   │    └─ para cada efeito de texto: step runTextEffectStep(canvas, texto, x, y, params, signal, eff)
  │   └─ step mergeImageLayers(canvases)                      → todas as camadas de texto empilhadas
+ ├─ descarta do cache as etapas além das usadas nesta execução
  ├─ compara hash(imagem, texto) com composite.lastHash → se igual, não redesenha
- └─ mergeCanvases(Image, Text) → Composites.Merged → copia para #myCanvas
+ ├─ se o signal foi abortado (há uma execução mais nova) → não pinta
+ └─ mergeCanvases(Image, Text) (ou só Image) → Composites.Merged → copia para #myCanvas
 ```
 
 ### Cache por etapas (`runStep`)
@@ -119,7 +122,17 @@ drawComposite(signal)
   Canvases, contextos e `Image` serializam como `{}`; por isso `applyComposite` injeta `{ srcOnly: [fnv1a(img.src)…] }`
   para que trocar/reordenar imagens mude o hash.
 - Se `stepsCache[índice].hash` for igual, o resultado guardado (canvas + ctx) é reutilizado e as etapas seguintes,
-  encadeadas pelo hash, também.
+  encadeadas pelo hash, também. O hash da etapa sempre vence um campo `hash` devolvido pela função.
+- As funções de etapa recebem a **chave** do registro (não o objeto de definição) e o canvas da etapa anterior, e
+  clonam dentro da etapa: uma etapa reaproveitada não copia o canvas de novo e nunca altera o resultado guardado de
+  outra etapa.
+- Valores que mudam a imagem sem aparecer nos parâmetros entram como argumento extra só para o hash:
+  `backgroundColor` no fundo e `document.fonts.check(fontStyle)` no texto (redesenha quando uma web font termina de
+  carregar).
+- `runStep` lança `AbortError` se o `signal` já foi abortado, antes de tocar no índice/cache compartilhados;
+  `drawCompositeImage`, `applyComposite`, `applyImageEffects` e `drawCompositeText` repassam o `AbortError` (os
+  outros erros continuam sendo registrados e o pipeline segue). O `Controller` resolve a chamada abortada com
+  `undefined`.
 - `clearStepsCache()` só é chamado ao importar projeto.
 
 ### Contratos das funções `apply`
@@ -131,8 +144,9 @@ drawComposite(signal)
 | `TEXT_EFFECTS[id].apply` | `(ctx, canvas, texto, x, y, params, abortSignal)` | `{ canvas, ctx }` (opcional: `applyTextEffect` usa o canvas recebido se nada vier) |
 
 - `images` pode conter `null` (slot vazio). `canvas` já é um **clone**: pode ser alterado à vontade.
-- Para composições e efeitos de imagem, **retornar `undefined` interrompe o pipeline** (o canvas visível para de atualizar).
-  Hoje vários `apply` fazem `return;` em casos de borda — ver `CM-03`.
+- Composições e efeitos de imagem que retornam `undefined` (vários fazem `return;` com 0 ou 1 imagem) mantêm o que
+  desenharam: `runCompositeStep`/`runImageEffectStep` devolvem o próprio clone. Antes isso congelava o canvas (`CM-03`).
+  Ainda assim, prefira `return { canvas, ctx }`.
 - `applyTextEffect` adiciona a todos os efeitos de texto o parâmetro `globalOpacity` (mistura do resultado com o
   estado anterior) e aceita `params.blendMode`.
 
@@ -176,6 +190,9 @@ O item aparece automaticamente no `<select>` (`getAvailableComposites`, `getAvai
 - Ações: adicionar/remover, mover ↑/↓, arrastar para reordenar, fixar (*pin*), embaralhar, inverter ordem, limpar,
   preencher aleatoriamente a partir do Jellyfin.
 - Blob URLs antigas são revogadas 100 ms depois da troca (`revokeBlobUrl`).
+- IDs: o slot na posição *i* sempre tem `id="slot-i"` e a prévia `id="img-slot-i"` (`renumberSlotIds()` roda ao
+  adicionar, remover, mover e trocar). O `pageMemory` restaura cada prévia pelo `id` em slots recriados nessa ordem,
+  então IDs únicos e posicionais mantêm cada imagem no seu slot depois de recarregar (`CM-11`).
 
 ## 7. Formatos de arquivo
 
@@ -186,8 +203,14 @@ project.json          { "Setup": { "Settings": <projectConfig> }, "imageSlots": 
 images/slot_<N>.<ext> uma imagem por slot preenchido (formato/qualidade de Setup.Export.Project.Images)
 ```
 
-Importação (`importProjectFromZip`): carrega as imagens `images/slot_N.(png|jpg|jpeg|webp|bmp|gif|tiff)` e depois
-aplica o `project.json` (`loadFullProjectFromJson`). Arquivos `.json` soltos são importados sem imagens.
+Importação (`importProjectFromZip`): carrega as imagens `images/slot_N.(png|jpg|jpeg|webp|bmp|gif|tiff)`, aplica o
+`project.json` (`loadFullProjectFromJson`) e completa a quantidade de slots com `imageSlots.length` (slots vazios do fim
+não se perdem). Arquivos `.json` soltos são importados sem imagens.
+
+### Imagem final — botão "Download" / "abrir em nova aba"
+
+Ambos usam o canvas visível (`#myCanvas`), que sempre tem a imagem final, com ou sem camadas de texto. O download usa
+`canvas.toBlob` (sem *data URL* gigante) no formato/qualidade de `Setup.Export.Canvas`.
 
 ### Setup — `<nome>.covermaker.setup.json` (botão "Save Setup (JSON)")
 
@@ -221,11 +244,15 @@ O `projectConfig` puro (sem imagens). Pode ser importado pelo mesmo botão de ab
 
 ### Configuração — `covermaker-config.json` (Options → "Export Config")
 
-O objeto `Setup` (tamanhos, padrões de camada/efeito, formatos de exportação). Ver `CM-10` sobre a importação.
+`{ "Setup": <Setup> }` (tamanhos, padrões de camada/efeito, formatos de exportação). A importação também aceita o
+`Setup` solto, formato gravado antes de 2026-10-23; ela aplica o arquivo direto na UI (`applySetupToUI`) e só então
+grava. A qualidade das imagens do projeto fica em `Setup.Export.Project.Images.quality` (`jpegQuality` só é lido de
+arquivos antigos).
 
 ### Tamanho do canvas
 
-`updateImageSettings()` calcula o tamanho a partir da proporção de `Setup.Sizes[format]`, fixando o **maior lado em 1920 px**:
+`updateImageSettings()` calcula o tamanho a partir da proporção de `Setup.Sizes[format]` **sem alterar** `Setup.Sizes`
+(que também define as miniaturas do Jellyfin, 480×270 / 270×480), fixando o **maior lado em 1920 px**:
 `cover` 1920×1080, `poster` 1080×1920, `square` 1920×1920. Em `custom`, largura/altura funcionam como **proporção**
 (ex.: 3 × 1 → 1920×640), não como pixels.
 

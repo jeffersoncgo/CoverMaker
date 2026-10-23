@@ -67,32 +67,39 @@ Sem mudança visual. Afeta os dois apps (o content-recommender carrega o `cdn` d
   original e com a busca usando o texto completo; content-recommender com as mesmas recomendações (só o desempate de
   itens com a mesma nota passou a seguir a nota da comunidade, como o código pedia).
 
-### Fase 1b — Componentes só usados pela demo do `cdn`
+### Fase 1b — Componentes só usados pela demo do `cdn` ✅ (2026-10-23)
 
-- [ ] `CDN-10` TableSorter, `CDN-13` popup/treelist (texto por padrão, HTML opcional), `CDN-15` themeControl, `CDN-16`.
+- [x] `CDN-10` TableSorter, `CDN-13` popup/treelist (texto por padrão, HTML opcional), `CDN-15` themeControl, `CDN-16`.
 
-### Fase 2 — CoverMaker: bugs funcionais
+### Fase 2 — CoverMaker: bugs funcionais ✅ (2026-10-23)
 
 Sem mudança visual nos casos que já funcionam.
 
-- [ ] `CM-15` (movido da Fase 3 e elevado a Alta) — IndexedDB do Jellyfin: conexão única, `onblocked`/`onversionchange`,
+- [x] `CM-15` (movido da Fase 3 e elevado a Alta) — IndexedDB do Jellyfin: conexão única, `onblocked`/`onversionchange`,
       gravação aguardável, timeout real. Medido: primeiro carregamento parado por 40 s+.
-- [ ] `CM-01` — sliders de efeitos de imagem atualizam o projeto (fim do alias `Setup.Settings`).
-- [ ] `CM-02` — camada de texto padrão criada na primeira visita; primeira sessão é salva.
-- [ ] `CM-03` — retornos vazios não congelam mais o canvas (0/1 imagem, Scanlines 0, Reflection 0).
+- [x] `CM-01` — sliders de efeitos de imagem atualizam o projeto (fim do alias `Setup.Settings`).
+- [x] `CM-02` — camada de texto padrão criada na primeira visita; primeira sessão é salva.
+- [x] `CM-03` — retornos vazios não congelam mais o canvas (0/1 imagem, Scanlines 0, Reflection 0).
       Visual: com 0 imagens a tela passa a mostrar o fundo + texto (antes ficava congelada) — correção intencional.
-- [ ] `CM-04` — exportar/abrir em nova aba usam o canvas visível (com ou sem texto).
-- [ ] `CM-10` — Export/Import Config compatíveis (aceita o formato antigo e o novo).
-- [ ] `CM-11` — IDs de slot únicos (IDs existentes preservados para a restauração).
-- [ ] `CM-12` — miniaturas do Jellyfin voltam a 480×270 / 270×480.
-- [ ] `CM-13` — exceções da lista (slots cheios, aleatório sem itens, botão "próxima", etc.).
-- [ ] `CM-14` — cache de etapas correto (inclui parâmetros do layout no hash, sem depender do spread) sem mudar a saída.
-- [ ] `CM-17` — `updateTextSettings` sem corrida (array local).
-- [ ] `CM-19` — importar ZIP mantém slots vazios do fim.
-- [ ] `CM-29` — Lightning com Seed 0 não quebra (0 = aleatório, como nos outros efeitos).
-- [ ] `CM-30` — títulos de seção dos efeitos aparecem; o parâmetro `"undefined"` deixa de ser gravado
-      (projetos antigos que o têm continuam abrindo).
-- [ ] Guarda contra quadro antigo: um `drawComposite` abortado não sobrescreve o canvas de um mais novo.
+- [x] `CM-04` — exportar/abrir em nova aba usam o canvas visível (com ou sem texto).
+- [x] `CM-10` — Export/Import Config compatíveis (aceita o formato antigo e o novo).
+- [x] `CM-11` — IDs de slot únicos (IDs existentes preservados para a restauração).
+- [x] `CM-12` — miniaturas do Jellyfin voltam a 480×270 / 270×480.
+- [x] `CM-13` — exceções da lista (slots cheios, aleatório sem itens, botão "próxima", etc.).
+- [x] `CM-14` — cache de etapas correto (inclui parâmetros do layout no hash, sem depender do spread) sem mudar a saída.
+- [x] `CM-17` — `updateTextSettings` sem corrida (array local).
+- [x] `CM-19` — importar ZIP mantém slots vazios do fim.
+- [x] `CM-29` — Lightning com Seed 0 não quebra (0 = aleatório, como nos outros efeitos).
+- [x] `CM-30` — títulos de seção dos efeitos aparecem; o parâmetro `"undefined"` deixa de ser gravado
+      (projetos antigos que o têm continuam abrindo). Os controles sem efeito (`grout`, `bgColor`) mudam a imagem e
+      ficaram para a Fase 5.
+- [x] Guarda contra quadro antigo: um `drawComposite` abortado não sobrescreve o canvas de um mais novo.
+- [x] `CM-09` (antecipado da Fase 5: é só o caminho do arquivo) — link do ZIP "Series — Rough" corrigido; todos os
+      caminhos de `gallery.json` existem.
+- [x] Achado na verificação (`cdn`): o `pageMemory` identificava imagens só por `tipo + tamanho em bytes`; duas
+      imagens diferentes com o mesmo tamanho eram gravadas como a mesma e um slot voltava com a imagem de outro.
+      Agora a assinatura inclui o SHA-256 do conteúdo (FNV-1a fora de contexto seguro).
+- Ficou para a Fase 3: `jellyfin.js:127` (`throw` em `init()`, parte do `CM-08`).
 
 ### Fase 3 — Segurança mantendo os recursos
 
@@ -111,7 +118,7 @@ Sem mudança visual nos casos que já funcionam.
 
 - [ ] `CM-07` — restaurar as versões antigas de `innerShadow`/`extrude` como efeitos adicionais e migrar projetos
       antigos (ex.: galeria "Batman").
-- [ ] `CM-09` — corrigir o link do ZIP "Series — Rough" em `gallery.json` (conteúdo da galeria).
+- [x] `CM-09` — feito na Fase 2.
 - [ ] `CM-21` — opção para blur sem halo nas bordas (padrão: atual).
 - [ ] `CM-22` — opção de semente nos layouts/efeitos aleatórios (padrão: atual).
 - [ ] `CM-23` — carregar pesos/itálico reais das Google Fonts.
@@ -151,9 +158,24 @@ Sem mudança visual nos casos que já funcionam.
 - `longShadow` com os parâmetros da camada padrão: 2,9 s por execução; soma dos 86 efeitos de texto (padrão): ~18 s.
 - `pageMemory`: ~340 KB gravados por salvamento.
 
+### Depois da Fase 2 (2026-10-23)
+
+- e2e: **41/42** (0 regressões, 8 corrigidos; o restante, a galeria "Series — Rough", passa com o `CM-09` incluído
+  depois da rodada).
+- Referência visual: 210/210 idênticas (12 aleatórias fora da comparação).
+- Pipeline completo (layout + efeitos de imagem + texto, via `drawComposite`): 5 cenários com pixels idênticos aos do
+  original; editar e voltar um parâmetro devolve exatamente a mesma imagem; com layout desligado o fundo e o texto
+  aparecem (antes a tela congelava); edições rápidas terminam no último estado.
+- Jellyfin simulado, primeira visita: bibliotecas em **7 s** (versão anterior: 30 s, por causa do `CM-15`). Sem a
+  camada de texto padrão seriam 4 s: ~3 s são o desenho da camada padrão (`longShadow`), que antes só aparecia a
+  partir da segunda visita. Ver `CM-31`.
+- Inventário: 0 remoções, 18 adições.
+
 ## Registro de progresso
 
 | Data | Fase | Resultado |
 |---|---|---|
 | 2026-10-23 | 0 | Rede de segurança criada; referência registrada acima. |
 | 2026-10-23 | 1 | Concluída (exceto 1b). Mudanças no caminho: CM-34/CR-14 antecipado; CM-15 elevado a Alta e movido para a Fase 2; Jellyfin simulado adicionado à rede de segurança. |
+| 2026-10-23 | 1b | Concluída: TableSorter, popup/treelist, themeControl verificados no Chromium. |
+| 2026-10-23 | 2 | Concluída. CM-09 antecipado; achado e corrigido o conflito de assinatura de imagens no `pageMemory`. Medições acima. Observação: a porta do proxy do contêiner mudou no meio da rodada (imagens externas falhavam); os testes passaram a ler `HTTPS_PROXY`. |
