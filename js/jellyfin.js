@@ -8,7 +8,8 @@ class Jellyfin {
     onLoginError: () => { },
     onLibraryLoad: () => { },
     onSearchFinish: () => { },
-  }, needsUserData = false) {
+  }, needsUserData = false, options = {}) {
+    // options.preferCredentials: log in with Username/Pw even if a saved session exists (an explicit "Connect")
     const defaultEvents = {
       onServerSetupError: () => { },
       onLoginSuccess: () => { },
@@ -118,40 +119,159 @@ class Jellyfin {
       },
       "maxTotalHits": 20000
     }
-    this.init();
+    this.init({ preferCredentials: options?.preferCredentials === true });
   }
 
-  async init() {
+  // Connects and loads the libraries. Resolves true when logged in; every failure is reported through the
+  // events (onServerSetupError / onLoginError) instead of an unhandled rejection.
+  // On page load the saved session token is tried first, so no password is needed (and none is sent);
+  // `preferCredentials` (an explicit "Connect" with a typed password) logs in with the password instead.
+  async init({ preferCredentials = false } = {}) {
     await this.getPublicInfo();
     if (!this.Server.isOnline)
-      throw new Error("Server is offline. Please check the address.")
+      return false; // getPublicInfo already reported it
 
     await this.setFastestAddress();
+    if (!this.Server.isOnline)
+      return false; // setFastestAddress already reported it
 
-    if (this.User.Username && this.User.Pw) {
-      this.login().then(async () => {
-        this.isAuthenticated = true;
-        this.updateAuthHeader();
-        await this.setupMeiliSearch();
-        setTimeout(async () => {
-          await this.getLibraries();
-        }, 1000);
-        this.searchReady = true;
-      }).catch(err => console.error(err))
-    } else
-      throw new Error("Username and password are required for authentication.")
-    return;
+    const hasCredentials = Boolean(this.User.Username && this.User.Pw);
+    let session = null;
+    if (preferCredentials && hasCredentials) {
+      session = await this.login();
+    } else {
+      session = await this.loginWithSavedToken();
+      if (!session && hasCredentials)
+        session = await this.login();
+    }
+
+    if (!session) {
+      // login() reports its own failures; without credentials nothing was tried yet
+      if (!hasCredentials) {
+        const error = new Error("Username and password are required for authentication.");
+        error.name = "MissingCredentialsError";
+        this.events.onLoginError(error);
+      }
+      return false;
+    }
+
+    this.isAuthenticated = true;
+    this.updateAuthHeader();
+    try {
+      await this.setupMeiliSearch();
+    } catch (error) {
+      // An unusable Meilisearch (non-admin user, index not reachable from the browser) must not block the libraries
+      console.warn("Meilisearch unavailable, loading the libraries from Jellyfin:", error);
+      this.Meilisearch.isAvailable = false;
+    }
+    setTimeout(async () => {
+      await this.getLibraries();
+    }, 1000);
+    this.searchReady = true;
+    return true;
   }
 
   UpdateConfig(host, username, password) {
     this.Server.ExternalAddress = this.SanitizeServer(host);
     this.User.Username = username;
     this.User.Pw = password;
-    this.init();
+    return this.init({ preferCredentials: true });
   }
 
   SanitizeServer(server) {
-    return (server.endsWith("/") ? server.slice(0, -1) : server).trim()
+    return Jellyfin.normalizeServer(server);
+  }
+
+  static normalizeServer(server) {
+    server = String(server ?? "").trim();
+    return server.endsWith("/") ? server.slice(0, -1) : server;
+  }
+
+  // ---- Saved session ----
+  // Only { server, serverId, userId, token } is kept (localStorage "jellyfinAuth"), never the password. Every app on
+  // this origin (CoverMaker, content-recommender) shares it, as they already shared the server address.
+  static AUTH_STORAGE_KEY = "jellyfinAuth";
+
+  static getSavedAuth(server = null) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(Jellyfin.AUTH_STORAGE_KEY) || "null");
+      if (!saved?.token || !saved?.userId) return null;
+      if (server && Jellyfin.normalizeServer(saved.server) !== Jellyfin.normalizeServer(server)) return null;
+      return saved;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  static clearSavedAuth() {
+    try { localStorage.removeItem(Jellyfin.AUTH_STORAGE_KEY); } catch (error) { /* storage unavailable */ }
+  }
+
+  saveAuth() {
+    try {
+      localStorage.setItem(Jellyfin.AUTH_STORAGE_KEY, JSON.stringify({
+        server: this.Server.ExternalAddress,
+        serverId: this.Server.Id,
+        userId: this.User.Id,
+        token: this.User.Token,
+      }));
+    } catch (error) {
+      console.warn("Could not save the Jellyfin session:", error);
+    }
+  }
+
+  // Reuses the saved token when it belongs to this server (same address, or same server id under another address).
+  // Resolves like login(): the session data, or null.
+  async loginWithSavedToken() {
+    const saved = Jellyfin.getSavedAuth();
+    if (!saved || (saved.server !== this.Server.ExternalAddress && saved.serverId !== this.Server.Id))
+      return null;
+
+    this.User.Token = saved.token;
+    this.User.Id = saved.userId;
+    this.updateAuthHeader();
+
+    let response;
+    try {
+      response = await fetch(`${this.Server.Address}/Users/${saved.userId}`, { method: "GET", headers: this.headers });
+    } catch (error) {
+      response = null; // network failure: keep the saved session for the next attempt
+    }
+
+    if (!response || !response.ok) {
+      // 401 = token revoked or expired: forget it, so the password (or the login window) takes over
+      if (response?.status === 401)
+        Jellyfin.clearSavedAuth();
+      this.User.Token = "";
+      this.User.Id = "";
+      this.isAuthenticated = false;
+      this.updateAuthHeader();
+      return null;
+    }
+
+    const user = await response.json();
+    this.User.Username = user?.Name ?? this.User.Username;
+    this.isAuthenticated = true;
+    const data = { User: user, AccessToken: saved.token, ServerId: saved.serverId, fromSavedToken: true };
+    this.events.onLoginSuccess(data);
+    return data;
+  }
+
+  // Ends the session on the server (the token stops working everywhere) and forgets it in this browser
+  async logout() {
+    try {
+      if (this.User.Token && this.Server.Address)
+        await fetch(`${this.Server.Address}/Sessions/Logout`, { method: "POST", headers: this.headers });
+    } catch (error) {
+      console.warn("Jellyfin logout request failed:", error);
+    }
+    Jellyfin.clearSavedAuth();
+    this.User.Token = "";
+    this.User.Id = "";
+    this.User.Pw = "";
+    this.isAuthenticated = false;
+    this.searchReady = false;
+    this.updateAuthHeader();
   }
 
   onFetchError(response) {
@@ -159,7 +279,8 @@ class Jellyfin {
       this.isAuthenticated = false;
       console.error("Authentication failed. Please check your credentials.");
     } else {
-      console.error("Fetch error:", response.statusText);
+      // Called with a Response or, when the request itself failed, with the Error
+      console.error("Fetch error:", response?.statusText || response?.message || response);
     }
   }
 
@@ -426,6 +547,9 @@ class Jellyfin {
       this.isAuthenticated = true;
 
       this.updateAuthHeader();
+      // From now on the token is used; the password is not kept (not even in memory)
+      this.saveAuth();
+      this.User.Pw = "";
       this.events.onLoginSuccess(data);
       return data;
     } catch (error) {
@@ -435,11 +559,12 @@ class Jellyfin {
       this.updateAuthHeader();
       if (response) {
         this.events.onLoginError(error, response);
-        this.onFetchError(error, response);
+        this.onFetchError(response);
       } else {
         this.events.onLoginError(error);
         this.onFetchError(error);
       }
+      return null;
     }
   }
 
@@ -888,11 +1013,17 @@ class Jellyfin {
 
   async loadLibraryItems(libraryId, fastLoading = false) {
     if (this.shouldUseMeiliSearch(libraryId)) {
-      return await this.loadLibraryItemsMeiliSearch(libraryId, fastLoading);
-    } else {
-      return await this.loadLibraryItemsVanilla(libraryId, fastLoading);
+      try {
+        return await this.loadLibraryItemsMeiliSearch(libraryId, fastLoading);
+      } catch (error) {
+        // e.g. the Meilisearch URL configured in the plugin is not reachable from the browser
+        console.warn("Meilisearch search failed, loading the library from Jellyfin instead:", error);
+        this.Meilisearch.isAvailable = false;
+        const library = this.Libraries[this.libaryNameById(libraryId)];
+        if (library?.Items) library.Items.length = 0; // drop a partial Meilisearch result (the loader below appends)
+      }
     }
-    
+    return await this.loadLibraryItemsVanilla(libraryId, fastLoading);
   }
 
   async loadLibraryItemsMeiliSearch(libraryId, fastLoading = false) {
@@ -1185,13 +1316,14 @@ class Jellyfin {
       `;
 
         wrapper.innerHTML = `
-        <div style="margin-bottom: 0.25rem; font-weight: bold;">
-          ${lib.Name} — ${lib.Items.length} / ${lib.Count}
-        </div>
+        <div style="margin-bottom: 0.25rem; font-weight: bold;"></div>
         <div style="background: #2d3748; border-radius: 0.25rem; overflow: hidden; height: 0.5rem;">
           <div style="width: ${progress}%; background: var(--primary, #3b82f6); height: 100%; transition: width 0.3s ease;"></div>
         </div>
       `;
+
+        // The library name comes from the server: shown as text, never parsed as HTML
+        wrapper.firstElementChild.textContent = `${lib.Name} — ${lib.Items.length} / ${lib.Count}`;
 
         container.appendChild(wrapper);
       } catch (error) {}
@@ -1229,7 +1361,12 @@ class Jellyfin {
     await this.checkForMeiliSearch();
     if (!this.Meilisearch.isAvailable)
       return false;
-    await this.getMeiliSearchApiKey();
+    // The plugin page is public, but its configuration (URL + API key) needs an administrator
+    if (!await this.getMeiliSearchApiKey() || !this.Meilisearch.Url) {
+      console.warn("Meilisearch plugin found, but its configuration is not available to this user. Using Jellyfin search.");
+      this.Meilisearch.isAvailable = false;
+      return false;
+    }
     this.Meilisearch.client = new meilisearch.Meilisearch({
       host: this.Meilisearch.Url,
       apiKey: this.Meilisearch.ApiKey,
