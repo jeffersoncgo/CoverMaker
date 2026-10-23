@@ -10,6 +10,9 @@
 ![Cache](https://img.shields.io/badge/cache-IndexedDB-green.svg)
 ![State](https://img.shields.io/badge/state-localStorage-blue.svg)
 [![Contributing](https://img.shields.io/badge/contribute-Guide-brightgreen.svg)](CONTRIBUTING.md)
+
+📚 **Technical docs (pt-BR):** [Architecture](docs/ARQUITETURA.md) · [Layouts & effects reference](docs/REFERENCIA-EFEITOS.md) · [Code audit & known issues](docs/AUDITORIA.md)
+
 ---
 
 ## 🚀 Quick Start
