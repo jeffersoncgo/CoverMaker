@@ -444,6 +444,30 @@ class pageMemory {
      * @param {Blob} blob - The blob to convert
      * @returns {Promise<string>}
      */
+    // Identifies a blob by its content. Type + size alone collide (two different images with the same byte
+    // size), which made one slot image be saved over another.
+    async blobSignature(blob) {
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let digest = '';
+        try {
+            if (globalThis.crypto?.subtle) {
+                const hash = await crypto.subtle.digest('SHA-256', bytes);
+                digest = Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+            }
+        } catch (error) {
+            // crypto.subtle only exists in secure contexts: use the FNV-1a fallback below
+        }
+        if (!digest) {
+            let h = 2166136261;
+            for (let i = 0; i < bytes.length; i++) {
+                h ^= bytes[i];
+                h = Math.imul(h, 16777619) >>> 0;
+            }
+            digest = h.toString(16);
+        }
+        return `${blob.type}-${blob.size}-${digest}`;
+    }
+
     async blobToBase64(blob) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -520,7 +544,7 @@ class pageMemory {
                             const blob = await this.blobUrlToBlob(elementInfo.blobUrl, element);
                             
                             if (blob) {
-                                const signature = `${blob.type}-${blob.size}`;
+                                const signature = await this.blobSignature(blob);
                                 const cachedBySig = this.blobSignatureCache.get(signature);
                                 const base64 = cachedBySig || await this.blobToBase64(blob);
 
