@@ -153,11 +153,19 @@ Sem mudança visual nos casos que já funcionam.
       do `longShadow` à área do texto mudou pixels em 2 de 8 casos (até 85/255) e foi descartado.
 - [x] `CM-32` — Skew ±1; `focusTabName`; `return` no `finally`; `new Promise(async …)`.
 
-### Fase 6 — HTML, acessibilidade e documentação
+### Fase 6 — HTML, acessibilidade, documentação e testes ✅ (2026-10-23)
 
-- [ ] `CM-20`, `CM-24`, `CM-27`, `CR-13` — HTML válido, janelas com toque, botões acessíveis, idioma.
-- [ ] `CM-26`, `CDN-18` — README atualizados.
-- [ ] `CM-25` — lista de código morto para decisão do usuário (nada é removido sem ok).
+- [x] `CM-20` — HTML equilibrado sem mudar o DOM (comparado com o `DOMParser`: idêntico).
+- [x] `CM-24` — janelas: Pointer Events (toque), `z-index` com ordem correta, parâmetro `window` renomeado.
+- [x] `CM-27` (em parte) — zoom, ícones acessíveis por teclado, estilos de toast, foco nas janelas.
+- [x] `CR-13` — README, comentário do HTML, foco, confirmação no "Clean Saved Memory", cartões com `role="link"`.
+      A confirmação também foi para o CoverMaker (o botão apaga o projeto inteiro).
+- [x] `CM-26`, `CDN-18`, `CR-07` — READMEs: só correções do que não era verdade.
+- [x] `CDN-08` (`outerHTML` opcional), `CDN-17` (resto) — `FetchQueue` com `res.ok` e Promise, `base.js`.
+- [x] `CM-25` — lista de código morto conferida, **nada removido** (D7).
+- [x] Testes no repositório: `cdn/tests` (23), `CoverMaker/tests/unit.test.js` (8) e `content-recommender/tests` (5)
+      no CI — no cdn e no CoverMaker o deploy só roda se passarem; `CoverMaker/tests/browser/` com a suíte do
+      Playwright e o Jellyfin simulado.
 
 ## Decisões (respondidas em 2026-10-23)
 
@@ -167,6 +175,7 @@ Sem mudança visual nos casos que já funcionam.
 | D2 | Versionar os testes em `tests/`? | Não respondida diretamente; adotado o padrão **sim** (é só adição e os testes se perderiam com o contêiner). |
 | D3 | Como publicar? | **Merge na `main` feito por mim**, sem PR. Depois do merge, conferir o deploy do GitHub Pages e os arquivos no ar. |
 | D4 | Senha salva → token? | **Sim.** A senha é a da conta Jellyfin digitada na janela de login; o app a usa uma última vez para obter o token e então a apaga do navegador. |
+| D7 | Código morto (`CM-25`) | **Pendente.** Lista conferida na auditoria (`factory.js`, `vendor/search.js` no CoverMaker, `pipelineManager`, `libraryImagetoCanvas`, ajudantes de depuração, `isLibrarySizeChanged`, bloco morto no content-recommender, variáveis não usadas). Recomendação: remover `factory.js`, `pipelineManager`/`PipelineStep` e `libraryImagetoCanvas`; manter os ajudantes de depuração. |
 | D6 | Projeto "Batman" da galeria (`CM-07`) | **Pendente.** Usar o efeito restaurado "Inner Shadow (Offset)" com os valores originais do arquivo (`offsetX 9`, `offsetY -1`)? Medição inconclusiva (~1 %). Recomendação: manter como está; o efeito antigo fica disponível para quem quiser. |
 | D5 | Perfil de gosto do content-recommender (`CR-06`) | **Pendente.** Hoje só a nota mínima filtra (os filtros de gênero, tag e ano não têm efeito). Recomendação: criar um modo novo como opção, mantendo o atual como padrão, para comparar na biblioteca real. |
 
@@ -174,7 +183,7 @@ Sem mudança visual nos casos que já funcionam.
 
 | Mudei | Também preciso |
 |---|---|
-| `cdn/js/*.js` | Copiar para `CoverMaker/js/vendor/` e `content-recommender/js/vendor/` (mesmo conteúdo) e testar os dois apps |
+| `cdn/js/*.js` | Copiar para `CoverMaker/js/vendor/` e `content-recommender/js/vendor/` (mesmo conteúdo), rodar `node --test "tests/*.test.js"` nos três repositórios (o do content-recommender confere as cópias quando estão lado a lado) e testar os dois apps |
 | `CoverMaker/js/jellyfin.js` ou `windowsHandle.js` | Copiar para `content-recommender/js/vendor/` (mesmo conteúdo) e testar o content-recommender |
 | `cdn/js/*.js` usados pelo content-recommender | Copiar também para `content-recommender/js/vendor/` |
 | Parâmetros em `compositeRegistry.js`, `effectsRegistry.js` ou `textEffects.js` | Regenerar `docs/REFERENCIA-EFEITOS.md` e abrir os projetos da galeria |
@@ -201,6 +210,13 @@ Sem mudança visual nos casos que já funcionam.
   camada de texto padrão seriam 4 s: ~3 s são o desenho da camada padrão (`longShadow`), que antes só aparecia a
   partir da segunda visita. Ver `CM-31`.
 - Inventário: 0 remoções, 18 adições.
+
+### Depois da Fase 6 (2026-10-23)
+
+- `pageMemory`: registro do CoverMaker de **383 KB para 7 KB**; gravação de 10 ms para 2 ms (sem o `outerHTML`).
+- HTML: DOM idêntico ao de antes (comparação com o `DOMParser`), agora com as tags equilibradas.
+- Testes no repositório: cdn 23/23 (3 deles falham no código anterior: `FetchQueue`, `saveDom`, mouse), CoverMaker 8/8
+  (no código original falham o link da galeria e os efeitos duplicados), content-recommender 5/5.
 
 ### Depois da Fase 5 (2026-10-23)
 
@@ -245,3 +261,4 @@ Sem mudança visual nos casos que já funcionam.
 | 2026-10-23 | 3 | Concluída. Achados extras no `pageMemory` (trava `canSave`, gravação superada). Teste e2e: aviso da galeria acompanhado durante a espera e "Failed to fetch" (sem Jellyfin em `localhost:8096`) tratado como erro conhecido, como já era "Fetch error: undefined". |
 | 2026-10-23 | 4 | Concluída, exceto `CR-06` (decisão do usuário). Observação: um mock caiu no meio dos testes por um `cd` que valia só para o primeiro comando; o cenário foi refeito com o mock no ar. |
 | 2026-10-23 | 5 | Concluída. Pendentes de decisão: D6 (Batman). O processo de trabalho foi reiniciado no meio da fase (servidores de teste caíram e foram reabertos). Um e2e deu 41/42 (export na abertura) enquanto o lint rodava em paralelo: as duas versões estabilizam o canvas antes dos 9 s do teste; o mapa de variações de fonte passou a ser baixado em paralelo no carregamento e o e2e, rodado sozinho, deu 42/42. |
+| 2026-10-23 | 6 | Concluída. Pendentes de decisão: D5 (perfil de gosto), D6 (Batman), D7 (código morto). |

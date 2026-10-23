@@ -372,7 +372,26 @@ O botão **Clean Saved Memory** chama `memory.reset()`, `jellyfin.cleanDb()` (qu
 - Arrastar e soltar: slots, efeitos de imagem, camadas de texto e efeitos de texto (entre camadas).
 - Copiar/colar efeitos de texto via área de transferência (JSON).
 
-## 13. Como rodar localmente
+- **Janelas flutuantes** (`windowsHandle.js`, também copiado para o content-recommender): arrasto pela barra com
+  Pointer Events (mouse, toque e caneta); a última janela aberta/arrastada fica por cima (`z-index` por contador perto
+  do máximo, acima de todo o resto). Abrir uma janela por clique/tecla move o foco para o primeiro campo; quando a
+  página abre sozinha (login no início), o foco não muda.
+- **Acessibilidade**: os ícones clicáveis (`<i onclick>`, prévias) recebem `tabindex="0"`, `role="button"` e
+  `aria-label` (do `title`) e respondem a Enter/Espaço (`makeClickablesAccessible` em `app.js`, aplicado também ao
+  conteúdo dos `<template>`). O zoom da página é permitido.
+- **Clean Saved Memory** pede confirmação antes de apagar projeto, imagens, configurações e cache.
+
+## 13. Testes
+
+- `tests/unit.test.js` (Node 20+, sem dependências): `node --test "tests/*.test.js"`. Sintaxe de todos os scripts,
+  caminhos da galeria, registros de efeitos (sem chave duplicada, parâmetros válidos), mapa de variações de fonte,
+  escolha da face, auxiliares da classe `Jellyfin` e, com os repositórios lado a lado, se as cópias do
+  content-recommender são idênticas. Roda no CI antes do deploy (`.github/workflows/static.yml`: `deploy` depende de
+  `test`).
+- `tests/browser/` (Playwright, manual): e2e de 42 fluxos, referência visual, pipeline, login com o Jellyfin simulado
+  etc. Instruções em `tests/browser/README.md`.
+
+## 14. Como rodar localmente
 
 ```bash
 git clone https://github.com/jeffersoncgo/CoverMaker.git
@@ -384,7 +403,7 @@ python3 -m http.server 8080      # qualquer servidor estático serve; file:// n�
 Para usar o Jellyfin, o servidor precisa aceitar requisições do domínio onde o app está (CORS) — o Jellyfin aceita por
 padrão; proxies reversos podem bloquear.
 
-## 14. Dependências externas
+## 15. Dependências externas
 
 | Dependência | Versão | Origem | Uso |
 |---|---|---|---|

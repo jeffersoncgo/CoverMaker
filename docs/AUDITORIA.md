@@ -37,14 +37,14 @@
 | CM-17 ✅ | Média | `app.js:2021`, `vendor/controller.js` | Corrida em `updateTextSettings` pode duplicar camadas (potencial) 🔎 |
 | CM-18 | Média | `index.html`, `vendor/pagememory.js` | `pageMemory` pesado: ~340 KB de `outerHTML` por gravação, varre o painel inteiro a cada clique 🧪 |
 | CM-19 ✅ | Baixa | `app.js:1851-1897`, `gallery.js:164-220` | Importar ZIP descarta slots vazios do fim; fluxo "Use Json" inconsistente 🔎 |
-| CM-20 | Baixa | `index.html` | HTML inválido (`#app` sem fechamento, `div` faltando no template, `src` duplicado) 🧪 |
+| CM-20 ✅ | Baixa | `index.html` | HTML inválido (`#app` sem fechamento, `div` faltando no template, `src` duplicado) 🧪 |
 | CM-21 ✅ | Baixa | `effectsRegistry.js`, `drawing.js:224` | Filtros redesenhados sobre o próprio canvas (bordas do blur); `ctx.filter` em Safari 🔎 |
 | CM-22 ✅ | Baixa | `compositeRegistry.js`, `textEffects.js` | Aleatoriedade sem semente: o mesmo projeto renderiza diferente após recarregar 🔎 |
 | CM-23 ✅ | Baixa | `fonts.js:214-229` | Google Fonts carrega só o peso/estilo padrão (negrito/itálico sintetizados) 🔎 |
-| CM-24 | Baixa | `windowsHandle.js:85-100` | Parâmetro `window` sombreia o global; janelas não arrastam no toque 🔎 |
-| CM-25 | Baixa | vários | Código morto / legado 🔎 |
-| CM-26 | Baixa | `README.md`, `CONTRIBUTING.md` | Documentação desatualizada ou incorreta 🔎 |
-| CM-27 | Baixa | `index.html`, `paramsRenderer.js:213` | Acessibilidade e consistência de idioma 🔎 |
+| CM-24 ✅ | Baixa | `windowsHandle.js:85-100` | Parâmetro `window` sombreia o global; janelas não arrastam no toque 🔎 |
+| CM-25 ◐ | Baixa | vários | Código morto / legado 🔎 |
+| CM-26 ✅ | Baixa | `README.md`, `CONTRIBUTING.md` | Documentação desatualizada ou incorreta 🔎 |
+| CM-27 ◐ | Baixa | `index.html`, `paramsRenderer.js:213` | Acessibilidade e consistência de idioma 🔎 |
 | CM-28 ✅ | Média | `textEffects.js` (`actionSpeedlines`) | "Anime Speedlines" apaga o texto com os valores padrão 🧪 |
 | CM-29 ✅ | Média | `textEffects.js:1205` (`lightning`) | "Lightning" com Seed = 0 (mínimo do slider) lança `rnd is not a function` 🧪 |
 | CM-30 ✅ | Média | `textEffects.js` | Controles que não fazem nada e parâmetro `"undefined"` salvo nos projetos 🧪 |
@@ -407,7 +407,9 @@ IndexedDB, sem base64).
 - O seletor de arquivo aceita `.json,.zip,.covermaker.zip`, mas o "Save Setup" gera `*.covermaker.setup.json` e o
   "Export Config" gera um JSON de outro formato que, se aberto pelo botão de projeto, é interpretado como projeto.
 
-### CM-20 — HTML inválido 🧪
+### CM-20 — HTML inválido 🧪 — ✅ corrigido (2026-10-23)
+
+Como ficou: `#app` e a camada do template fechados exatamente onde o navegador já os fechava (o DOM montado é idêntico ao de antes, comparado com o `DOMParser`); `src` duplicado e `</img>` removidos. **Mantidos** o `<li>` fora de `<ul>` e o `value` no `<select>`: corrigir mudaria o DOM.
 
 - `<div id="app">` (`index.html:341`) nunca é fechado (os `<script>` e `#toast-root` ficam dentro dele).
 - No `#text-layer-template` falta um `</div>` na seção "Position/Rotation" (o navegador fecha no `</template>`).
@@ -442,14 +444,24 @@ Peça os eixos disponíveis (ex.: `family=Nome:ital,wght@0,400;0,700;1,400;1,700
 existir, então trate o erro e tente sem eixos). `document.fonts.load` resolve mesmo quando a fonte não carrega
 (retorna `[]`): confira o tamanho do array.
 
-### CM-24 — Janelas 🔎
+### CM-24 — Janelas 🔎 — ✅ corrigido (2026-10-23)
+
+Como ficou: parâmetro renomeado (`win`); arrasto por Pointer Events (mouse igual, agora também toque/caneta); `z-index` por contador perto do máximo (as janelas continuam acima de tudo e a última aberta fica por cima).
 
 `document.querySelectorAll('.floatWindow').forEach(window => …)` (`windowsHandle.js:85`) sombreia o `window` global:
 `window.innerWidth` vira `undefined` e o ajuste ao viewport nunca ocorre. Renomeie para `win`. O arrasto usa apenas
 eventos de mouse; troque por *Pointer Events* (`pointerdown/move/up` + `setPointerCapture`) para funcionar no toque.
 `z-index = Date.now()` ultrapassa o máximo de 32 bits (é limitado pelo navegador); um contador simples basta.
 
-### CM-25 — Código morto / legado 🔎
+### CM-25 — Código morto / legado 🔎 — ◐ lista para decisão (2026-10-23; nada foi removido)
+
+Conferido em 2026-10-23, ainda vale: `factory.js` é carregado pelo `index.html` e nada o usa; `vendor/search.js` é
+carregado e o CoverMaker não usa o `SearchEngine` (o cliente Jellyfin usa o `searchInArray` do `object.js`);
+`pipelineManager`/`PipelineStep` não existem (o código cai no `drawComposite`); `libraryImagetoCanvas` não tem
+chamador; `debugSlotsImages`/`fillSlotsWithNumbers` só servem para depuração pelo console; `isLibrarySizeChanged`
+nunca é falso no único lugar em que é usado; 27 variáveis atribuídas e não usadas (lint). No content-recommender, o bloco
+`if (window.jellyfin.onLibraryLoad)` do `onLoginSuccess` nunca roda (os tipos são filtrados em `getList`). Remover
+qualquer um desses itens fica para a decisão do usuário (decisão D7 no plano).
 
 - `factory.js` inteiro (nenhum chamador; `Object.assign(select, { options })` lançaria erro).
 - `pipelineManager`, `PipelineStep._stableStringify`, `markImageBaseDirty` (`slots.js:157-171`, `app.js:270`) — de um
@@ -462,7 +474,9 @@ eventos de mouse; troque por *Pointer Events* (`pointerdown/move/up` + `setPoint
   Prefira imagens próprias em `gallery/` ou `images/`.
 - `fillSlotsWithNumbers`/`debugSlotsImages` e botões comentados de debug.
 
-### CM-26 — Documentação 🔎
+### CM-26 — Documentação 🔎 — ✅ corrigido (2026-10-23)
+
+Como ficou: README e CONTRIBUTING corrigidos onde afirmavam coisas que não existem (OffscreenCanvas, `GALLERY.md`, projeto em JSON, tamanho custom em pixels, delta sync); o resto do texto ficou como estava.
 
 - README afirma "OffscreenCanvas rendering for non-blocking UI" — não há `OffscreenCanvas` nem *Workers*; tudo roda na
   thread principal.
@@ -474,7 +488,9 @@ eventos de mouse; troque por *Pointer Events* (`pointerdown/move/up` + `setPoint
 - "Custom: Define any dimensions (width/height in pixels)" — os valores são usados como proporção (maior lado = 1920 px).
 - "Multiple strokes and shadows", "3D depth 0-50", "Glow intensity 0-3" descrevem uma UI antiga; hoje tudo é efeito.
 
-### CM-27 — Acessibilidade e idioma 🔎
+### CM-27 — Acessibilidade e idioma 🔎 — ◐ (2026-10-23)
+
+Como ficou: zoom liberado no `viewport`; ícones clicáveis com foco, `role="button"`, nome acessível e Enter/Espaço (também nos templates); toasts `warning`/`error`/`info` com estilo; foco vai para a janela aberta pelo usuário. **Não feito** (mudança visual ou de texto não pedida, fica como sugestão): destaque do slot fixado e a dica em português no `paramsRenderer`.
 
 - `maximum-scale=1.0, user-scalable=no` (`index.html:6`) impede zoom (WCAG 1.4.4).
 - Ações principais são `<i onclick>`: sem foco por teclado, sem `role="button"`, sem nome acessível além do `title`.
