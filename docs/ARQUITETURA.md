@@ -74,7 +74,7 @@ Todos são scripts clássicos no fim do `<body>` (exceto `meilisearch_index.min.
 ## 4. Inicialização (`window.load` em `app.js`)
 
 1. Copia `Setup` e `projectConfig` para `window.defaultSetup` / `window.defaultprojectConfig`.
-2. `loadFieldsFromStorage()` → preenche servidor/usuário/senha a partir do `localStorage`.
+2. `loadFieldsFromStorage()` → preenche o servidor a partir do `localStorage` (e, só para quem vem de uma versão antiga, usuário/senha, usados uma vez para obter o token).
 3. Liga as abas (`#imageslotsTab`, `#settingsTab`).
 4. `loadSetup()` → mescla `localStorage.setup` sobre `Setup`.
 5. `addtypeSelectOptions()` → popula o `<select>` de layouts e os controles do layout atual.
@@ -276,14 +276,28 @@ A janela agrupa por `type`, permite busca por título/autor/descrição e abre u
 
 ## 9. Integração Jellyfin (`jellyfin.js` + `jellyfin_ui.js`)
 
-Fluxo de `new Jellyfin(host, usuário, senha, eventos)`:
+Fluxo de `new Jellyfin(host, usuário, senha, eventos, needsUserData = false, { preferCredentials = false } = {})`
+(`init()` nunca rejeita: falhas chegam por `onServerSetupError` / `onLoginError`):
 
-1. `GET /System/Info/Public` → nome, versão, `Id` e `LocalAddress` do servidor.
-2. `setFastestAddress()` → mede o endereço externo e o local, usa o mais rápido.
-3. `POST /Users/authenticatebyname` → `AccessToken` (enviado no cabeçalho `authorization: MediaBrowser … Token="…"`).
+1. `GET /System/Info/Public` → nome, versão, `Id` e `LocalAddress` do servidor. Fora do ar → `onServerSetupError`.
+2. `setFastestAddress()` → mede o endereço externo e o local (máx. 5 s), usa o mais rápido.
+3. Login:
+   - **sessão salva** (`localStorage.jellyfinAuth` = `{ server, serverId, userId, token }`, do mesmo servidor pelo
+     endereço ou pelo `Id`) → `GET /Users/{userId}` com o token. 200 = logado sem senha; 401 = token revogado/expirado,
+     a sessão é apagada e o login por senha (ou a janela de login) assume;
+   - **senha** → `POST /Users/authenticatebyname` → `AccessToken`. O token é salvo (`saveAuth`) e a senha é descartada,
+     inclusive da memória. Falha → `onLoginError(erro, response)` e nada segue (antes um login com falha seguia como
+     se tivesse dado certo).
+   - Ordem: no carregamento da página, sessão salva primeiro (não envia senha); no botão **Connect**
+     (`UpdateConfig` / `preferCredentials: true`), usuário e senha digitados primeiro — é assim que se troca de conta.
+     Sem credenciais e sem sessão → `onLoginError` com `error.name === 'MissingCredentialsError'`.
+   - **Sign out** (`logout()`) → `POST /Sessions/Logout` (o token deixa de valer no servidor) e apaga a sessão salva.
+   - O token vai no cabeçalho `authorization: MediaBrowser … Token="…"`.
 4. `setupMeiliSearch()` → se a página `/web/configurationpage?name=Meilisearch` existir, lê a configuração do plugin
    (`/Plugins/{id}/Configuration`, requer administrador), cria o cliente `meilisearch` e garante `path`/`type` como
-   atributos filtráveis/ordenáveis no índice.
+   atributos filtráveis/ordenáveis no índice. Sem acesso à configuração (usuário comum) ou com erro, o Meilisearch é
+   desligado e as bibliotecas carregam pelo Jellyfin; se uma busca no Meilisearch falhar depois, a biblioteca é
+   recarregada pelo Jellyfin (`loadLibraryItems`).
 5. `getLibraries()` (1 s depois) → `GET /UserViews`, `GET /Library/VirtualFolders`; para cada biblioteca de tipo suportado:
    - se o cache IndexedDB tiver o mesmo número de itens, usa o cache;
    - senão baixa todos os itens (Meilisearch ou `GET /Users/{id}/Items` paginado em blocos de `loadLimit` via `FetchQueue`).
@@ -309,16 +323,19 @@ recarrega a página.
 
 | Onde | Chave | Conteúdo |
 |---|---|---|
-| `localStorage` | `server`, `username`, `password` | Credenciais do formulário de login (texto puro) |
+| `localStorage` | `server` | Endereço do servidor Jellyfin |
+| `localStorage` | `jellyfinAuth` | Sessão Jellyfin `{ server, serverId, userId, token }` (classe `Jellyfin`; nunca a senha) |
+| `localStorage` | `username`, `password` | **Só de versões antigas**: usados uma última vez para obter o token e apagados (`forgetSavedPassword`) |
 | `localStorage` | `setup` | `Setup` serializado |
 | `localStorage` | `projectConfig` | Projeto atual |
 | `localStorage` | `customPostersLimits` | Limites personalizados de paginação |
-| IndexedDB `pageMemoryDB` | URL da página | Estado dos elementos `[save]` (inclusive imagens dos slots em base64 e o formulário de login) |
+| IndexedDB `pageMemoryDB` | URL da página | Estado dos elementos `[save]` (inclusive imagens dos slots em base64 e o endereço do servidor; usuário e senha não têm mais `[save]`, e o registro antigo é regravado sem eles após o login) |
 | IndexedDB `<Server.Id>` | `Tags`, `Genres`, `Studios`, `<libraryId>` | Cache das bibliotecas Jellyfin |
 
 > **Origem compartilhada:** no GitHub Pages, CoverMaker, content-recommender e a demo do cdn rodam todos em
 > `https://jeffersoncgo.github.io`, portanto **compartilham** `localStorage` e IndexedDB. As chaves
-> `server`/`username`/`password` e o cache do Jellyfin (banco `<Server.Id>`) são lidos e escritos pelos dois apps.
+> `server`, a sessão `jellyfinAuth` e o cache do Jellyfin (banco `<Server.Id>`) são lidos e escritos pelos dois apps
+> (logar em um deles loga no outro; "Sign out" sai dos dois).
 
 O botão **Clean Saved Memory** chama `memory.reset()`, `jellyfin.cleanDb()` (que recarrega a página) e limpa `setup`,
 `projectConfig` e camadas de texto.

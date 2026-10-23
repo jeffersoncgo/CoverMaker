@@ -101,12 +101,21 @@ Sem mudança visual nos casos que já funcionam.
       Agora a assinatura inclui o SHA-256 do conteúdo (FNV-1a fora de contexto seguro).
 - Ficou para a Fase 3: `jellyfin.js:127` (`throw` em `init()`, parte do `CM-08`).
 
-### Fase 3 — Segurança mantendo os recursos
+### Fase 3 — Segurança mantendo os recursos ✅ (2026-10-23)
 
-- [ ] `CM-05` / `CR-04` — guardar token em vez de senha; o login automático continua funcionando (decisão D4).
-- [ ] `CM-06` / `CR-03` — nomes do Jellyfin e mensagens como texto (mesma aparência para nomes normais).
-- [ ] `CM-08` — login com falha não é tratado como sucesso; Meilisearch com *fallback* para a carga normal.
+- [x] `CM-05` / `CR-04` — guardar token em vez de senha; o login automático continua funcionando (decisão D4).
+      O usuário confirmou em 2026-10-23: "apagar o usuário e senha, e deixar só o token de acesso, pode fazer, contanto
+      que tenha certeza que realmente funcione". Usuário e senha deixam de ser gravados; a senha antiga é usada uma vez
+      e apagada. Adicionado: botão **Sign out** (revoga o token no servidor).
+- [x] `CM-06` / `CR-03` — nomes do Jellyfin e mensagens como texto (mesma aparência para nomes normais).
+- [x] `CM-08` — login com falha não é tratado como sucesso; Meilisearch com *fallback* para a carga normal.
+- [x] Achados na verificação (`cdn`, `pageMemory`): a trava `canSave` começava liberada (uma gravação entre abrir o
+      banco e terminar a restauração sobrescreveria o estado salvo com o padrão da página — o login dispara uma
+      gravação justamente nessa janela); e uma gravação já superada continuava lendo imagens revogadas
+      (`ERR_FILE_NOT_FOUND` no console) e atualizava o "estado anterior" mesmo abortada.
 - Verificação: servidor Jellyfin simulado (mock) para login, bibliotecas, Meilisearch indisponível e não-admin.
+  O mock passou a validar o token como o Jellyfin (`GET /Users/{id}` → 401 com token inválido; `POST /Sessions/Logout`
+  revoga o token).
 
 ### Fase 4 — content-recommender e dados do Jellyfin
 
@@ -171,6 +180,18 @@ Sem mudança visual nos casos que já funcionam.
   partir da segunda visita. Ver `CM-31`.
 - Inventário: 0 remoções, 18 adições.
 
+### Depois da Fase 3 (2026-10-23)
+
+- Login (CoverMaker, 10 cenários): migração a partir do app antigo **na mesma origem** (o antigo grava a senha no
+  `localStorage` e no `pageMemory`; o novo loga com ela uma vez e depois nenhuma das duas cópias existe); recarga só com
+  token (0 logins por senha no servidor); token revogado → janela de login; senha errada; troca de conta; Sign out
+  (token passa a dar 401 no servidor); usuário comum com Meilisearch carrega as 2 bibliotecas; servidor fora do ar sem
+  erro não tratado. **10/10.**
+- content-recommender: migração, recarga só com token (mesmas recomendações: 19 assistidos, 36 não assistidos, 6 por
+  gosto, 3 grupos × 6), cartões com nome malicioso exibido como texto, Sign out e login pelo formulário. **6/6.**
+- e2e: **42/42** (a galeria "Series — Rough" passa: o teste agora acompanha o aviso durante a espera; no original ele
+  também falhava por olhar só depois que o aviso sumia).
+
 ## Registro de progresso
 
 | Data | Fase | Resultado |
@@ -179,3 +200,4 @@ Sem mudança visual nos casos que já funcionam.
 | 2026-10-23 | 1 | Concluída (exceto 1b). Mudanças no caminho: CM-34/CR-14 antecipado; CM-15 elevado a Alta e movido para a Fase 2; Jellyfin simulado adicionado à rede de segurança. |
 | 2026-10-23 | 1b | Concluída: TableSorter, popup/treelist, themeControl verificados no Chromium. |
 | 2026-10-23 | 2 | Concluída. CM-09 antecipado; achado e corrigido o conflito de assinatura de imagens no `pageMemory`. Medições acima. Observação: a porta do proxy do contêiner mudou no meio da rodada (imagens externas falhavam); os testes passaram a ler `HTTPS_PROXY`. |
+| 2026-10-23 | 3 | Concluída. Achados extras no `pageMemory` (trava `canSave`, gravação superada). Teste e2e: aviso da galeria acompanhado durante a espera e "Failed to fetch" (sem Jellyfin em `localhost:8096`) tratado como erro conhecido, como já era "Fetch error: undefined". |

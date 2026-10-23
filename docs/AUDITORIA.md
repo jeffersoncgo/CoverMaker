@@ -22,15 +22,15 @@
 | CM-02 ✅ | Alta | `app.js:2213`, `:1066` | Primeira visita: camada de texto padrão não é criada e **nada é salvo** — tudo se perde ao recarregar 🧪 |
 | CM-03 ✅ | Alta | `compositeRegistry.js`, `effectsRegistry.js:320,446` | Com 0 ou 1 slot (ou Scanlines com opacidade 0) o canvas **congela** 🧪 |
 | CM-04 ✅ | Alta | `app.js:1641`, `:1936` | "Download" falha quando não há camada de texto (e pode exportar imagem antiga) 🧪 |
-| CM-05 | Alta | `app.js:708`, `index.html:39-43` | Senha do Jellyfin gravada em texto puro (localStorage **e** IndexedDB) 🧪 |
-| CM-06 | Alta | `jellyfin_ui.js:324,338`, `jellyfin.js:1151`, `toast.js:51` | XSS: nomes vindos do Jellyfin inseridos com `innerHTML` 🔎 |
+| CM-05 ✅ | Alta | `app.js:708`, `index.html:39-43` | Senha do Jellyfin gravada em texto puro (localStorage **e** IndexedDB) 🧪 |
+| CM-06 ✅ | Alta | `jellyfin_ui.js:324,338`, `jellyfin.js:1151`, `toast.js:51` | XSS: nomes vindos do Jellyfin inseridos com `innerHTML` 🔎 |
 | CM-07 | Alta | `textEffects.js:1938,2140,5833,5945` | `innerShadow` e `extrude` declarados duas vezes; o projeto da galeria "Batman" perde parâmetros 🔎 |
-| CM-08 | Alta | `jellyfin.js:124-143,372-410,1188-1221` | Login falho tratado como sucesso; com o plugin Meilisearch, usuário não-admin nunca carrega bibliotecas 🔎 |
+| CM-08 ✅ | Alta | `jellyfin.js:124-143,372-410,1188-1221` | Login falho tratado como sucesso; com o plugin Meilisearch, usuário não-admin nunca carrega bibliotecas 🔎 |
 | CM-09 ✅ | Alta | `gallery/gallery.json:122` | "Series — Rough → Use Full Project" aponta para um ZIP que não existe 🧪 |
 | CM-10 ✅ | Média | `app.js:1440,1479,1489,941` | Export/Import Config incompatíveis; importação é sobrescrita pelo que estava salvo 🧪 |
 | CM-11 ✅ | Média | `slots.js:178` | IDs de slot duplicados após remover + adicionar (restauração troca imagens) 🧪 |
 | CM-12 ✅ | Média | `app.js:1185-1195` | `updateImageSettings` muta `Setup.Sizes`: miniaturas do Jellyfin passam a ser pedidas em 1920 px 🧪 |
-| CM-13 ◐ | Média | vários | Exceções não tratadas e IDs/elementos errados (lista) 🧪/🔎 |
+| CM-13 ✅ | Média | vários | Exceções não tratadas e IDs/elementos errados (lista) 🧪/🔎 |
 | CM-14 ✅ | Média | `drawing.js:65,322,488,569` | Cache de etapas só funciona por acidente; clones de canvas a cada redesenho 🧪 |
 | CM-15 ✅ | **Alta** | `jellyfin.js:171-208,317-334` | IndexedDB do Jellyfin: conexões nunca fechadas **travam o primeiro carregamento das bibliotecas** (40 s+ medidos); timeout inexistente 🧪 |
 | CM-16 | Média | `jellyfin.js:476-504,1039-1099` | Cache de bibliotecas só invalida por contagem; `UserData` nunca atualiza por padrão 🔎 |
@@ -158,7 +158,7 @@ mainCanvas.toBlob(blob => {
 
 Em `drawComposite`, zerar `window.Composites.Merged` quando não houver texto.
 
-### CM-05 — Senha em texto puro 🧪
+### CM-05 — Senha em texto puro 🧪 — ✅ corrigido (2026-10-23)
 
 - `saveFieldsToStorage` grava `localStorage.password` (`app.js:708`).
 - `#Password` tem o atributo `save` (`index.html:43`) → o `pageMemory` grava o valor no IndexedDB `pageMemoryDB`
@@ -173,7 +173,15 @@ essas credenciais. Correção sugerida:
    (`authorization: MediaBrowser … Token="…"`); oferecer "Sair" que chama `POST /Sessions/Logout`.
 3. Quem já usa o app tem a senha gravada: na próxima versão, apagar `localStorage.password` e o registro do `pageMemory`.
 
-### CM-06 — XSS via metadados do Jellyfin 🔎
+Como ficou (2026-10-23): o login guarda só `localStorage.jellyfinAuth = { server, serverId, userId, token }`; no
+carregamento o token é validado com `GET /Users/{userId}` e nenhuma senha é enviada. Quem já tinha a senha salva loga com
+ela **uma última vez**; com o token obtido (ou se o servidor recusar a senha), `localStorage.password`/`username` são
+apagados e o registro do `pageMemory` é regravado sem os campos de login (que perderam o `[save]`). O formulário não vem
+mais com a senha `password` preenchida. Botão novo **Sign out** chama `POST /Sessions/Logout`. Verificado contra o
+Jellyfin simulado: migração a partir do app antigo na mesma origem, recarga só com token, token revogado, senha errada,
+troca de conta, sair, usuário comum com Meilisearch e servidor fora do ar (10/10).
+
+### CM-06 — XSS via metadados do Jellyfin 🔎 — ✅ corrigido (2026-10-23)
 
 `addVideoposter`/`addLibrarycover` fazem `label.innerHTML = item.Name` (`jellyfin_ui.js:324,338`) e
 `showLoadingLibraries` monta HTML com `lib.Name` (`jellyfin.js:1151`). Nomes vêm de metadados (arquivos NFO, scrapers,
@@ -197,7 +205,13 @@ projetos antigos, ou migrar parâmetros ao carregar (`distance = hypot(offsetX, 
 `angle = atan2(offsetY, offsetX)`). Um teste simples que falhe com chaves duplicadas evita a repetição
 (ex.: `grep -E "^  [a-zA-Z0-9]+: \{" | sort | uniq -d`).
 
-### CM-08 — Fluxo de login/Meilisearch 🔎
+### CM-08 — Fluxo de login/Meilisearch 🔎 — ✅ corrigido (2026-10-23)
+
+Como ficou: `init()` não rejeita mais (servidor fora do ar e falta de credenciais viram `onServerSetupError` /
+`onLoginError`); login com falha para o fluxo; sem acesso à configuração do plugin, ou com erro do Meilisearch, as
+bibliotecas carregam pelo Jellyfin (verificado com usuário comum e o plugin presente). **Mantido de propósito:** o ajuste
+automático dos atributos do índice Meilisearch (`updateFilterableAttributes`/`updateSortableAttributes`) — é um recurso
+que o app usa; perguntar antes de alterar o índice fica como sugestão.
 
 - `login()` captura o erro e retorna `undefined` (`jellyfin.js:397-409`); em `init()` o `.then` roda mesmo assim
   (`:132-140`), marca `isAuthenticated = true` e chama Meilisearch/bibliotecas sem token (cascata de 401).
@@ -278,7 +292,7 @@ const size = ratio > 1 ? { width: 1920, height: Math.round(1920 / ratio) } : { w
 setCanvasSize(size.width, size.height);
 ```
 
-### CM-13 — Exceções e referências erradas — ◐ (2026-10-23: tudo, exceto `jellyfin.js:127`, que vai com o CM-08 na Fase 3)
+### CM-13 — Exceções e referências erradas — ✅ corrigido (2026-10-23; `jellyfin.js:127` junto com o CM-08)
 
 | Local | Problema | Correção |
 |---|---|---|
