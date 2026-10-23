@@ -1,5 +1,7 @@
 # CoverMaker — Auditoria: erros, correções sugeridas e melhorias
 
+> Plano de correções em andamento: [`PLANO-DE-CORRECOES.md`](PLANO-DE-CORRECOES.md).
+
 > Revisão do código em `9928358`. Cada item indica **como foi verificado**:
 > 🧪 reproduzido no Chromium (Playwright) com o app servido localmente · 🔎 leitura de código.
 > Severidade: **Alta** (função quebrada, perda de dados ou segurança), **Média** (falha em casos comuns),
