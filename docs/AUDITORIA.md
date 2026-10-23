@@ -6,6 +6,10 @@
 > **Baixa** (borda, desempenho, manutenção).
 > Problemas das bibliotecas copiadas em `js/vendor/` estão documentados em `jeffersoncgo/cdn` → `docs/AUDITORIA.md`
 > (IDs `CDN-xx`); os que afetam o CoverMaker são citados aqui.
+>
+> Segunda rodada (CM-28 a CM-32): ESLint com regras de erro (`no-undef`, `no-dupe-keys`, `no-unsafe-finally`, …)
+> em todo o JS e um teste que executa **todos** os layouts (0, 1, 2 e 6 imagens), efeitos de imagem e efeitos de texto
+> no Chromium com parâmetros padrão, mínimos e máximos, registrando exceções, saída vazia e tempo.
 
 ## Resumo
 
@@ -38,6 +42,11 @@
 | CM-25 | Baixa | vários | Código morto / legado 🔎 |
 | CM-26 | Baixa | `README.md`, `CONTRIBUTING.md` | Documentação desatualizada ou incorreta 🔎 |
 | CM-27 | Baixa | `index.html`, `paramsRenderer.js:213` | Acessibilidade e consistência de idioma 🔎 |
+| CM-28 | Média | `textEffects.js` (`actionSpeedlines`) | "Anime Speedlines" apaga o texto com os valores padrão 🧪 |
+| CM-29 | Média | `textEffects.js:1205` (`lightning`) | "Lightning" com Seed = 0 (mínimo do slider) lança `rnd is not a function` 🧪 |
+| CM-30 | Média | `textEffects.js` | Controles que não fazem nada e parâmetro `"undefined"` salvo nos projetos 🧪 |
+| CM-31 | Média | `textEffects.js` | Efeitos de texto travam a página por segundos (Stained Glass: 46 s no mínimo) 🧪 |
+| CM-32 | Baixa | vários | Achados de lint e casos-limite de parâmetros 🧪 |
 
 ---
 
@@ -98,8 +107,9 @@ window.memoryLoaded = true;
 O pipeline (`drawing.js:65`) guarda `{hash, ...resultado}`; quando um `apply` faz `return;`, o resultado fica sem
 `canvas`, `applyImageEffects`/`drawComposite` encerram e **o canvas visível para de atualizar** — inclusive o texto.
 
-- Todos os 40 layouts fazem `if (!N) return;` e ~30 fazem `if (N === 1) return;` (carousel, fanSpread, scatteredPhotos,
-  polaroidWall, honeycomb, …), às vezes depois de já terem desenhado o fundo.
+- Medido executando cada layout: **40 de 40** não devolvem canvas com 0 imagens e **34 de 40** com 1 imagem
+  (`if (!N) return;` / `if (N === 1) return;` em carousel, fanSpread, scatteredPhotos, polaroidWall, honeycomb, …),
+  às vezes depois de já terem desenhado o fundo. Com 2 ou mais imagens, todos funcionam e nenhum lança exceção.
 - `effectsRegistry.js:446` (Scanlines com `opacity` 0 — o mínimo do slider) e `:320` (Reflection com tamanho 0).
 
 Reprodução: deixar 1 slot, layout "3D Carousel", editar o texto → canvas não muda. Ou Scanlines com opacidade 0 →
@@ -435,6 +445,70 @@ eventos de mouse; troque por *Pointer Events* (`pointerdown/move/up` + `setPoint
   comentários misturados; escolher um idioma (ou i18n simples com um dicionário).
 - Tipos de toast `warning`, `error` e `info` são usados mas não têm estilo em `css/toast.css` (aparecem como "default").
 - Slot fixado não tem destaque visual além do ícone, e o ícone exibido quando fixado é o de "desafixar".
+
+---
+
+## Segunda rodada
+
+### CM-28 — "Anime Speedlines" apaga o texto 🧪
+
+`actionSpeedlines.apply` faz `ctx.clearRect(0, 0, w, h)` **antes** de usar `canvas` como máscara e como fonte do texto
+(o `ctx` é do próprio `canvas`). No modo padrão "Inside Text" a máscara fica vazia e a camada some inteira; em
+"Behind Text" sobram só as linhas, sem o texto. Correção: copiar o texto antes de limpar.
+
+```js
+const src = cloneCanvas(canvas).canvas;   // antes do clearRect
+ctx.clearRect(0, 0, w, h);
+// … usar `src` no lugar de `canvas` em lCtx.drawImage(…) e ctx.drawImage(…)
+```
+
+### CM-29 — "Lightning" com Seed 0 🧪
+
+`createSeededRandom(0)` retorna `null` (semente 0 significa "aleatório"), e `lightning` (`textEffects.js:1205`) chama
+`rnd()` sem *fallback* → `TypeError: rnd is not a function` ao arrastar o Seed até 0. Correção:
+`const rnd = createSeededRandom(seedVal) ?? Math.random;` (como já fazem `channelTear` e `nordicRuneforge`).
+
+### CM-30 — Controles sem efeito e parâmetro `"undefined"` 🧪
+
+- `stainedGlass`: o slider **Grout Width** (`grout`) é lido e nunca usado (`textEffects.js:4829`).
+- `blueprint`: **Paper Color** (`bgColor`) nunca é lido (o próprio comentário diz que é "só referência").
+- `sauronFire`, `chiseledMetal`, `engravedMetal` e `plasma` usam `{ type: 'span', label: 'Colors' }` como título de
+  seção, sem `key`. `renderParamsOptions` agrupa por `key` num `Set`, então **só o primeiro título aparece**
+  ("Colors"; "Texture", "Pupil", "Effects"… somem) e o controle recebe `data-param-key="undefined"` → o projeto salva
+  `"undefined": ""` nos parâmetros (verificado no Chromium). Correção: em `renderParamsOptions`, tratar entradas sem
+  `key` como títulos (renderizar um rótulo e pular `dataset.paramKey`), ou trocar por `group: 'Colors'` nos parâmetros.
+
+### CM-31 — Efeitos de texto lentos na thread principal 🧪
+
+Tempo de **um** efeito num canvas 1920×1080 (Chromium *headless*, renderização por software — numa máquina com GPU os
+números são menores, mas a proporção se mantém):
+
+| Efeito | Parâmetros | Tempo |
+|---|---|---|
+| `stainedGlass` | mínimos (Shard Size 5) | **45,8 s** |
+| `neon` | máximos | 8,7 s |
+| `longShadow` | máximos | 7,1 s |
+| `paintBrush` | máximos | 5,1 s |
+| `longShadow` | **os da camada padrão do app** (length 48, blur 2) | 2,9 s |
+| `nordicRuneforge`, `stainedGlass`, `infernoForge` | padrão | 1,2 – 2,0 s |
+
+Os 86 efeitos com parâmetros padrão somam ~18 s. Como cada alteração no texto invalida o cache dos efeitos daquela
+camada, digitar com a camada padrão congela a interface por segundos, e um slider no extremo pode travar a aba.
+
+- `longShadow` cria `length + 1` canvases de tela cheia (49 × ~8 MB) e aplica `blur` em cada um. Recorte para a área
+  do texto (`cropCanvas` já existe), reutilize um único canvas de passo e aplique o blur uma vez a cada N passos.
+- Em geral: processar só o retângulo que contém o texto (não 1920×1080), limitar extremos dos sliders
+  (ex.: `stainedGlass.size` mínimo 15) e mover efeitos de pixel para um *Worker* com `OffscreenCanvas`, mantendo uma
+  prévia em resolução reduzida enquanto o usuário arrasta.
+
+### CM-32 — Lint e casos-limite 🧪
+
+- `app.js:1084` — `focusTabName` é global implícita.
+- `slots.js:324` — `return items` dentro de `finally` engole exceções de `getRandomImages`.
+- `drawing.js:149` — `new Promise(async (resolve, reject) => …)`: erros fora do `try` não rejeitam a Promise.
+- `skew` com Skew X = Skew Y = ±1 gera matriz de transformação singular e o texto desaparece; limitar a ±0,95.
+- 28 variáveis atribuídas e nunca usadas (ex.: `compositeRegistry.js:3926-3932` no Jigsaw, `:3993-4000`,
+  `textEffects.js:3201`, `5448`, `5507`, `6564`) — cálculos mortos ou recursos inacabados; vale revisar caso a caso.
 
 ---
 
