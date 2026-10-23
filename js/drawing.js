@@ -146,9 +146,24 @@ function loadImage(file) {
     }
     
     // For external URLs, convert to Blob URL first
-    return new Promise(async (resolve, reject) => {
+    // (an async IIFE instead of `new Promise(async …)`, whose unexpected errors never rejected the promise)
+    return (async () => {
+      let blobUrl;
       try {
-        const blobUrl = await urlToBlob(file);
+        blobUrl = await urlToBlob(file);
+      } catch (error) {
+        // If conversion fails, try loading the original URL
+        console.warn('Failed to convert to Blob URL, trying original:', error);
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = file;
+        });
+      }
+      return new Promise((resolve, reject) => {
         const img = new Image();
         
         img.onload = () => resolve(img);
@@ -157,17 +172,8 @@ function loadImage(file) {
           reject(new Error('Failed to load image from URL'));
         };
         img.src = blobUrl;
-      } catch (error) {
-        // If conversion fails, try loading the original URL
-        console.warn('Failed to convert to Blob URL, trying original:', error);
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = file;
-      }
-    });
+      });
+    })();
   }
   
   // If it's a File or Blob object

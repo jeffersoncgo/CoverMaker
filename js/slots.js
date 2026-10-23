@@ -320,9 +320,10 @@ function reloadSlotImage(el) {
 
 async function getRandomImages(count) {
   let items;
+  // Checked before the try: the finally below restores search params that, at this point, were never backed up
+  if (!jellyfin.areLibrariesLoaded)
+    return [];
   try {
-    if (!jellyfin.areLibrariesLoaded)
-      return [];
     jellyfin.backupSearchParams();
 
     jellyfin.searchParams.sortBy = jellyfin.searchParams.choices.sortBy[0]
@@ -339,8 +340,9 @@ async function getRandomImages(count) {
   } finally {
     jellyfin.restoreSearchParams();
     fillJellyfinContainerAttr()
-    return items;
   }
+  // (a return inside finally used to swallow exceptions and override the early return)
+  return items;
 }
 
 function isSlotPinned(index) {
