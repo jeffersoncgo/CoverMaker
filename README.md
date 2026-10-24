@@ -11,7 +11,7 @@
 ![State](https://img.shields.io/badge/state-localStorage-blue.svg)
 [![Contributing](https://img.shields.io/badge/contribute-Guide-brightgreen.svg)](CONTRIBUTING.md)
 
-📚 **Technical docs (pt-BR):** [Architecture](docs/ARQUITETURA.md) · [Layouts & effects reference](docs/REFERENCIA-EFEITOS.md) · [Code audit & known issues](docs/AUDITORIA.md)
+📚 **Technical docs:** [Architecture](docs/ARCHITECTURE.md) · [Layouts & effects reference](docs/EFFECTS-REFERENCE.md) · [Code audit & known issues](docs/AUDIT.md) · [Fix plan](docs/FIX-PLAN.md)
 
 ---
 
@@ -159,7 +159,7 @@ Your examples will be featured here and help inspire other users!
 
 ### Text Layer Effects
 
-Create unlimited text layers with professional typography and many built-in text effects (88 in total — the full list with every parameter is in [`docs/REFERENCIA-EFEITOS.md`](docs/REFERENCIA-EFEITOS.md)). Some of them:
+Create unlimited text layers with professional typography and many built-in text effects (88 in total — the full list with every parameter is in [`docs/EFFECTS-REFERENCE.md`](docs/EFFECTS-REFERENCE.md)). Some of them:
 
 - `opacity` (Opacity)
 - `fade` (Fade)
@@ -307,7 +307,7 @@ Create unlimited text layers with professional typography. Strokes, shadows, 3D 
 
 ---
 
-**Available Text Effects (in-app names — some of them; all 88 in [`docs/REFERENCIA-EFEITOS.md`](docs/REFERENCIA-EFEITOS.md)):**
+**Available Text Effects (in-app names — some of them; all 88 in [`docs/EFFECTS-REFERENCE.md`](docs/EFFECTS-REFERENCE.md)):**
 
 - `opacity` (Opacity)
 - `fade` (Fade)
